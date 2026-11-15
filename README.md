@@ -97,14 +97,16 @@ O comportamento hierárquico é idêntico; muda apenas o formato de registro dos
 - Os arquivos em `opencode/agent/` refletem os agentes ativos, exceto pela
   assinatura de autoria adicionada no final de cada arquivo.
 - Os arquivos em `codex/agents/` refletem os agentes ativos em `~/.codex/agents/`.
-- `INSTALAR.command` é citado nos documentos originais mas não consta neste snapshot;
-  a instalação oficial documentada é via `bin/willtech-bootstrap.sh` (ver INSTALL.md).
+- O `INSTALAR.command` citado em partes do material Claude Code não está presente neste
+  repositório. A instalação reproducível disponível é via terminal:
+  `claude-code/bin/willtech-bootstrap.sh --check` ou `--apply` (ver `INSTALL.md`).
 
 ## Licença e autoria
 
-Conteúdo autoral **WILLTECH-BH** (conta GitHub: `hebwil`), uso privado — assinatura
-completa em [NOTICE.md](NOTICE.md). Componentes externos (EGM, TokenEconomizer)
-pertencem a seus respectivos autores e são citados apenas como integrações.
+Conteúdo autoral **WILLTECH-BH** (conta GitHub: `hebwil`), distribuído sob a
+[MIT License](LICENSE). A assinatura de autoria está em [NOTICE.md](NOTICE.md).
+Componentes externos (EGM, TokenEconomizer) pertencem a seus respectivos autores
+e são citados apenas como integrações.
 
 ---
 

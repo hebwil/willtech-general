@@ -45,16 +45,18 @@ cp -a claude-code/agents/. ~/.claude/agents/
 #    Os 7 nomes willtech-* devem aparecer.
 ```
 
-O pacote original incluía `INSTALAR.command` (instalador de duplo clique), que não
-compõe este snapshot. Para instalação via terminal, o pacote original documentava:
+O `INSTALAR.command` mencionado em parte do material original não está presente neste
+repositório. Para instalação reproducível via terminal, use:
 
 ```sh
+cd claude-code
 ./bin/willtech-bootstrap.sh --check   # inventário e simulação
 ./bin/willtech-bootstrap.sh --apply   # instalação idempotente com backup
 ```
 
 Nota: os scripts de `claude-code/bin/` foram escritos para localizar o runtime do
 Claude Code no macOS da estação original; revisar antes de reutilizar em outra máquina.
+O caminho correto dentro deste repositório é `claude-code/bin/`, e não a raiz.
 
 ## Desinstalação
 

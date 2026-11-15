@@ -33,3 +33,37 @@
 - Inclusão da variante Codex com os sete agentes ativos.
 - Atualização de `README.md` e `INSTALL.md`.
 - Registro desta auditoria em `AUDITORIA.md`.
+
+## Rodada 2 — validação real e pendências
+
+### OpenCode
+
+- Runtime OpenCode 2.2.6 localizado no app desktop e executado em modo headless.
+- Agentes visíveis: `willtech-general`, `willtech-executor`, `willtech-explorador`,
+  `willtech-pesquisador`, `willtech-revisor`, `willtech-testador` e `willtech-visual`.
+- Delegação comandante → General → especialista executada com sucesso.
+- Tentativa de escrita pelo `willtech-explorador` foi negada por ausência de
+  ferramenta de escrita/perfil somente leitura.
+- Repositório permaneceu inalterado após os testes.
+
+### Codex
+
+- Os sete arquivos `.toml` permanecem idênticos aos agentes ativos.
+- Novo teste de isolamento confirmou que o runtime permitiu escrita ao
+  `willtech-explorador`; o arquivo de prova foi removido imediatamente.
+- Risco real: isolamento no Codex é dependente do runtime e do contexto, não é
+  garantia declarativa como no OpenCode.
+
+### Claude Code
+
+- `~/.claude/agents` permanece ausente; nenhuma instalação foi feita.
+- A variante continua sendo pacote preservado e não homologado na superfície real.
+- O `INSTALAR.command`, antes apenas citado, foi incluído como wrapper explícito do
+  `willtech-bootstrap.sh --apply`.
+- Delegação automática permanece **NÃO TESTADA** no Claude Code real.
+
+### Referências e licença
+
+- Referências quebradas ao `INSTALAR.command` foram resolvidas com o arquivo real.
+- Caminhos de instalação do Claude Code corrigidos em `INSTALL.md`.
+- Licença MIT presente e registrada no `README.md`.
