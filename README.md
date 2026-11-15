@@ -2,7 +2,7 @@
 
 > Repositório privado de preservação da arquitetura WILLTECH de hierarquia multiagente
 > (comandante → tenente coordenador → especialistas), com variantes para
-> **Claude Code** e **OpenCode**.
+> **Claude Code**, **OpenCode** e **Codex**.
 
 ## O que é
 
@@ -69,6 +69,9 @@ willtech-general/
 │   ├── settings/               bloco de roteamento para CLAUDE.md
 │   ├── bin/                    bootstrap, homologação e verificação
 │   └── README.md, HOMOLOGACAO.md, COMECE-AQUI.md
+├── codex/                  variante Codex (configuração ativa em ~/.codex/agents)
+│   ├── agents/                 os 7 agentes em formato TOML
+│   └── README.md               instalação e limites específicos do Codex
 ├── opencode/               variante OpenCode (versão ativa na estação)
 │   └── agent/                  os 7 agentes em formato mode: subagent
 ├── history/                versões históricas
@@ -79,20 +82,21 @@ willtech-general/
 
 ## Diferenças entre plataformas
 
-| Aspecto | Claude Code (`claude-code/`) | OpenCode (`opencode/`) |
-|---|---|---|
-| Frontmatter | `name`, `tools: [...]`, `model`, `color` | `description`, `mode: subagent` |
-| Delegação | Ferramenta `Agent` | Ferramenta `subagent` |
-| Instalação | `~/.claude/agents/` (leitura recursiva) | `~/.config/opencode/agent/` |
-| Detalhamento do contrato | 7 pontos + tabela de especialistas | Condensado (4 passos + matriz) |
+| Aspecto | Claude Code (`claude-code/`) | OpenCode (`opencode/`) | Codex (`codex/`) |
+|---|---|---|---|
+| Formato | Frontmatter Markdown | Frontmatter Markdown | TOML |
+| Delegação | Ferramenta `Agent` | Ferramenta `subagent` | Ferramenta de subagentes do runtime |
+| Instalação | `~/.claude/agents/` | `~/.config/opencode/agent/` | `~/.codex/agents/` |
+| Permissões | Ferramentas por agente | Permissões declaradas por agente | `developer_instructions` |
 
 O comportamento hierárquico é idêntico; muda apenas o formato de registro dos agentes.
 
 ## Status
 
 - Snapshot canônico da arquitetura em uso na estação WILLTECH (Novembro/2026).
-- Os arquivos em `opencode/agent/` refletem 1:1 os agentes ativos em
-  `~/.config/opencode/agent/` no momento da captura.
+- Os arquivos em `opencode/agent/` refletem os agentes ativos, exceto pela
+  assinatura de autoria adicionada no final de cada arquivo.
+- Os arquivos em `codex/agents/` refletem os agentes ativos em `~/.codex/agents/`.
 - `INSTALAR.command` é citado nos documentos originais mas não consta neste snapshot;
   a instalação oficial documentada é via `bin/willtech-bootstrap.sh` (ver INSTALL.md).
 

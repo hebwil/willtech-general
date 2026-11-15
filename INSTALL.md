@@ -1,5 +1,14 @@
 # Instalação
 
+## Codex (variante nativa ativa)
+
+```sh
+cp -a ~/.codex/agents ~/.codex/agents.backup-$(date +%Y%m%d-%H%M%S)
+cp codex/agents/*.toml ~/.codex/agents/
+```
+
+Reinicie a sessão do Codex e confirme os sete nomes `willtech-*`.
+
 ## OpenCode (variante ativa)
 
 Os agentes ficam em `~/.config/opencode/agent/` (diretório no singular).
