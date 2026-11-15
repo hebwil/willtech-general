@@ -1,126 +1,212 @@
-# WillTech-General — Arquitetura Autoral de Orquestração Multiagente
+<h1 align="center">WILLTECH-GENERAL</h1>
 
-> Repositório privado de preservação da arquitetura WILLTECH de hierarquia multiagente
-> (comandante → tenente coordenador → especialistas), com variantes para
-> **Claude Code**, **OpenCode** e **Codex**.
-
-## O que é
-
-A estação WILLTECH organiza agentes de IA em uma **hierarquia de comando** com
-responsabilidades e permissões estritas: um agente principal (o "comandante") coordena
-a sessão e delega tarefas complexas a um tenente coordenador (`willtech-general`),
-que por sua vez aciona especialistas de função única e consolida as evidências.
-
-Esta implementação é **autoral e personalizada da WILLTECH**. Ela NÃO copia código de
-terceiros; os componentes externos citados abaixo são apenas **referências de integração**
-e mantêm seus próprios repositórios e licenças:
-
-| Componente externo | Origem | Papel na estação |
-|---|---|---|
-| Elephant Goldfish Model (EGM) | `github.com/google/elephant-goldfish-model` | Revisão independente em contexto fresco (fluxo opcional citado nos prompts) |
-| TokenEconomizer | `github.com/microsoft/TokenEconomizer` | Economia de tokens (plugin separado, não faz parte desta arquitetura) |
-
-Nenhuma reivindicação de autoria é feita sobre esses componentes externos.
-
-## Hierarquia
-
-```
-┌─────────────────────────────────────────────┐
-│  COMANDANTE (agente principal nativo)       │
-│  decide escopo, autoriza alterações         │
-└──────────────────┬──────────────────────────┘
-                   │ subagent
-┌──────────────────▼──────────────────────────┐
-│  willtech-general (tenente coordenador)     │
-│  decompõe, delega, consolida evidências     │
-└──┬───────┬───────┬───────┬───────┬───────┬──┘
-   ▼       ▼       ▼       ▼       ▼       ▼
-explorador pesquisador visual executor testador revisor
-(leitura) (leitura) (leitura) (escrita (lab     (leitura,
-                             restrita) isolado) contexto fresco)
-```
-
-### Matriz de acionamento
-
-| Especialista | Função | Permissão |
-|---|---|---|
-| `willtech-explorador` | Investigar repositórios, código, dependências | Somente leitura |
-| `willtech-pesquisador` | Documentação oficial, GitHub, fontes técnicas | Somente leitura |
-| `willtech-visual` | Interface, UX, acessibilidade, Astro | Somente leitura (análise) |
-| `willtech-executor` | Implementar mudanças **expressamente autorizadas** | Escrita apenas no escopo aprovado |
-| `willtech-testador` | Executar testes em ambiente isolado | Laboratório dedicado |
-| `willtech-revisor` | Revisão independente de código e regressões | Somente leitura, contexto fresco |
-
-### Regras transversais
-
-- Escopo autorizado vem sempre do comandante; o General não decide escopo sozinho.
-- Tarefa trivial não é delegada (economia de tokens e de contexto).
-- Máximo de 2 tentativas por problema; bloqueio é registrado e a execução segue.
-- Proibido: sudo, `git push` sem aprovação, credenciais, `.env`, gateways, VPS, produção.
-- Toda conclusão exige evidência (comando, saída, arquivo, resultado de teste).
-
-## Estrutura deste repositório
-
-```
-willtech-general/
-├── claude-code/            variante Claude Code (pacote original "willtech-station")
-│   ├── agents/general/         willtech-general com frontmatter Claude
-│   ├── agents/especialistas/   os 6 especialistas (formato Claude)
-│   ├── settings/               bloco de roteamento para CLAUDE.md
-│   ├── bin/                    bootstrap, homologação e verificação
-│   └── README.md, HOMOLOGACAO.md, COMECE-AQUI.md
-├── codex/                  variante Codex (configuração ativa em ~/.codex/agents)
-│   ├── agents/                 os 7 agentes em formato TOML
-│   └── README.md               instalação e limites específicos do Codex
-├── opencode/               variante OpenCode (versão ativa na estação)
-│   └── agent/                  os 7 agentes em formato mode: subagent
-├── history/                versões históricas
-│   └── willtech-general.pre-comercial.md   (v1: executor técnico)
-├── INSTALL.md              orientações de instalação por plataforma
-└── HISTORICO.md            linhagem das versões
-```
-
-## Diferenças entre plataformas
-
-| Aspecto | Claude Code (`claude-code/`) | OpenCode (`opencode/`) | Codex (`codex/`) |
-|---|---|---|---|
-| Formato | Frontmatter Markdown | Frontmatter Markdown | TOML |
-| Delegação | Ferramenta `Agent` | Ferramenta `subagent` | Ferramenta de subagentes do runtime |
-| Instalação | `~/.claude/agents/` | `~/.config/opencode/agent/` | `~/.codex/agents/` |
-| Permissões | Ferramentas por agente | Permissões declaradas por agente | `developer_instructions` |
-
-O comportamento hierárquico é idêntico; muda apenas o formato de registro dos agentes.
-
-## Status
-
-- Snapshot canônico da arquitetura em uso na estação WILLTECH (Novembro/2026).
-- Os arquivos em `opencode/agent/` refletem os agentes ativos, exceto pela
-  assinatura de autoria adicionada no final de cada arquivo.
-- Os arquivos em `codex/agents/` refletem os agentes ativos em `~/.codex/agents/`.
-- O `INSTALAR.command` citado em partes do material Claude Code não está presente neste
-  repositório. A instalação reproducível disponível é via terminal:
-  `claude-code/bin/willtech-bootstrap.sh --check` ou `--apply` (ver `INSTALL.md`).
-
-## Licença e autoria
-
-Conteúdo autoral **WILLTECH-BH** (conta GitHub: `hebwil`), distribuído sob a
-[MIT License](LICENSE). A assinatura de autoria está em [NOTICE.md](NOTICE.md).
-Componentes externos (EGM, TokenEconomizer) pertencem a seus respectivos autores
-e são citados apenas como integrações.
+<p align="center">
+  <strong>Orquestração Multiagente para Engenharia de Software</strong><br>
+  <em>Uma arquitetura. Múltiplos especialistas. Um único comando.</em>
+</p>
 
 ---
 
-## Créditos
+O **WillTech-General** é uma arquitetura modular de orquestração de agentes de inteligência artificial, desenvolvida pela **WILLTECH-BH** para organizar, delegar e supervisionar tarefas complexas de engenharia de software.
 
-A hierarquia de comando desta arquitetura (comandante → coordenador → especialistas)
-foi concebida de forma independente pela WILLTECH-BH. Referência de inspiração no
-paradigma de orquestração hierárquica de múltiplos agentes:
+Projetado para integrar-se ao **Claude Code, OpenCode e OpenAI Codex**, o projeto transforma agentes especializados em uma equipe coordenada, preservando o controle do agente principal de cada plataforma.
 
-- **[Multi-Agent Shogun](https://github.com/yohey-w/multi-agent-shogun)** —
-  orquestração hierárquica estilo samurai (Shogun → Karo → Ashigaru) por
-  [yohey-w](https://github.com/yohey-w). A WILLTECH-BH agradece a referência pública;
-  nenhum código deste repositório provém desse projeto.
+Em vez de substituir o assistente nativo por outro orquestrador, o WillTech-General acrescenta uma camada subordinada de coordenação, acionada quando a complexidade da tarefa justifica a delegação.
 
-Outros componentes externos citados: [Elephant Goldfish Model](https://github.com/google/elephant-goldfish-model)
-(revisão independente) e [TokenEconomizer](https://github.com/microsoft/TokenEconomizer)
-(economia de tokens) — autoria de seus respectivos donos.
+**Seu princípio central: delegar com propósito, executar com controle e concluir com evidências.**
+
+---
+
+## O conceito
+
+O WillTech-General adota uma estrutura hierárquica de três níveis:
+
+```text
+               COMANDANTE NATIVO
+           Claude Code | Codex | OpenCode
+                       |
+                       v
+                WILLTECH-GENERAL
+              Coordenação inteligente
+                       |
+        +--------------+--------------+
+        |              |              |
+        v              v              v
+     ANÁLISE       IMPLEMENTAÇÃO    QUALIDADE
+        |              |              |
+   Explorador        Executor       Testador
+   Pesquisador                       Revisor
+   Visual
+```
+
+### Nível 1 — Comandante
+
+O agente principal da plataforma permanece responsável pelas decisões, autorizações, escopo e entrega final.
+
+### Nível 2 — WillTech-General
+
+O coordenador recebe tarefas complexas, identifica dependências, organiza etapas, seleciona especialistas, acompanha resultados e consolida evidências.
+
+Não assume o controle da sessão nem substitui o comandante.
+
+### Nível 3 — Especialistas
+
+Seis agentes com responsabilidades específicas, utilizados conforme a natureza do trabalho.
+
+A arquitetura prioriza delegação seletiva, evitando mobilizar toda a equipe para operações simples.
+
+---
+
+## Equipe especializada
+
+| Agente | Especialidade |
+|---|---|
+| **Explorador** | Análise estrutural de código, dependências e reconhecimento de repositórios |
+| **Pesquisador** | Investigação técnica, bibliotecas, documentação e requisitos |
+| **Visual** | Engenharia de interfaces, UX, acessibilidade e análise visual |
+| **Executor** | Implementação controlada de alterações autorizadas |
+| **Testador** | Validação funcional, testes automatizados e investigação de falhas |
+| **Revisor** | Revisão independente, qualidade, arquitetura e regressões |
+
+Cada agente possui um contrato operacional, com responsabilidades, limites e critérios de entrega.
+
+O modelo de permissões depende das capacidades e configurações de cada runtime. As restrições precisam ser verificadas tecnicamente, não apenas declaradas nos prompts.
+
+---
+
+## Princípios de engenharia
+
+### 01 — Comando preservado
+
+O agente principal mantém a autoridade. O General coordena, mas não redefine unilateralmente os objetivos.
+
+### 02 — Delegação proporcional
+
+Tarefas simples permanecem com o comandante. Especialistas são acionados quando oferecem benefício concreto.
+
+### 03 — Especialização funcional
+
+Cada agente atua em uma responsabilidade delimitada, reduzindo sobreposição e retrabalho.
+
+### 04 — Execução controlada
+
+Mudanças devem respeitar o escopo autorizado, preservar o código existente e permitir inspeção dos resultados.
+
+### 05 — Verificação independente
+
+Quando necessário, a implementação é submetida a testes e revisão antes da conclusão.
+
+### 06 — Evidências antes de conclusões
+
+Uma tarefa não é considerada concluída apenas pela declaração de um agente. Resultados devem ser sustentados por arquivos, diffs, testes ou outras evidências verificáveis.
+
+### 07 — Recuperação e continuidade
+
+O fluxo prioriza reaproveitamento de trabalho existente, identificação de bloqueios e continuidade controlada, evitando reinícios desnecessários.
+
+---
+
+## Compatibilidade
+
+O projeto mantém implementações específicas para diferentes ambientes de desenvolvimento assistido por IA.
+
+| Plataforma | Implementação | Estado documentado |
+|---|---|---|
+| **OpenAI Codex** | Agentes nativos em TOML | Delegação hierárquica validada |
+| **OpenCode V2** | Subagentes Markdown | Delegação aninhada validada |
+| **Claude Code** | Subagentes Markdown | Pacote disponível; instalação e delegação ainda não homologadas no ambiente atual |
+
+A estrutura conceitual é compartilhada, mas os mecanismos de delegação, execução e controle de permissões variam entre plataformas.
+
+### Integração sem substituição
+
+O WillTech-General foi concebido para trabalhar com o agente principal existente, sem exigir que outro framework assuma o comando.
+
+As variantes são mantidas separadamente para respeitar as capacidades nativas de cada plataforma.
+
+---
+
+## Estrutura do projeto
+
+```text
+willtech-general/
+├── claude-code/
+│   ├── agents/
+│   ├── bin/
+│   └── INSTALAR.command
+│
+├── codex/
+│   └── agents/
+│
+├── opencode/
+│   └── agent/
+│
+├── history/
+│
+├── README.md
+├── INSTALL.md
+├── HISTORICO.md
+├── AUDITORIA.md
+├── NOTICE.md
+└── LICENSE
+```
+
+- **claude-code/** — implementação, ferramentas de instalação e arnês de homologação para Claude Code.
+- **codex/** — agentes adaptados ao runtime Codex nativo.
+- **opencode/** — agentes para OpenCode V2.
+- **history/** — preservação de versões históricas da arquitetura.
+- **AUDITORIA.md** — testes, evidências e limitações técnicas documentadas.
+
+Consulte [INSTALL.md](INSTALL.md) para os procedimentos de instalação específicos de cada plataforma.
+
+---
+
+## Segurança e limitações
+
+O WillTech-General foi concebido com separação de responsabilidades, proteção do escopo autorizado e revisão de resultados.
+
+Entretanto, **instruções de agentes não constituem, por si só, isolamento de segurança**.
+
+Operações por shell, ferramentas externas e mecanismos de delegação podem exigir políticas adicionais para impedir escrita ou execução não autorizada.
+
+A proteção efetiva deve ser avaliada conforme o runtime utilizado. Os resultados conhecidos, suas limitações e testes de homologação estão documentados em [AUDITORIA.md](AUDITORIA.md).
+
+---
+
+## Filosofia do projeto
+
+**Mais agentes não significam necessariamente mais inteligência.**
+
+A eficiência de um sistema multiagente depende de como o trabalho é dividido, do momento em que a delegação acontece e da qualidade das evidências produzidas.
+
+O WillTech-General busca uma arquitetura enxuta, supervisionável e extensível, na qual cada especialista tenha uma função clara e o agente principal mantenha o controle.
+
+O objetivo não é automatizar indiscriminadamente. É oferecer uma estrutura de engenharia capaz de lidar com tarefas complexas de maneira organizada, verificável e consistente.
+
+---
+
+## Desenvolvimento e licença
+
+| | |
+|---|---|
+| **Projeto** | WillTech-General |
+| **Desenvolvimento** | WILLTECH-BH |
+| **Mantenedor** | [hebwil](https://github.com/hebwil) |
+| **Repositório** | [github.com/hebwil/willtech-general](https://github.com/hebwil/willtech-general) |
+| **Licença** | MIT |
+
+O código e os arquivos próprios deste repositório são disponibilizados sob os termos da [Licença MIT](LICENSE), respeitadas as licenças aplicáveis a quaisquer componentes de terceiros.
+
+---
+
+## Créditos e referências
+
+O WillTech-General é uma implementação personalizada da WILLTECH-BH.
+
+Entre as referências arquiteturais estudadas está o [Multi-Agent Shogun](https://github.com/yohey-w/multi-agent-shogun), desenvolvido por [yohey-w](https://github.com/yohey-w), especialmente por sua abordagem de coordenação hierárquica de agentes.
+
+O WillTech-General não é uma distribuição oficial desse projeto nem possui vínculo com seus mantenedores.
+
+---
+
+**WILLTECH-GENERAL — Engenharia multiagente com comando, especialização e evidências.**
