@@ -15,7 +15,7 @@ Origin: WILLTECH custom multi-agent implementation
 </p>
 
 <p align="center">
-  <sub>Versão atual: <strong>2.2.1</strong> (estabilização E) · Licença MIT · macOS, Linux e CLIs de IA</sub>
+  <sub>Versão atual: <strong>2.2.1</strong> (estabilização E) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
 </p>
 
 <p align="center">
@@ -140,6 +140,19 @@ Cada agente possui um contrato operacional, com responsabilidades, limites e cri
 
 ## Compatibilidade e homologação
 
+### Sistemas operacionais
+
+| Sistema | Estado | Condição objetiva |
+|---|---|---|
+| **macOS** | Validado | Suítes determinísticas e smoke tests exercitados em macOS (arm64). Os wrappers de sandbox do OpenCode usam `sandbox-exec`, exclusivo do macOS |
+| **Linux** | Não validado nesta estação | Código Unix (python3 stdlib + shell POSIX + git, com `fcntl` disponível em Linux). Requisitos: python3, git, sh. Sem ambiente Linux disponível para exercício; o sandbox `sandbox-exec` dos wrappers não se aplica |
+| **Windows nativo** | Não suportado | O dossiê e o núcleo importam `fcntl` (Unix); os scripts são `sh` e não executam em PowerShell; `sandbox-exec` é macOS. Não há instalador Windows nesta versão |
+| **Windows via WSL** | Não validado | O caminho seria o Linux dentro da distribuição WSL (python3, git, sh). Sem ambiente Windows/WSL disponível para exercício; mesmas condições do Linux |
+
+As três integrações de IA abaixo são independentes do sistema operacional: cada uma usa os mecanismos nativos do seu runtime.
+
+### Plataformas de IA
+
 | Plataforma | Agentes | Delegação hierárquica | Hooks / plugins (2.2.1) | Memória, revisão e controle de loops | Isolamento por agente |
 |---|---|---|---|---|---|
 | **OpenCode V2** | Subagentes Markdown + wrappers sandbox + plugin V2 | Homologada em runtime real | Plugin V2 nativo | Contratos ativos; automação validada em simulação | Aplicado pelo runtime (2.2.6) |
@@ -154,7 +167,7 @@ A estrutura conceitual é compartilhada; os mecanismos de delegação, execuçã
 
 ## Comece aqui
 
-**Pré-requisitos:** um dos runtimes suportados (OpenCode V2, Codex ou Claude Code) e `git`. As ferramentas de inteligência usam apenas a biblioteca padrão do Python 3 — sem dependências externas e sem custo de modelo.
+**Pré-requisitos:** um dos runtimes suportados (OpenCode V2, Codex ou Claude Code) e `git`. As ferramentas de inteligência usam apenas a biblioteca padrão do Python 3 — sem dependências externas e sem custo de modelo. Os comandos abaixo são Unix (`sh`): executam em macOS, Linux e dentro do WSL, **não diretamente no PowerShell/Windows nativo** (condições por sistema na seção Compatibilidade).
 
 ### OpenCode V2 (variante homologada no runtime 2.2.6)
 
@@ -182,6 +195,10 @@ sh opencode/tests/test-wrappers.sh   # regressão sem custo de modelo
 
 ```sh
 mkdir -p ~/.codex/agents
+# Backup apenas se já existirem agentes (instalação limpa não tem o que copiar)
+if [ -n "$(ls -A ~/.codex/agents 2>/dev/null)" ]; then
+  cp -a ~/.codex/agents ~/.codex/agents.backup-$(date +%Y%m%d-%H%M%S)
+fi
 cp codex/agents/*.toml ~/.codex/agents/
 # Reinicie a sessão e confirme os sete nomes willtech-*
 ```
@@ -190,6 +207,10 @@ cp codex/agents/*.toml ~/.codex/agents/
 
 ```sh
 mkdir -p ~/.claude/agents
+# Backup apenas se já existirem agentes (instalação limpa não tem o que copiar)
+if [ -n "$(ls -A ~/.claude/agents 2>/dev/null)" ]; then
+  cp -a ~/.claude/agents ~/.claude/agents.backup-$(date +%Y%m%d-%H%M%S)
+fi
 cp -a claude-code/agents/. ~/.claude/agents/
 ```
 
@@ -206,6 +227,10 @@ sh tools/willtech-install.sh --uninstall           # reverter com restauração 
 Escreve **apenas dentro do repositório alvo** (`.claude/`, `.codex/`, `.opencode/`, `.willtech/`); as telas oficiais de trust/permissão de cada plataforma continuam valendo.
 
 **Desativação e reversão:** `--disable` desliga sem remover; `--uninstall` restaura os backups pré-instalação. Para desinstalar agentes, remova os arquivos `willtech-*` dos diretórios de agentes da plataforma (instruções completas em [INSTALL.md](INSTALL.md)).
+
+### Smoke tests dos adaptadores
+
+Os três adaptadores da `main` passaram em smoke tests mínimos com **código real publicado**: plugin/hooks carregados, núcleo Python executado e bloqueio anti-loop comprovado — a terceira tentativa idêntica é negada após duas falhas (OpenCode V2 via `throw` no plugin; Codex e Claude Code via JSON `deny` no contrato de hooks). Os testes simulam apenas o ambiente externo e os eventos; **não constituem homologação em sessão real com modelo**, que permanece pendente e documentada em [EVOLUCAO.md](EVOLUCAO.md).
 
 ---
 

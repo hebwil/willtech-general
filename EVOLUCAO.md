@@ -417,4 +417,30 @@ instalações ativas. Branch `qoder/general-2.2.1-stabilization`, PR único.
   desconhecidos. Instalações ativas, modelos, provedores, Bifrost, VPS, SSH e
   credenciais: não tocados. Autoria, MIT, mascotes e animações: preservados.
 
+## Rodada editorial — compatibilidade de SO e vitrine (2026-11-16)
+
+Revisão documental única, sem alterações em agentes, núcleo ou instalador.
+
+- **Sistemas operacionais (evidência, não anúncio):** macOS validado por
+  exercício (suítes determinísticas e smoke tests nesta estação, arm64).
+  Linux e Windows via WSL: requisitos objetivos registrados (python3, git,
+  shell POSIX; `fcntl` disponível em Linux), **não exercitados** — nenhum
+  ambiente Linux/WSL disponível (docker/podman/wsl ausentes). Windows nativo:
+  **não suportado** — o dossiê importa `fcntl` (Unix-only,
+  `tools/willtech-dossie.py`), scripts `sh` não executam em PowerShell e
+  `sandbox-exec` é macOS. Nenhum instalador novo foi implementado.
+- **Vitrine:** README separa a matriz de SO das três integrações de IA
+  (OpenCode V2, Codex, Claude Code); expressões de máquina pessoal
+  ("nesta máquina", "ambiente atual") substituídas por estado neutro com
+  remissão a este documento; tom sem alertas alarmistas. Limitações técnicas
+  verificáveis permanecem aqui e em INSTALL.md/AUDITORIA.md.
+- **Resultados destacados:** smoke tests 3/3 dos adaptadores com código real
+  da main, núcleo Python executado e bloqueio anti-loop comprovado **em
+  simulação** — explicitamente não homologação em sessão real.
+- **Instalação segura:** INSTALL.md declara que os comandos são Unix
+  (macOS/Linux/WSL, não PowerShell) e adiciona backup condicional antes da
+  cópia dos agentes Claude Code (sobrescrita sem backup corrigida).
+- **Preservação:** banner, APNG/GIF, seis mascotes, layout, textos corretos,
+  assinaturas de autoria e MIT intactos.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

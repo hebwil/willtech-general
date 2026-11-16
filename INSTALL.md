@@ -1,5 +1,19 @@
 # Instalação
 
+## Sistemas operacionais
+
+Todos os comandos deste documento são Unix (`sh`). Eles executam em **macOS**
+(validado nesta estação) e seguem os mesmos requisitos em **Linux** e dentro do
+**WSL** (python3, git, shell POSIX) — esses dois caminhos não foram exercitados
+aqui e não têm suporte anunciado. **Não execute estes comandos diretamente no
+PowerShell/Windows nativo**: o núcleo importa `fcntl` (Unix), os scripts são
+`sh` e não há instalador Windows nesta versão. Os wrappers de sandbox do
+OpenCode usam `sandbox-exec`, exclusivo do macOS; em Linux/WSL permanecem as
+permissões por agente do runtime, sem esse sandbox adicional.
+
+As três integrações de IA (Codex, OpenCode V2, Claude Code) são independentes
+do sistema operacional e estão separadas abaixo.
+
 ## Codex (variante nativa ativa)
 
 ```sh
@@ -94,7 +108,11 @@ Estrutura de origem: pasta `claude-code/` deste repositório (pacote "willtech-s
 
 ```sh
 # 1. Copiar os agentes (o Claude Code lê ~/.claude/agents recursivamente)
+#    Backup apenas se já existirem agentes (instalação limpa não tem o que copiar)
 mkdir -p ~/.claude/agents
+if [ -n "$(ls -A ~/.claude/agents 2>/dev/null)" ]; then
+  cp -a ~/.claude/agents ~/.claude/agents.backup-$(date +%Y%m%d-%H%M%S)
+fi
 cp -a claude-code/agents/. ~/.claude/agents/
 
 # 2. (Opcional) Roteamento automático: colar o bloco
@@ -114,12 +132,12 @@ cd claude-code
 ```
 
 Nota: os scripts de `claude-code/bin/` foram escritos para localizar o runtime do
-Claude Code no macOS da estação original; revisar antes de reutilizar em outra máquina.
+Claude Code em macOS; revisar antes de reutilizar em outro ambiente.
 O caminho correto dentro deste repositório é `claude-code/bin/`, e não a raiz.
 
 **Estado desta variante:** pacote preservado e validado apenas sintaticamente
-(`bash -n`, `zsh -n`, `py_compile`). `~/.claude/agents` não existe nesta máquina e a
-delegação real **não foi homologada**. Não instale sem uma sessão autenticada e uma
+(`bash -n`, `zsh -n`, `py_compile`). A delegação real **não foi homologada**
+(estado detalhado em EVOLUCAO.md). Não instale sem uma sessão autenticada e uma
 rodada de testes na superfície real.
 
 ## Automação nativa 2.2.1 (projeto-local, opcional)
