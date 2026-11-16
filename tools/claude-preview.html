@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WillTech · laboratório visual do Mod Claude Code (complementar, não nativo)</title>
+<style>
+body { margin: 0; background: #070d17; color: #e5edf6; font: 13px system-ui; }
+header { padding: 14px 20px; background: #382319; border-bottom: 1px solid #a36b47; }
+header strong { color: #ffd2a0; display: block; margin-bottom: 4px; }
+.wrap { display: flex; gap: 18px; padding: 18px; flex-wrap: wrap; }
+.panel { border: 1px solid #283346; border-radius: 12px; padding: 12px; background: #0b1422; }
+.panel h3 { margin: 0 0 8px; font-size: 13px; color: #87d8f5; }
+.card { display: flex; gap: 10px; align-items: center; border: 1px solid #283346; border-radius: 10px; padding: 6px; margin-bottom: 6px; }
+.card[data-state=working] { border-color: var(--c); }
+.card .name { color: var(--c); font-weight: 650; }
+.card .state { color: #b4c2d3; font-size: 11px; }
+.card[data-state=completed] .state { color: #8bd76b; }
+.card[data-state=error] .state { color: #ff9595; }
+.card[data-state=blocked] .state { color: #f6d35f; }
+button { font: inherit; color: #bdeeff; background: #102638; border: 1px solid #31516a; border-radius: 7px; padding: 5px 9px; cursor: pointer; margin: 0 6px 10px 0; }
+@media (prefers-reduced-motion: reduce) { .card svg * { animation: none !important; } }
+</style>
+<header><strong>LABORATÓRIO COMPLEMENTAR · NÃO É PINTURA NATIVA DO CLAUDE CODE</strong>
+Renderiza os mesmos Svg+SMIL (desktop/VS Code) e quadros PNG (terminal) que o Mod envia pelos elementos oficiais. Nenhum agente ou modelo é acionado.</header>
+<div style="padding: 12px 18px 0">
+  <button id="start">General + Executor trabalhando</button>
+  <button id="done">Concluir tudo</button>
+  <button id="fail">Erro no Testador</button>
+  <button id="motion">Pausar animações</button>
+</div>
+<div class="wrap">
+  <div class="panel"><h3>Superfície desktop / VS Code · Svg + SMIL</h3><div id="desktop"></div></div>
+  <div class="panel"><h3>Superfície terminal · Image + troca de quadros (blit)</h3><div id="terminal"></div></div>
+</div>
+<script type="module">
+import { AGENTS, projectAgents } from '../claude/plugins/willtech-visual/hooks/activity.js';
+import { PNG, FRAMES, SIZE } from '../claude/plugins/willtech-visual/hooks/assets.js';
+
+const observations = new Map();
+let seq = 0;
+let motion = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sessions = AGENTS.map((a) => ({ id: a.id, agent: a.id, status: 'idle', time: { busy: 0, idle: 1 }, pending: 0, permissions: 0 }));
+const parser = new DOMParser();
+
+function svgFor(id, state) {
+  const animate = state === 'working' && motion
+    ? '<animateTransform attributeName="transform" type="translate" values="0 0; 0 -3; 0 0" dur="2.8s" repeatCount="indefinite"/>' : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE.w}" height="${SIZE.h}" viewBox="0 0 ${SIZE.w} ${SIZE.h}"><g>${animate}<image x="0" y="4" width="${SIZE.w}" height="${SIZE.h - 8}" href="data:image/png;base64,${PNG[id]}"/></g></svg>`;
+}
+
+const cards = AGENTS.map((agent) => {
+  const make = (host, kind) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.setProperty('--c', agent.color);
+    let picture;
+    if (kind === 'svg') {
+      picture = document.createElement('div');
+    } else {
+      picture = document.createElement('img');
+      picture.width = 96; picture.height = 102; picture.alt = `Mascote ${agent.name}`;
+      picture.src = 'data:image/png;base64,' + PNG[agent.id];
+    }
+    const text = document.createElement('div');
+    const name = document.createElement('div'); name.className = 'name'; name.textContent = agent.name;
+    const state = document.createElement('div'); state.className = 'state';
+    text.append(name, state);
+    card.append(picture, text);
+    host.append(card);
+    return { card, picture, state, kind };
+  };
+  return { agent, desktop: make(document.getElementById('desktop'), 'svg'), terminal: make(document.getElementById('terminal'), 'img') };
+});
+
+let frame = 0;
+setInterval(() => {
+  frame = (frame + 1) % 4;
+  for (const { agent, terminal } of cards) {
+    if (terminal.card.dataset.state === 'working' && motion) {
+      terminal.picture.src = 'data:image/png;base64,' + FRAMES[agent.id][frame];
+    }
+  }
+}, 240);
+
+function render() {
+  const rows = projectAgents(sessions, observations, true);
+  rows.forEach((row, i) => {
+    for (const view of [cards[i].desktop, cards[i].terminal]) {
+      view.card.dataset.state = row.state;
+      view.state.textContent = row.label;
+      if (view.kind === 'svg') {
+        view.picture.replaceChildren(parser.parseFromString(svgFor(row.id, row.state), 'image/svg+xml').documentElement);
+      } else if (row.state !== 'working' || !motion) {
+        view.picture.src = 'data:image/png;base64,' + PNG[row.id];
+      }
+    }
+  });
+}
+const mark = (id, state) => observations.set(id, { state, at: ++seq });
+document.getElementById('start').onclick = () => { mark('willtech-general', 'working'); mark('willtech-executor', 'working'); render(); };
+document.getElementById('done').onclick = () => { AGENTS.forEach((a) => mark(a.id, 'completed')); render(); };
+document.getElementById('fail').onclick = () => { mark('willtech-testador', 'error'); render(); };
+document.getElementById('motion').onclick = (e) => { motion = !motion; e.target.textContent = motion ? 'Pausar animações' : 'Ativar animações'; render(); };
+render();
+window.__labReady = true;
+</script>
+</html>
