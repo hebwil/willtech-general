@@ -6,8 +6,8 @@
 |---|---|---|---|
 | 7 agentes definidos | Sim | Sim | Sim |
 | Instalação ativa local | Não (`~/.claude/agents` ausente) | Sim | Sim |
-| Delegação real observada | Não | Não testado | Sim |
-| Bloqueio real de escrita pelo explorador | Não | Não testado | Sim |
+| Delegação real observada | Não | **Sim** | Sim |
+| Bloqueio real de escrita pelo explorador | Não testado | **Sim** | Não |
 
 ## Evidências
 
@@ -45,6 +45,66 @@
 - Tentativa de escrita pelo `willtech-explorador` foi negada por ausência de
   ferramenta de escrita/perfil somente leitura.
 - Repositório permaneceu inalterado após os testes.
+
+### Falhas adversariais comprovadas (rodada 3)
+
+Testes com comandos reais no runtime 2.2.6 mostraram quatro brechas que a
+configuração anterior não fechava:
+
+1. **Shell livre nos agentes de leitura.** Declarar apenas `edit: deny` não impedia
+   `shell`, porque o runtime começa com `allow` e aplica a última regra que casa.
+   General e especialistas de leitura conseguiam escrever via shell.
+2. **Delegação a partir do Explorador.** O Explorador conseguia acionar o Executor e
+   contornar a hierarquia.
+3. **Testador sem isolamento efetivo.** Não havia confinamento de escrita por
+   diretório.
+4. **Ferramentas nativas de worktree.** `opencode_worktree_create` criou um worktree
+   mesmo com `edit: deny` e `execute: deny`; a ferramenta tem ação de permissão
+   própria.
+5. **Redirecionamento fora do sandbox.** Com o wrapper sem aspas, o `>` era
+   interpretado pelo shell externo antes do `sandbox-exec`, permitindo escrever
+   fora do laboratório.
+
+### Correções aplicadas
+
+- Agentes de leitura (Explorador, Pesquisador, Visual, Revisor) e General:
+  `shell`, `edit`, `subagent` (exceto General), `execute`,
+  `opencode_worktree_create` e `opencode_worktree_remove` negados.
+- Shell liberado apenas por `willtech-read-shell "COMANDO"` (leitura) e
+  `willtech-test-shell "COMANDO"` (Testador), com o comando inteiro entre aspas.
+- Executor: `subagent` e `execute` negados; `git push`, `sudo` e `rm -rf` negados.
+- Testador: escrita confinada a `~/willtech-lab`; rede, SSH, `.env` e configuração
+  bloqueados pelo `sandbox-exec`.
+- Gatilho de delegação no `AGENTS.md` do comandante, versionado em
+  `opencode/AGENTS.md`.
+
+### Matriz de homologação (runtime real)
+
+| Cenário | Resultado |
+|---|---|
+| Explorador: shell direto / escrita / `subagent` / worktree | todos negados, sem arquivo |
+| General: shell direto / escrita / worktree | todos negados, sem arquivo |
+| Visual, Pesquisador, Revisor: shell direto | negados |
+| Executor: escrita no laboratório | concluída |
+| Executor: `subagent` e `git push` | negados |
+| Testador: shell direto | negado; somente o wrapper é aceito |
+| Testador: escrita dentro de `~/willtech-lab` | concluída |
+| Testador: escrita fora de `~/willtech-lab` | `Operation not permitted` |
+| General → Explorador | `subagent` concluído |
+| Comandante → General em 3 arquivos / multi-etapa | delegou ao General |
+| Comandante em tarefa de 1 arquivo | resolveu direto, sem delegação |
+| Injeção `>`, `>>`, `&&`, `;`, `\|`, `$()`, backtick, sem aspas | todas negadas |
+
+Evidências reproduzíveis sem custo de modelo: `sh opencode/tests/test-wrappers.sh`
+(37 verificações aprovadas). Matriz completa em `opencode/HOMOLOGACAO.md`.
+
+### Instalação ativa
+
+- Backup: `~/.willtech-backups/opencode-20261115-214945-final/`.
+- Agentes em `~/.config/opencode/agent/` e wrappers em `~/.config/opencode/bin/`
+  idênticos aos arquivos versionados.
+- `opencode.json`, provedores, MCPs, Bifrost e VPS não foram alterados.
+- `opencode debug agents` confirmou as permissões novas nos sete agentes.
 
 ### Codex
 

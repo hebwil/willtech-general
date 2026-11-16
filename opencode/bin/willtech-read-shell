@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+PROFILE="(version 1)
+(allow default)
+(deny file-write*)
+(allow file-write* (literal \"/dev/null\"))
+(allow file-write* (literal \"/dev/tty\"))
+(allow file-write* (literal \"/dev/stdout\"))
+(allow file-write* (literal \"/dev/stderr\"))
+(deny file-read* (subpath \"$HOME/.ssh\"))
+(deny file-read* (subpath \"$HOME/.config/opencode\"))
+(deny file-read* (subpath \"$HOME/.config/bifrost\"))
+(deny file-read* (subpath \"$HOME/.config/willtech-bifrost2\"))
+(deny file-read* (regex #\"/\\\\.env(\\\\..*)?$\"))
+(deny network*)
+(deny ipc-posix*)
+"
+
+export GIT_OPTIONAL_LOCKS=0
+export PYTHONDONTWRITEBYTECODE=1
+
+exec sandbox-exec -p "$PROFILE" /bin/sh -c "$*"

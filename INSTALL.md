@@ -9,25 +9,60 @@ cp codex/agents/*.toml ~/.codex/agents/
 
 Reinicie a sessão do Codex e confirme os sete nomes `willtech-*`.
 
-## OpenCode (variante ativa)
+## OpenCode (variante ativa, homologada no runtime 2.2.6)
 
 Os agentes ficam em `~/.config/opencode/agent/` (diretório no singular).
+Os wrappers de shell ficam em `~/.config/opencode/bin/`.
 
 ```sh
 # 1. Backup do estado atual
-cp -a ~/.config/opencode/agent ~/.config/opencode/agent.backup-$(date +%Y%m%d-%H%M%S)
+STAMP=$(date +%Y%m%d-%H%M%S)
+mkdir -p ~/.willtech-backups/opencode-$STAMP
+cp -a ~/.config/opencode/agent ~/.willtech-backups/opencode-$STAMP/
+cp -a ~/.config/opencode/AGENTS.md ~/.willtech-backups/opencode-$STAMP/
 
-# 2. Copiar os 7 agentes
+# 2. Copiar os 7 agentes, os wrappers e a política do comandante
 cp opencode/agent/*.md ~/.config/opencode/agent/
+mkdir -p ~/.config/opencode/bin
+cp opencode/bin/* ~/.config/opencode/bin/
+chmod +x ~/.config/opencode/bin/*
+cp opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 
 # 3. Reiniciar a sessão do OpenCode (agentes carregam no início da sessão)
 
 # 4. Verificar
-#    Em uma sessão nova, o agente principal deve listar os subagentes willtech-*
+opencode debug agents
+#    Os 7 agentes willtech-* devem aparecer com as regras de permissão novas.
+#    Se o binário não estiver no PATH, use o caminho do app instalado.
+
+# 5. Rodar a regressão dos wrappers (não usa modelo, custo zero)
+sh opencode/tests/test-wrappers.sh
 ```
 
 Cada arquivo usa `mode: subagent` no frontmatter — formato nativo do OpenCode.
-Não há dependência de hooks, plugins ou configuração extra.
+`~/.config/opencode/opencode.json` não é alterado: provedores, MCPs e
+`experimental.subagent_depth` permanecem como estão.
+
+### Rollback
+
+```sh
+BK=~/.willtech-backups/opencode-<STAMP>
+cp -a "$BK/agent/." ~/.config/opencode/agent/
+cp -a "$BK/AGENTS.md" ~/.config/opencode/AGENTS.md
+```
+
+Os wrappers podem ser removidos de `~/.config/opencode/bin/` após restaurar os
+agentes antigos, que não os referenciam.
+
+### Uso dos wrappers
+
+```sh
+~/.config/opencode/bin/willtech-read-shell "git status --short"
+~/.config/opencode/bin/willtech-test-shell "npm test"
+```
+
+O comando vai **inteiro entre aspas duplas**. Sem aspas, o runtime nega a chamada;
+isso impede que `>`, `;`, `&&` e `|` sejam executados fora do sandbox.
 
 ## Claude Code (variante original)
 
@@ -45,8 +80,8 @@ cp -a claude-code/agents/. ~/.claude/agents/
 #    Os 7 nomes willtech-* devem aparecer.
 ```
 
-O `INSTALAR.command` mencionado em parte do material original não está presente neste
-repositório. Para instalação reproducível via terminal, use:
+O instalador por duplo clique está em `claude-code/INSTALAR.command`. Para
+instalação reproducível via terminal, use:
 
 ```sh
 cd claude-code
@@ -57,6 +92,11 @@ cd claude-code
 Nota: os scripts de `claude-code/bin/` foram escritos para localizar o runtime do
 Claude Code no macOS da estação original; revisar antes de reutilizar em outra máquina.
 O caminho correto dentro deste repositório é `claude-code/bin/`, e não a raiz.
+
+**Estado desta variante:** pacote preservado e validado apenas sintaticamente
+(`bash -n`, `zsh -n`, `py_compile`). `~/.claude/agents` não existe nesta máquina e a
+delegação real **não foi homologada**. Não instale sem uma sessão autenticada e uma
+rodada de testes na superfície real.
 
 ## Desinstalação
 

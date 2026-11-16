@@ -139,7 +139,11 @@ willtech-general/
 │   └── agents/
 │
 ├── opencode/
-│   └── agent/
+│   ├── agent/
+│   ├── bin/
+│   ├── tests/
+│   ├── AGENTS.md
+│   └── HOMOLOGACAO.md
 │
 ├── history/
 │
@@ -153,7 +157,8 @@ willtech-general/
 
 - **claude-code/** — implementação, ferramentas de instalação e arnês de homologação para Claude Code.
 - **codex/** — agentes adaptados ao runtime Codex nativo.
-- **opencode/** — agentes para OpenCode V2.
+- **opencode/** — agentes, wrappers de shell com sandbox, política do comandante
+  e testes de regressão para OpenCode V2.
 - **history/** — preservação de versões históricas da arquitetura.
 - **AUDITORIA.md** — testes, evidências e limitações técnicas documentadas.
 
@@ -170,6 +175,35 @@ Entretanto, **instruções de agentes não constituem, por si só, isolamento de
 Operações por shell, ferramentas externas e mecanismos de delegação podem exigir políticas adicionais para impedir escrita ou execução não autorizada.
 
 A proteção efetiva deve ser avaliada conforme o runtime utilizado. Os resultados conhecidos, suas limitações e testes de homologação estão documentados em [AUDITORIA.md](AUDITORIA.md).
+
+### OpenCode 2.2.6 — isolamento aplicado
+
+No OpenCode, as permissões são ordenadas e a **última regra que casa vence**. Os
+agentes de leitura negam explicitamente `shell`, `edit`, `subagent`, `execute` e
+as ferramentas nativas `opencode_worktree_create`/`opencode_worktree_remove`.
+
+Shell é liberado apenas pelos wrappers:
+
+```sh
+~/.config/opencode/bin/willtech-read-shell "COMANDO"
+~/.config/opencode/bin/willtech-test-shell "COMANDO"
+```
+
+O comando deve ir **inteiro entre aspas duplas**. Sem aspas, o runtime nega a
+chamada; isso impede que `>`, `;`, `&&` e `|` sejam executados fora do sandbox.
+O wrapper de leitura bloqueia escrita; o de teste confina escrita a
+`~/willtech-lab`, bloqueia rede, SSH, `.env` e configurações sensíveis.
+
+Matriz completa e limites em [opencode/HOMOLOGACAO.md](opencode/HOMOLOGACAO.md).
+Regressão sem custo de modelo: `sh opencode/tests/test-wrappers.sh`.
+
+### Limitações por plataforma
+
+| Plataforma | Isolamento real | Estado |
+|---|---|---|
+| **OpenCode 2.2.6** | Por agente, aplicado pelo runtime + sandbox dos wrappers | Homologado nos testes documentados |
+| **Codex** | Instrucional; o TOML não oferece permissão por agente | Sem garantia equivalente |
+| **Claude Code** | Depende dos controles do runtime e do pacote | Não homologado nesta máquina |
 
 ---
 
