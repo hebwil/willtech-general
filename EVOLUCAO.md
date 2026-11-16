@@ -496,7 +496,7 @@ runner Windows real execute `python3 tools/test-compat.py` e o instalador.
 
 ## Rodada homologação Windows nativa — windows-latest real (2026-11-16)
 
-Runner real obtido sem novo OAuth: workflow `.github/workflows/windows-compat.yml
+Runner real obtido sem novo OAuth: workflow `.github/workflows/windows-compat.yml`
 criado na `main` pela interface web autenticada (commits `e83a7b0`, `392b875`)
 e acionado por `gh api` (dispatch exige apenas escopo `repo`). Código do PR #6
 testado por checkout do input `ref=qoder/windows-compat`.
@@ -522,14 +522,52 @@ testado por checkout do input `ref=qoder/windows-compat`.
    `UTF8Encoding($false)` + leitura de configs existentes como `utf-8-sig`
    (arquivos reais do Windows têm BOM) — commit `355934e`.
 
-**Bloqueio concreto remanescente (orçamento de tentativas esgotado):**
-o ciclo completo do `willtech-install.ps1` ainda falha no runner: PS 5.1
+**Bloqueio ao encerrar aquela rodada (resolvido na rodada final abaixo):**
+o ciclo completo do `willtech-install.ps1` falhava no runner: PS 5.1
 **descarta argumentos de string vazia** em chamadas nativas — o prefixo do
-launcher (vazio para `python`, `-3` para `py`) some do argv e o programa de
-merge recebe 4 valores em vez de 5 (`ValueError: not enough values to unpack`,
-run 43885449180). Correção exata para a próxima rodada autorizada: enviar o
-prefixo com sentinela não vazia (ex.: `@none`) ou junto do stdin, filtrando no
-lado Python. Nada foi mergeado; PR #6 permanece ABERTO. O núcleo Windows está
-homologado nativamente; o instalador PowerShell não.
+launcher (vazio para `python`, `-3` para `py`) sumia do argv e o programa de
+merge recebia 4 valores em vez de 5 (`ValueError: not enough values to unpack`,
+run 43885449180). O orçamento de tentativas daquela missão foi encerrado;
+o PR #6 ficou aberto, com núcleo homologado e instalador ainda bloqueado.
+
+## Rodada final PR #6 — núcleo e instalador homologados (2026-11-16)
+
+[Workflow Windows nativo 43892063828: SUCCESS](https://github.com/hebwil/willtech-general/actions/runs/43892063828).
+Checkout exato do produto: `c70e5e80f8183cdb06dea6febee73249e5d9b98f`.
+Runner `windows-latest`, Python 3.12.10 (`os.name == 'nt'`) e Windows
+PowerShell 5.1 real; nenhum modelo de IA chamado.
+
+- **Correção do bloqueio final (`7129daf`):** transporte do prefixo vazio
+  usando `@none`, convertido de volta para vazio no Python; os cinco
+  argumentos chegam intactos. Contratos, parâmetros, código via stdin,
+  UTF-8 sem BOM e leitura `utf-8-sig` preservados.
+- **Único defeito adicional comprovado (`43891790256`):** reinstalação criava
+  backup dos hooks Codex que o próprio instalador havia criado; uninstall
+  restaurava esse backup indevidamente. Correção localizada (`c70e5e8`):
+  marcador `.willtech-created` apenas para arquivos criados pelo instalador,
+  impedindo backups indevidos; marcador removido no uninstall.
+- **Workflow existente reutilizado (`548a615`):** verificações acrescentadas
+  apenas para caminho com espaços e Unicode (`wt lab Ação`), sentinela sem
+  vazamento nos hooks, integridade do plugin/núcleo e restauração integral
+  das configurações. Permissões `contents: read` e timeout mantidos.
+- **PASS nativo:** `tools/test-compat.py` 22/22, lock `msvcrt` com 8 processos
+  × 25 appends + prune concorrente, anti-loop, dossiê legado, hooks das três
+  plataformas, fail-closed e recusa real de `.env` via CLI (exit 2).
+- **Ciclo PowerShell completo PASS:** instalação, backup, merge preservando
+  hooks e dados do usuário, idempotência (1 → 1), disable, enable e uninstall;
+  configuração original restaurada integralmente, Codex/plugin criados
+  removidos, Unicode nos caminhos preservado e hashes sem alterações.
+- **Economia:** uma execução de produto e a única reexecução autorizada
+  após o defeito adicional. Um acionamento com referência incorreta foi
+  cancelado no checkout, antes de qualquer teste de produto.
+- **Preservação:** regressão macOS previamente aprovada reutilizada; código
+  Unix, instalador sh, núcleo auto, General, especialistas, contratos,
+  assets, assinaturas e MIT sem alterações nesta rodada. Linux/WSL não
+  exercitados; nenhum suporte adicional de sandbox foi anunciado.
+
+**Resultado:** núcleo Windows e instalador PowerShell **HOMOLOGADOS NATIVAMENTE**.
+Sem bloqueio remanescente para publicar o PR #6. Homologação de runtimes de
+IA em Windows não faz parte deste workflow; os três incrementos futuros
+não foram iniciados.
 
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

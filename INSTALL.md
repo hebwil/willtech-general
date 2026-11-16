@@ -201,15 +201,19 @@ compatibilidade. A disponibilidade dos runtimes Codex e Claude Code em
 Windows nativo não foi verificada nesta estação; o OpenCode V2 carrega o
 plugin normalmente onde o runtime existir.
 
-**Estado:** núcleo homologado em Windows nativo real (`windows-latest`,
-Python 3.12, `os.name == 'nt'`): bateria `tools/test-compat.py` 22/22
-(locks `msvcrt` 8×25 processos, anti-loop, hooks das 3 plataformas, `.env`
-recusado) e regressão Unix completa verde. O ciclo do instalador PowerShell
-tem um bloqueio concreto remanescente de transporte de argumentos do
-Windows PowerShell 5.1 (argumento vazio descartado; causa exata, correção
-proposta e run IDs em EVOLUCAO.md) — até a correção final, prefira WSL ou
-instalação manual assistida. Regressão local:
-`python3 tools\test-compat.py` (22 verificações, cross-platform).
+**Estado:** núcleo e instalador homologados em Windows nativo real
+(`windows-latest`, Python 3.12.10, Windows PowerShell 5.1):
+[workflow 43892063828 aprovado](https://github.com/hebwil/willtech-general/actions/runs/43892063828).
+Bateria `tools/test-compat.py` 22/22, recusa real de `.env` e ciclo completo
+com backup, merge preservando configurações, idempotência, desativação,
+reativação e restauração integral. Caminho com espaços e Unicode (`Ação`)
+preservado; plugin copiado e núcleo do laboratório sem alterações.
+A sentinela `@none` preserva o argumento vazio do launcher sem vazar para
+os hooks. Arquivos criados pelo instalador recebem `.willtech-created`,
+removido no uninstall, para não gerar backups indevidos na reinstalação.
+Regressão macOS previamente aprovada reutilizada; código Unix preservado,
+Linux/WSL não exercitados nesta rodada. Runtimes de IA não foram homologados
+por este workflow; nenhum modelo foi chamado.
 
 ## Desinstalação
 
