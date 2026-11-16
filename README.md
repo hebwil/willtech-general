@@ -284,15 +284,6 @@ O objetivo não é automatizar indiscriminadamente. É oferecer uma estrutura de
 
 O código e os arquivos próprios deste repositório são disponibilizados sob os termos da [Licença MIT](LICENSE), respeitadas as licenças aplicáveis a quaisquer componentes de terceiros.
 
----
-
-## Créditos e referências
-
-O WillTech-General é uma implementação personalizada da WILLTECH-BH.
-
-Entre as referências arquiteturais estudadas está o [Multi-Agent Shogun](https://github.com/yohey-w/multi-agent-shogun), desenvolvido por [yohey-w](https://github.com/yohey-w), especialmente por sua abordagem de coordenação hierárquica de agentes.
-
-O WillTech-General não é uma distribuição oficial desse projeto nem possui vínculo com seus mantenedores.
 
 ---
 
