@@ -1,0 +1,19 @@
+{
+  "capturedFrom": "página tools/test-smoke.html em modo full (3ª execução, PASS 64/64) e modo reduced-motion",
+  "fullMode": {
+    "fileScripts": [
+      "tools/test-gui.js",
+      "opencode/plugins/willtech/visual/gui-experimental.cjs",
+      "tools/test-smoke.js"
+    ],
+    "dataImages": "7 data:image/webp (mascotes estáticos) + 1 data:image/apng (General working) + 1 data:image/apng (fetch do próprio harness para decodificação WebCodecs)",
+    "httpHttpsRequests": 0
+  },
+  "reducedMode": {
+    "fileScripts": 3,
+    "dataImages": "7 data:image/webp; nenhum APNG carregado (motion off)",
+    "httpHttpsRequests": 0
+  },
+  "bundleStaticCheck": "tools/test-smoke.cjs: nenhuma ocorrência de fetch/XMLHttpRequest/WebSocket/EventSource no bundle gui-experimental.cjs",
+  "conclusion": "zero chamadas de rede externas e zero chamadas de modelo/IA durante o smoke"
+}

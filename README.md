@@ -233,6 +233,10 @@ Escreve **apenas dentro do repositório alvo** (`.claude/`, `.codex/`, `.opencod
 
 **Delegação DeepSeek — evidência parcial:** no OpenCode Desktop 2.2.6, o comandante acionou o General e este chamou o Explorador real por `subagent`, recebendo seu retorno de erro. A leitura foi rejeitada por `permission.rejected` no cliente não interativo; o processo terminou por timeout de 60 segundos. Isso comprova comunicação real, **não homologação completa da tarefa**. Profundidade 2 e permissões corretas não substituem a aprovação oficial do runtime. Registros e limitações em [EVOLUCAO.md](EVOLUCAO.md).
 
+### Painel visual dos agentes (experimental, opt-in)
+
+Contribuição gráfica independente para **OpenCode Desktop 2.2.6**, baseada na API oficial `@opencode/plugin/gui` e no export `gui-experimental`. Reutiliza os sete mascotes, observa eventos nativos sem acionar agentes e respeita movimento reduzido. Não altera os hooks nem é instalada pelo instalador de automação. **Homologação gráfica nativa pendente; não anunciada como suporte validado.** Ativação, reversão e limites de Codex/Claude Code em [INSTALL.md](INSTALL.md#painel-visual-experimental-opencode-desktop).
+
 ### Smoke tests dos adaptadores
 
 Os três adaptadores da `main` passaram em smoke tests mínimos com **código real publicado**: plugin/hooks carregados, núcleo Python executado e bloqueio anti-loop comprovado — a terceira tentativa idêntica é negada após duas falhas (OpenCode V2 via `throw` no plugin; Codex e Claude Code via JSON `deny` no contrato de hooks). Os testes simulam apenas o ambiente externo e os eventos; **não constituem homologação em sessão real com modelo**, que permanece pendente e documentada em [EVOLUCAO.md](EVOLUCAO.md).

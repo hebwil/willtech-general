@@ -656,6 +656,96 @@ memória, anti-loop e revisão independente permanecem intactos.
 Banner, sete mascotes, APNG/GIF/estáticos, layout premium, autoria WILLTECH-BH,
 MIT e créditos preservados.
 
+## Painel visual experimental — OpenCode Desktop (2026-11-16)
+
+Base publicada: `57f8bb458218e1dfb844722fc19b9abba1d94add`. Branch isolada:
+`qoder/agent-activity-panel`. Nenhum subagente, modelo, instalação pessoal,
+configuração de provedor ou permissão foi acionado/modificado nesta rodada.
+
+### Implementação e contrato oficial
+
+- SDK GUI confirmado na fonte da release oficial OpenCode **2.2.6**, incluindo
+  `Plugin.define`, `Panel`, `Command`, `Style`, `createKeyed` e `gui-experimental`.
+- Contribuição em `opencode/plugins/willtech/visual/`, **GUI-only**, opt-in e
+  limitada à versão/superfície verificadas. Nenhum export de servidor: carregar
+  o pacote não executa nem duplica o plugin de automação.
+- Estado proveniente de `Session.Info.agent`, família de sessões sincronizada,
+  execução nativa `session.execution.*` e pedidos de permissão. Marcadores
+  otimistas, títulos e texto de respostas não simulam trabalho.
+- Oito imagens originais embutidas byte a byte: sete WebP e APNG do General.
+  Bundle reproduzível de **830948 bytes**, sem build dependencies, polling,
+  chamadas de ferramenta/modelo, escrita, WebGL ou nova delegação.
+- Movimento somente durante trabalho observado, com pausa local, suspensão
+  quando o painel fica oculto e `prefers-reduced-motion`. Desativação pelo
+  ciclo de vida oficial retira recursos sem interferir na automação.
+
+### Validação consolidada e bloqueios
+
+- **4/4 testes determinísticos** de distribuição, em 0,040 s: build idêntico,
+  oito imagens originais, pacote sem servidor/dependências e preservação de
+  núcleo, instaladores, agentes, hooks, assets, HTML premium, MIT e créditos.
+- `git diff --check`: aprovado. Não foram repetidas auditorias/suítes anteriores.
+- Bancada Browser Use com bundle real e **host/eventos simulados** percorreu os
+  estados dos sete agentes, pausa, ocultação, permissão, fim/erro/interrupção,
+  desconexão, troca de sessão e servidor incompatível até a montagem final.
+  Inspeção estrutural encontrou sete imagens completas com dimensões válidas.
+  **Não há resultado PASS consolidado da bancada:** a chamada atingiu o timeout
+  do navegador de 15 s enquanto aguardava `image.decode()` do APNG.
+- Screenshot: **BLOQUEADO** por `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`, com
+  `visible=false` e `visibilityState=hidden`. A seleção oficial com
+  `bringToFront=true` não tornou a superfície visível. Nenhuma imagem de uma
+  interface fictícia foi criada para substituir essa evidência.
+- Helper da bancada passou a aguardar eventos de carga com timeout e impedir
+  execução concorrente. **Correção não revalidada**, para não repetir a rodada.
+- Carregamento no OpenCode Desktop, evento de agente real, término/erro real e
+  não regressão gráfica/orquestração: **NÃO TESTADOS**. Código preservado e
+  simulação não equivalem à homologação nativa. O escopo não autoriza acessar
+  instalações pessoais nem iniciar IA para gerar essa demonstração.
+
+O único PR desta rodada deve permanecer **draft, sem merge**. A autorização de
+merge é condicional aos testes necessários; não foi satisfeita pela simulação.
+A contribuição permanece experimental, desativada por padrão e não anunciada
+como plataforma efetivamente homologada.
+
+### Codex e Claude Code
+
+Codex documenta plugins/MCP e recursos UI em hosts MCP Apps, particularmente
+ChatGPT, mas as fontes consultadas não comprovam painel nativo passivo Codex
+com assinatura dos eventos dos agentes. Nada gráfico foi implementado no Codex.
+
+Claude Code documenta agora **mods** com panes, `ui.render` e `$.agent.list()`
+em versões mais novas (referência 2.1.290+), e diferentes elementos por
+superfície. `Image` consta para terminal, não Desktop/VS Code. Não se afirma
+que Claude Code não possui API de extensão visual; a animação dos mascotes
+originais não foi homologada e nenhuma GUI Claude Code é distribuída.
+Fontes oficiais e configuração opt-in estão em INSTALL.md.
+
+## Rodada de correção do painel — deduplicação e bancada consolidada (2026-11-16)
+
+- Defeito real corrigido em `gui-source.cjs`: a guarda de eventos usava apenas
+  `at > event.created`, então um evento idêntico (mesmo tipo e mesmo timestamp)
+  produzia uma segunda revisão. A guarda agora também compara o estado quando
+  os timestamps coincidem; eventos distintos no mesmo milissegundo e eventos
+  posteriores mais novos continuam aceitos. Bundle regerado por `build-gui.py`.
+- Novo teste determinístico `tools/test-gui-events.cjs` (Node, SDK simulado):
+  reproduzia a duplicação (2 revisões para 1 evento) e agora passa nas duas
+  formas, `gui-source.cjs` e `gui-experimental.cjs`, cobrindo também evento
+  terminal distinto no mesmo milissegundo, evento antigo, sessão fora da
+  família e limpeza das quatro inscrições no cleanup.
+- Bancada Browser Use (`tools/test-gui.html`, bundle real, host simulado):
+  **PASS consolidado, 42/42 verificações**, incluindo os sete mascotes originais
+  decodificados no navegador, estados dos sete agentes, pausa, ocultação,
+  permissão, erro, interrupção, desconexão/reconexão, troca de sessão, servidor
+  incompatível, unmount e CSS com `prefers-reduced-motion`. O timeout de 15 s
+  da chamada ocorreu de novo, mas o resultado foi lido do estado da página
+  após a conclusão; screenshot real da bancada capturado com os sete cards.
+  Isto continua sendo **laboratório simulado, não homologação nativa**.
+- Regressão proporcional: `tools/test-gui.py` 4/4 (build reprodutível, bytes
+  originais dos assets, pacote GUI-only, núcleo/instaladores intactos vs
+  `57f8bb4`) e `tools/test-drift.sh` 7/7.
+- Homologação no OpenCode Desktop real permanece **NÃO TESTADA**; nenhuma
+  instalação pessoal foi acessada e nenhum aplicativo gráfico foi aberto.
+
 ## Rodada inteligência 2.3 — Elephant/Goldfish, RepoMap e supervisor (2026-11-16)
 
 Três melhorias incrementais sobre o núcleo existente, em branch própria
@@ -713,5 +803,49 @@ Nenhum agente novo, nenhum framework, nenhuma chamada de modelo extra.
   divergências; suítes Windows/instalação/trace reexecutadas na consolidação.
 - Homologação em runtime real (com gasto de modelo) permanece PENDENTE e não
   é anunciada como concluída; nada publicado remotamente.
+
+## Rodada smoke final (homologação de laboratório)
+
+- Novo harness `tools/test-smoke.cjs` (Node): extrai o literal `ASSETS` do bundle
+  real e confere por SHA-256 as 8 chaves contra os bytes dos arquivos originais
+  (`willtech-general-static.webp`, seis `willtech-<nome>.webp`,
+  `willtech-general-animated.apng`); conta 18 quadros fcTL e asserta ausência de
+  `fetch`/`XMLHttpRequest`/`WebSocket`/`EventSource` no bundle. PASS.
+- Novo harness de navegador `tools/test-smoke.html` + `tools/test-smoke.js`:
+  bundle real + host reativo do `test-gui.js` + eventos determinísticos.
+  **PASS 64/64 em três execuções consecutivas**: sete personagens carregados;
+  associação agente→imagem por hash da data URL; estados aguardando/executando/
+  concluído/erro/interrompido dos sete; General isolado dos eventos dos
+  especialistas e reagindo ao próprio; pausa/retomada com fallback estático;
+  deduplicação provada por MutationObserver (evento válido atualiza, idêntico
+  não duplica, distinto no mesmo ms é aceito); unmount remove listeners, congela
+  animação e ignora eventos posteriores. **PASS 3/3 reduced-motion** (stub de
+  `matchMedia` com `matches=true`: General working usa WebP, motion off, listener
+  de media removido no cleanup).
+- Avanço de quadros do APNG: o navegador automatizado suprime o playback ao vivo
+  de imagens animadas (canvas estático mesmo com rAF ativo e página visível);
+  a prova determinística usa WebCodecs `ImageDecoder` sobre o APNG em uso:
+  18 quadros, quadro 0 ≠ quadro 9 (214 pixels amostrados diferem). O resultado
+  registra `livePaintingAdvanced=false` e a nota de limitação de ambiente —
+  sem aprovação inventada de playback ao vivo.
+- Dois defeitos do próprio harness corrigidos na causa: `ImageDecoder.tracks.
+  selectedTrack` só existe após o primeiro decode; e `MutationObserver.takeRecords()`
+  após `await` devolve sempre 0 porque a entrega ao callback esvazia a fila —
+  a contagem agora ocorre no callback (isto também eliminou uma aprovação
+  trivialmente falsa do check pós-unmount).
+- `tools/test-gui.js` ganhou apenas duas linhas de exposição (`__under`,
+  `__dispose`) para o smoke; bancada reexecutada: **42/42 PASS**.
+- Regressão proporcional reexecutada: `test-gui.py` 4/4, `test-gui-events.cjs`
+  PASS nas duas formas, drift do branch 0 divergências. Regressão consolidada
+  do branch de inteligência (sem alterações novas): dossiê 51/51, auto 39/39,
+  drift 7/7, plan 21/21, trace 10/10, repomap 10/10, supervisor 10/10,
+  compat 22/22, install 16/16.
+- Evidências em `tools/smoke-evidence/`: `full-results.json`,
+  `reduced-results.json`, `node-assets.json`/`.log`, `bench-results.json`,
+  `network-evidence.json` (somente `file://` e `data:`, zero http/https, zero
+  IA) e screenshots `smoke-full-pass.png`, `smoke-states.png` (fixture manual
+  com os sete estados), `smoke-reduced-motion.png`.
+- Continua **laboratório simulado, não homologação nativa**; nenhum aplicativo
+  Desktop aberto, nenhuma instalação pessoal tocada, nenhum push/publicação.
 
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

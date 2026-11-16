@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "tests": 3,
+  "mode": "reduced-motion",
+  "simulation": true,
+  "nativeHomologation": "NÃO TESTADA",
+  "mediaRemoved": 1,
+  "stub": "window.matchMedia substituído por stub com matches=true (prefers-reduced-motion: reduce); removeEventListener/removeListener contabilizados em window.__mediaRemoved",
+  "passed": [
+    "reduced-motion: General working usa WebP estático",
+    "reduced-motion: animação desligada",
+    "reduced-motion: listener de media removido no cleanup"
+  ]
+}
