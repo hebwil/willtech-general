@@ -1,0 +1,11 @@
+{
+  "name": "willtech-general-visual",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Painel GUI experimental e opcional dos sete agentes WillTech-General",
+  "license": "MIT",
+  "author": "WillTech-General / WILLTECH-BH — github.com/hebwil",
+  "exports": {
+    "./gui-experimental": "./gui-experimental.cjs"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "suite": "tools/test-gui.html + tools/test-gui.js (bancada headless, host reativo simulado)",
+  "status": "PASS",
+  "tests": 42,
+  "reasonForRerun": "test-gui.js recebeu duas linhas de exposição (__under/__dispose) para o smoke; bancada reexecutada para validar a mudança",
+  "simulation": true,
+  "nativeHomologation": "NÃO TESTADA"
+}
