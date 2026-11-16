@@ -78,6 +78,9 @@ render();
 
 // Fonte de eventos: SSE do servidor local (feed JSONL dos hooks/App Server).
 if (!window.__LAB_NO_SSE) {
+  fetch("/history").then((res) => res.json())
+    .then((records) => { records.forEach(applyEvent); })
+    .catch(() => {});
   const source = new EventSource("/events");
   source.onmessage = (e) => { try { applyEvent(JSON.parse(e.data)); } catch {} };
   source.onerror = () => { connected = false; render(); };

@@ -26,13 +26,24 @@ function pump() {
     }
   });
 }
-setInterval(pump, 300).unref();
+setInterval(pump, 300);
 
 const server = http.createServer((req, res) => {
+  if (req.url === "/history") {
+    fs.readFile(FEED, "utf8", (err, text) => {
+      const records = err ? [] : text.split("\n").filter((l) => l.trim())
+        .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+        .filter(Boolean);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(records));
+    });
+    return;
+  }
   if (req.url === "/events") {
     res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
     res.write("retry: 1000\n\n");
     clients.add(res);
+    pump();
     req.on("close", () => clients.delete(res));
     return;
   }
