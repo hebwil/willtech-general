@@ -85,4 +85,74 @@ exato de permissões OpenCode e wrappers sandbox; whitelists de ferramentas Clau
 modelos, provedores, Bifrost, MCPs, VPS, SSH e instalações ativas; mascotes, animações,
 README (apenas acréscimos de documentação), assinatura de autoria e licença MIT.
 
+## Rodada 2.1 — inteligência seletiva
+
+Estudo dirigido de dois repositórios públicos (apenas README, sem instalar nada):
+`microsoft/TokenEconomizer` e `google/elephant-goldfish-model`, ambos Apache-2.0.
+Nenhum código foi copiado; apenas ideias adaptadas ao contrato existente, com atribuição.
+
+### Mecanismos estudados e decisão
+
+- **Micro-skills (TokenEconomizer)** → adaptado como **lições verificadas** no dossiê
+  (`learn`/`recall`). Diferença de projeto: o TokenEconomizer confirma um fato após três
+  sessões e usa um modelo para propor fatos; aqui a evidência é determinística no momento
+  do registro (comando + hash SHA-256 da saída real), sem custo de modelo. O fato
+  contraditado é descartado lá; aqui a lição antiga é marcada `superseded` e o `recall`
+  re-confere hash e HEAD, devolvendo `USABLE`, `REVERIFY` ou `NO_LESSON`.
+- **Tool pruning (TokenEconomizer)** → descartado na forma original (desativa ferramentas
+  via settings do agente). Adaptado como **seleção econômica por tarefa**: o comandante
+  declara na delegação só os recursos necessários; nenhuma desativação automática, nenhuma
+  mudança em configurações ou instalações ativas.
+- **Failure-loop intervention (TokenEconomizer, juiz LLM com limiar de confiança)** →
+  descartado: duplicaria o anti-loop determinístico já implementado no 2.0
+  (`guard-attempt`, 2 tentativas, exit 3) e acrescentaria custo de modelo contínuo.
+- **Goldfish (elephant-goldfish-model): revisores em contexto fresco, sem a conversa
+  anterior** → adaptado como **revisão independente seletiva**: o `willtech-revisor`
+  existente é acionado somente em decisão arquitetural crítica, mudança complexa
+  (multi-módulo/contrato público) ou alteração de segurança/permissões; uma rodada por
+  padrão; segunda rodada apenas após correção de achado bloqueante, sobre o delta
+  corrigido. O papel do "elephant" (design com contexto) e a aprovação humana permanecem
+  com o comandante e o usuário; nenhum plugin foi instalado.
+
+### O que entrou
+
+- `tools/willtech-dossie.py`: subcomandos `learn` e `recall`; cache seletivo por escopo
+  (`cache-put --paths`, `cache-check --paths`), com compatibilidade de leitura do formato
+  2.0. Lição exige comando e arquivo de saída reais; caminhos de credencial são recusados;
+  a ferramenta grava hash, nunca conteúdo. `verify` já re-confere as saídas das lições.
+- `tools/test-dossie.sh`: 21 verificações novas (45 no total; as 24 do 2.0 intactas).
+- Contratos (17 arquivos, apenas acréscimos): políticas de lições, cache seletivo,
+  revisão seletiva de uma rodada e seleção de ferramentas por tarefa, respeitando a
+  compatibilidade real de cada plataforma — wrappers OpenCode somente leitura conferem
+  `recall`/`cache-check` e não gravam; no Claude Code o General e o explorador (sem Bash)
+  pedem `recall` ao comandante e exigem `learn` de executor/testador; no Codex as mesmas
+  regras vivem em `developer_instructions`. Nenhuma permissão, whitelist ou frontmatter
+  foi alterada.
+
+### Comparação objetiva 2.0 → 2.1
+
+| Aspecto | 2.0 | 2.1 |
+| --- | --- | --- |
+| Cache do mapa | chave HEAD+porcelain global; qualquer sujeira → MISS | escopo `--paths`; sujeira fora do escopo → HIT; novo commit → MISS; formato 2.0 ainda aceito |
+| Conhecimento de falhas | nenhum registro reutilizável | `learn`/`recall` com evidência verificada; invalidação por hash/HEAD; supersede da lição antiga |
+| Revisão independente | recomendada antes de declarar concluída qualquer alteração | seletiva (crítica/arquitetura/complexa/segurança); 1 rodada padrão; 2ª só após correção de bloqueante |
+| Ferramentas | "sob demanda" genérico | seleção declarada por tarefa na delegação; sem desativação automática |
+| Anti-loop | `guard-attempt` determinístico (2 tentativas, exit 3) | inalterado — não duplicado, sem juiz LLM |
+| Testes do dossiê | 24 verificações | 45 verificações (24 antigas + 21 novas), 0 falhas |
+
+Benefício demonstrado por teste, sem percentuais inventados: o caso "cache seletivo HIT
+com sujeira fora do escopo" prova reaproveitamento do mapa que no 2.0 seria MISS (nova
+varredura paga); `recall USABLE` evita redepurar falha já resolvida com evidência; a
+revisão seletiva elimina a delegação do revisor em mudanças triviais/pequenas. Custo da
+extensão: stdlib, zero chamadas de modelo, zero rede, zero dependências novas.
+
+### Pendências e bloqueios desta rodada
+
+- O escopo OAuth `workflow` continua ausente na conta autenticada: o commit do CI
+  (`05a4b9c`, apenas `.github/workflows/ci.yml`) permanece preservado na branch local
+  `qoder/general-2.0` e o PR #2 segue aberto em `4d9aa14`. Este PR 2.1 baseia-se no head
+  publicado do PR #2 e, portanto, ainda não dispara CI automático; o desbloqueio é o
+  fluxo oficial `gh auth refresh -h github.com -s workflow` + push, ou envio do workflow
+  pela interface web. Nenhum merge foi realizado.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->
