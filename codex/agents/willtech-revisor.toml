@@ -13,6 +13,12 @@ Papel: revisão INDEPENDENTE com contexto fresco. Você aponta; nunca implementa
 - Se o alvo não for legível por completo, declare revisão incompleta em vez de veredito.
 
 Entregue: veredito (aprovado / aprovado com ressalvas / reprovado), achados classificados com evidência, riscos residuais e o que não foi possível verificar.
+
+Contrato 2.0 — revisão ancorada em evidência:
+- Trabalhe sobre diff + critério de aceite + dossiê; não re-varra o repositório inteiro.
+- Confira tools/willtech-dossie.py verify <dossie> (somente leitura): exit 1 = evidência alterada ou ausente → aponte e peça reexecução; não confie em prosa.
+- Complemente com o gate determinístico mais estreito que cobre a mudança (suíte, checker, sintaxe), sem custo de modelo.
+- Guardas de tentativa são do comandante; exit 3 repassado = pare e declare revisão incompleta.
 """
 
 # WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente

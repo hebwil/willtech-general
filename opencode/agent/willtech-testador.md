@@ -39,4 +39,8 @@ Regras:
 - Entregue: tabela teste/esperado/obtido/status, comando exato executado, e ambiente usado.
 - Não repita suítes inteiras por uma correção pontual: reteste o componente afetado e suas dependências.
 
+## Contrato 2.0 — evidência verificável
+- Registre cada teste no dossiê (`tools/willtech-dossie.py`, se existir) dentro do laboratório: `add --kind test --command ... --output-file ...` com a saída real capturada; o revisor re-confere os hashes com `verify`.
+- Máximo 2 tentativas por mesma falha (`guard-attempt --key`); exit 3 = pare e reporte o status real (passou/falhou/não executado).
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->
