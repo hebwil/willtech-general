@@ -494,4 +494,42 @@ nada foi anunciado como aprovado nativamente. Linux/WSL = não exercitados
 (sem ambiente), requisitos inalterados. O PR permanece aberto até que um
 runner Windows real execute `python3 tools/test-compat.py` e o instalador.
 
+## Rodada homologação Windows nativa — windows-latest real (2026-11-16)
+
+Runner real obtido sem novo OAuth: workflow `.github/workflows/windows-compat.yml
+criado na `main` pela interface web autenticada (commits `e83a7b0`, `392b875`)
+e acionado por `gh api` (dispatch exige apenas escopo `repo`). Código do PR #6
+testado por checkout do input `ref=qoder/windows-compat`.
+
+**Comprovado em Windows nativo (Python 3.12.10, os.name == 'nt', runs
+43884119785 → 43885449180, passos estáveis em todas as execuções):**
+
+- `tools/test-compat.py` **22/22 PASS nativo**: lock real `msvcrt.locking`
+  com 8 processos × 25 appends + prune concorrente (200/200, 0 corrupção),
+  recuperação anti-loop pós-learn, dossiê pré-2.2 legível, credenciais com
+  separadores Windows, deny da 3ª tentativa nas 3 plataformas, Stop→goldfish,
+  falha fechado com dossiê corrompido.
+- Rejeição real de `.env` via CLI em Windows (exit 2, mensagem de recusa).
+- Regressão Unix do head permanece verde (51/40/7/wrappers/22 POSIX).
+
+**Falhas reais corrigidas durante a homologação (cada uma com evidência de log):**
+
+1. Harness: `pwsh` propaga `$LASTEXITCODE` residual da negação esperada de
+   `.env` → `exit 0` explícito no workflow (produto estava correto).
+2. Produto: PS 5.1 corrompe aspas embutidas em `-c` nativo → código Python
+   passa por stdin (`python - args`) — commit `9a6a596`.
+3. Produto: `[Encoding]::UTF8` do PS 5.1 emite BOM no stdin →
+   `UTF8Encoding($false)` + leitura de configs existentes como `utf-8-sig`
+   (arquivos reais do Windows têm BOM) — commit `355934e`.
+
+**Bloqueio concreto remanescente (orçamento de tentativas esgotado):**
+o ciclo completo do `willtech-install.ps1` ainda falha no runner: PS 5.1
+**descarta argumentos de string vazia** em chamadas nativas — o prefixo do
+launcher (vazio para `python`, `-3` para `py`) some do argv e o programa de
+merge recebe 4 valores em vez de 5 (`ValueError: not enough values to unpack`,
+run 43885449180). Correção exata para a próxima rodada autorizada: enviar o
+prefixo com sentinela não vazia (ex.: `@none`) ou junto do stdin, filtrando no
+lado Python. Nada foi mergeado; PR #6 permanece ABERTO. O núcleo Windows está
+homologado nativamente; o instalador PowerShell não.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

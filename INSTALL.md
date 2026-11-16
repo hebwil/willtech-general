@@ -201,11 +201,14 @@ compatibilidade. A disponibilidade dos runtimes Codex e Claude Code em
 Windows nativo não foi verificada nesta estação; o OpenCode V2 carrega o
 plugin normalmente onde o runtime existir.
 
-**Estado:** implementação validada por regressão Unix completa e simulação
-determinística da lógica do instalador (merge/backup/idempotência/restauração,
-caminhos com espaços e Unicode). A execução nativa em Windows
-**PENDENTE DE HOMOLOGAÇÃO** — sem runner Windows acessível (escopo
-`workflow` ausente no token; sem máquina Windows). Regressão local:
+**Estado:** núcleo homologado em Windows nativo real (`windows-latest`,
+Python 3.12, `os.name == 'nt'`): bateria `tools/test-compat.py` 22/22
+(locks `msvcrt` 8×25 processos, anti-loop, hooks das 3 plataformas, `.env`
+recusado) e regressão Unix completa verde. O ciclo do instalador PowerShell
+tem um bloqueio concreto remanescente de transporte de argumentos do
+Windows PowerShell 5.1 (argumento vazio descartado; causa exata, correção
+proposta e run IDs em EVOLUCAO.md) — até a correção final, prefira WSL ou
+instalação manual assistida. Regressão local:
 `python3 tools\test-compat.py` (22 verificações, cross-platform).
 
 ## Desinstalação
