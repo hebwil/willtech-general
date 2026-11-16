@@ -204,7 +204,10 @@ willtech-general/
 │
 ├── tools/
 │   ├── willtech-dossie.py
-│   └── test-dossie.sh
+│   ├── willtech-drift.py
+│   ├── test-dossie.sh
+│   ├── test-trace.sh
+│   └── test-drift.sh
 │
 ├── README.md
 ├── INSTALL.md
@@ -222,8 +225,10 @@ willtech-general/
 - **history/** — preservação de versões históricas da arquitetura.
 - **docs/assets/** — identidade visual da equipe: cards e banner em WebP, animação do General em APNG/GIF com fallback estático e respeito a `prefers-reduced-motion`.
 - **tools/** — dossiê de evidências com hash, cache de mapa por commit e guardas de orçamento (stdlib, sem custo de modelo).
+- **tools/willtech-drift.py** — gate determinístico de divergências: README↔arquivos, contratos↔subcomandos e roster de agentes↔plataformas.
+- **tools/test-trace.sh / tools/test-drift.sh** — suítes determinísticas da rodada 2.2 (loops de falha, lições candidatas com evidência em hash, ferramentas ociosas, drift com mutações).
 - **.github/workflows/** — gate determinístico de regressão (permissões, sintaxe, suítes) em Pull Requests.
-- **EVOLUCAO.md** — registro da versão 2.0: o que entrou, o que foi adiado e por quê.
+- **EVOLUCAO.md** — registro das versões 2.0, 2.1 e 2.2: o que entrou, o que foi adiado e por quê.
 - **AUDITORIA.md** — testes, evidências e limitações técnicas documentadas.
 
 Consulte [INSTALL.md](INSTALL.md) para os procedimentos de instalação específicos de cada plataforma.

@@ -148,11 +148,72 @@ extensão: stdlib, zero chamadas de modelo, zero rede, zero dependências novas.
 
 ### Pendências e bloqueios desta rodada
 
-- O escopo OAuth `workflow` continua ausente na conta autenticada: o commit do CI
+- Publicação concluída posteriormente: PR #2 merged em `f14ad1c` e PR #3 (2.1) merged em
+  `35d8748` (main). O escopo OAuth `workflow` continua ausente: o commit do CI
   (`05a4b9c`, apenas `.github/workflows/ci.yml`) permanece preservado na branch local
-  `qoder/general-2.0` e o PR #2 segue aberto em `4d9aa14`. Este PR 2.1 baseia-se no head
-  publicado do PR #2 e, portanto, ainda não dispara CI automático; o desbloqueio é o
-  fluxo oficial `gh auth refresh -h github.com -s workflow` + push, ou envio do workflow
-  pela interface web. Nenhum merge foi realizado.
+  `qoder/general-2.0`, com publicação adiada pelo usuário para etapa futura. A ausência
+  do CI não invalida as funcionalidades testadas localmente.
+
+## Rodada 2.2 — inteligência nativa unificada
+
+Objetivo: um único WILLTECH-GENERAL incorporando nativamente os melhores mecanismos de
+`microsoft/TokenEconomizer` e `google/elephant-goldfish-model` (Apache-2.0), sem executar
+nenhum dos dois ao lado, sem instalar plugins e sem copiar código. Base: main `35d8748`
+(2.0 + 2.1 já publicados). branch isolada `qoder/general-2.2`, PR único, sem merge.
+
+### Comparação mecanismo a mecanismo
+
+| Mecanismo original | Já existente (2.0/2.1) | Aperfeiçoamento 2.2 | Evidência de funcionamento | Custo adicional |
+| --- | --- | --- | --- | --- |
+| Micro-skills: aprender fatos do repositório a partir de sessões (TE) | `learn`/`recall` manual com evidência verificada | `willtech_trace.py` pareia `tool_use`/`tool_result` de transcripts **reais** e extrai candidatas de lição (mesmo comando falhou → depois sucedeu) com evidência em hash e `verified: false` | `tools/test-trace.sh` 10/10; fluxo real: `claude-code/bin/willtech-homologate.sh:188` já executa o trace em transcripts de sessões reais | 0 modelo; stdlib; 1 parse por transcript |
+| Fato confirmado por 3 sessões / descartado se contraditado (TE) | supersede + `stale` por HEAD | escopo por projeto (toplevel + remote) nas lições; `recall`/`brief` devolvem REVERIFY fora do projeto de origem | `tools/test-dossie.sh`: "lição de outro projeto = REVERIFY" | 0 |
+| Tool pruning: remover ferramentas não usadas via settings (TE) | política de seleção por tarefa (sem desativação) | evidência real de ociosidade: `tools_unused` = declaradas no init − usadas no transcript; o comandante decide, nada é desativado | `test-trace.sh`: `tools_unused == [Edit, NotebookEdit]`, `tool_usage` por ferramenta | 0 |
+| Failure-loop intervention com juiz LLM (TE) | `guard-attempt` determinístico (2 tentativas, exit 3) | detecção automática de falha repetida no transcript → `guard_key` determinística pronta para `guard-attempt`; **sem juiz LLM** | `test-trace.sh`: `failure_loops` count=2 com `guard_key`; suíte de guardas intacta | 0 modelo (juiz descartado) |
+| Goldfish: revisores em contexto fresco, sem a conversa anterior (EGM) | revisor seletivo, 1 rodada, diff+criterio+dossiê | pack mínimo determinístico: `brief` (cache + lições USABLE + guardas + verify, ≤1500 chars) como única evidência de contexto do revisor | `test-dossie.sh`: brief compõe cache+guardas+verify e respeita teto; contratos revisor 2.2 | 0 modelo extra; menos contexto enviado |
+| Elephant: design com contexto do projeto (EGM) | comandante + dossiê | `brief` como pacote de planejamento antes de delegar (planejamento contextual sem releituras) | contratos general/routing 2.2; brief testado | 0 |
+| Drift report: docs divergem do código (EGM) | inexistente | `tools/willtech-drift.py`: README↔arquivos, contratos↔subcomandos (citado sem implementação e implementado sem doc), roster↔3 plataformas | `tools/test-drift.sh` 7/7 **com mutações**; drift no repositório real = 0 | 0 modelo; milissegundos |
+| Integração operacional (não só prompt) | contratos + scripts manuais | capacidades exercidas no fluxo real de homologação Claude (trace já invocado pelo script); brief/drift/guardas acionáveis pelo comandante/General via wrapper | `willtech-homologate.sh:188`; suítes determinísticas | 0 |
+
+### Iniciativas próprias (não solicitadas no prompt)
+
+- **Redação de segredos no parser**: comandos com `API_KEY=`, `TOKEN=`, `Bearer`, `ghp_`,
+  `github_pat_`, `sk-…` são redigidos antes de qualquer saída; conteúdo de `tool_result`
+  nunca é exposto (vira hash). Evidência: testes "segredo redigido em comando", "erro vira
+  hash, não conteúdo", "tool_result não é exposto". Benefício: a aprendizagem a partir de
+  sessões reais não pode vazar credenciais para o dossiê ou relatórios.
+- **Gate de drift** (acima): verificação de decisões sem LLM, com testes de mutação.
+- **Escopo por projeto nas lições**: evita contaminação de conhecimento entre projetos.
+- **Teto de caracteres do `brief`**: economia de contexto garantida por teste, não por promessa.
+
+### Limitações honestas (não anunciadas como funcionais)
+
+- **OpenCode e Codex**: nenhum hook de runtime verificado neste repositório. A automação
+  plena existe apenas no fluxo Claude Code (homologação executa o trace). Nessas
+  plataformas, brief/drift/guardas são acionados explicitamente pelo comandante/General
+  via wrapper. Nenhum plugin/hook foi adicionado para não tocar instalações ativas nem
+  introduzir superfície não testada.
+- **Candidatas de lição não são auto-verificadas**: a detecção é automática; a gravação
+  exige confirmação da evidência e `learn` com saída real. Não há "conhecimento automático"
+  não verificado.
+- A detecção de loop usa `is_error` do `tool_result` (fato observável); não infere
+  sucesso/erro por texto.
+- CI continua não publicado (escopo `workflow` ausente); commit `05a4b9c` preservado
+  localmente. As suítes 2.2 rodam localmente e entrarão no gate quando o workflow for
+  publicado.
+
+### Validação consolidada (uma rodada)
+
+- `sh tools/test-dossie.sh`: **51 PASS, 0 FAIL** (45 da 2.1 intactas + 6 novas: brief,
+  escopo por projeto, teto de caracteres, dossiê ausente).
+- `sh tools/test-trace.sh`: **10 PASS, 0 FAIL** (loops, candidata não verificada, evidência
+  hash, ociosas, redação de segredos, não vazamento de conteúdo, transcript ausente).
+- `sh tools/test-drift.sh`: **7 PASS, 0 FAIL** (árvore coerente + 4 mutações + erro de uso
+  + repositório real sem drift).
+- `sh opencode/tests/test-wrappers.sh`: suíte completa passou (mutação + contrato dos 7 agentes).
+- `python3 opencode/tests/check-permissions.py opencode/agent`: 7/7 conforme contrato.
+- TOML dos 7 agentes Codex: parse OK; `py_compile`/`sh -n`: OK.
+- Contratos: apenas acréscimos; nenhuma permissão, whitelist ou frontmatter alterada.
+  Instalações ativas, modelos, provedores, Bifrost, VPS e SSH não tocados; mascotes,
+  animações, assinatura de autoria e licença MIT preservados.
 
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->
