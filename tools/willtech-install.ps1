@@ -54,8 +54,8 @@ function Want([string]$p) { return ($Platform -eq 'all') -or ($Platform -eq $p) 
 function Invoke-MergeHooks([string]$target, [string]$template, $py) {
   $code = @'
 import json, os, sys
-target, template, pyjson, root = sys.argv[1:5]
-py = json.loads(pyjson)
+target, template, exe, prefix, root = sys.argv[1:6]
+py = [exe] + [p for p in prefix.split(",") if p]
 data = {}
 created = not os.path.isfile(target)
 if not created:
@@ -94,9 +94,10 @@ with open(target, "w", encoding="utf-8") as fh:
     json.dump(data, fh, indent=2, ensure_ascii=False)
 print(("criado " if created else "mesclado ") + target)
 '@
-  $pyjson = ConvertTo-Json -Compress -InputObject @($py[0] + $py[1])
+  #_argv sem aspas duplas: PS 5.1 as corrompe em chamadas nativas; o prefixo
+  # do launcher (ex.: -3) vai como texto simples separado por vírgula.
   $exe = $py[0]; $pre = $py[1]
-  $code | & $exe @pre - $target $template $pyjson $Repo
+  $code | & $exe @pre - $target $template $exe ($pre -join ',') $Repo
   if ($LASTEXITCODE -ne 0) { throw "falha ao mesclar hooks em $target" }
 }
 
