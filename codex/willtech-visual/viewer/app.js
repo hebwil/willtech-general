@@ -17,8 +17,14 @@ function applyEvent(record) {
   const id = record.agent;
   const at = record.at ?? ++seq;
   if (record.reset) {
-    sessions.clear();
-    observations.clear();
+    // SessionEnd encerra UMA sessão: remove só a sessão correspondente e
+    // preserva as demais sessões ativas (concorrentes). Não recria a sessão
+    // encerrada como atividade fantasma.
+    const sid = record.session || id;
+    sessions.delete(sid);
+    observations.delete(sid);
+    render();
+    return;
   }
   let session = sessions.get(record.session || id);
   if (!session) {
