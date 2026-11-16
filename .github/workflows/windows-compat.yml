@@ -29,6 +29,12 @@ jobs:
         run: |
           python -c "import os, sys; assert os.name == 'nt', os.name; print(sys.version)"
 
+      - name: Gate FTS5 (sqlite3 stdlib) — pré-requisito para congelar schema da sala 3.0
+        shell: pwsh
+        run: |
+          python -c "import sqlite3; c=sqlite3.connect(':memory:'); c.execute('CREATE VIRTUAL TABLE t USING fts5(x)')"
+          if ($LASTEXITCODE -ne 0) { throw "FTS5 indisponível no sqlite3 stdlib deste runner Windows; schema da sala não pode ser congelado. Fallback planejado: consulta LIKE + índice próprio (sem ALTER de schema v1); ver design doc 3.0." }
+
       - name: Bateria cross-platform (msvcrt 8x25, anti-loop, hooks 3 plataformas, .env)
         shell: pwsh
         run: python tools/test-compat.py
