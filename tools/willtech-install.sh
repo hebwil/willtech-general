@@ -37,68 +37,129 @@ if [ ! -d "$REPO" ] || [ ! -f "$REPO/tools/willtech-auto.py" ]; then
 fi
 REPO=$(CDPATH= cd -- "$REPO" && pwd -P)
 BASE="$REPO/.willtech"
+for path in "$BASE" "$BASE/enabled" "$BASE/installed.json"; do
+  if [ -L "$path" ]; then
+    echo "erro: symlink em estado de instalação: $path"
+    exit 2
+  fi
+done
 
-merge_hooks() {
-  python3 - "$1" "$2" <<'PY'
-import json, os, sys
-target, template = sys.argv[1], sys.argv[2]
-data = {}
-created = not os.path.isfile(target)
-if not created:
-    with open(target, encoding="utf-8") as fh:
-        data = json.load(fh)
-    bak = target + ".willtech-bak"
-    if not os.path.exists(bak):
-        with open(bak, "w", encoding="utf-8") as fh:
-            json.dump(data, fh, indent=2, ensure_ascii=False)
-hooks = data.get("hooks") or {}
-with open(template, encoding="utf-8") as fh:
-    tpl = json.load(fh)["hooks"]
-for event, groups in tpl.items():
-    kept = []
-    for g in hooks.get(event, []):
-        hs = [h for h in g.get("hooks", []) if "willtech-auto.py" not in json.dumps(h)]
-        if hs:
-            g = dict(g); g["hooks"] = hs; kept.append(g)
-    hooks[event] = kept + groups
-data["hooks"] = hooks
-os.makedirs(os.path.dirname(target), exist_ok=True)
-with open(target, "w", encoding="utf-8") as fh:
-    json.dump(data, fh, indent=2, ensure_ascii=False)
-print(("criado " if created else "mesclado ") + target)
-PY
-}
-
-unmerge_hooks() {
-  python3 - "$1" <<'PY'
-import json, os, sys
-target = sys.argv[1]
+update_component() {
+  python3 - "$1" "$2" "$3" "$REPO" <<'PY'
+import hashlib, json, os, shutil, sys
+mode, target, template, root = sys.argv[1:5]
+root = os.path.realpath(root)
 bak = target + ".willtech-bak"
-if os.path.isfile(bak):
-    os.replace(bak, target)
-    print("restaurado backup " + target)
-elif os.path.isfile(target):
-    with open(target, encoding="utf-8") as fh:
-        data = json.load(fh)
-    hooks = data.get("hooks") or {}
-    for event in list(hooks):
-        kept = []
-        for g in hooks[event]:
-            hs = [h for h in g.get("hooks", []) if "willtech-auto.py" not in json.dumps(h)]
-            if hs:
-                g = dict(g); g["hooks"] = hs; kept.append(g)
-        if kept:
-            hooks[event] = kept
-        else:
-            del hooks[event]
-    if hooks:
+owned = target + ".willtech-created"
+registry = target + ".willtech-managed.json"
+for path in (target, bak, owned, registry):
+    if os.path.islink(path) or os.path.commonpath((root, os.path.realpath(path))) != root:
+        raise ValueError("componente fora do projeto ou symlink: " + path)
+
+def read_json(path):
+    with open(path, encoding="utf-8-sig") as fh:
+        return json.load(fh)
+
+def write_json(path, data):
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, ensure_ascii=False)
+
+def remove_managed(hooks, groups):
+    for event, added_groups in groups.items():
+        entries = hooks.get(event, [])
+        for added in reversed(added_groups):
+            for handler in reversed(added.get("hooks", [])):
+                found = False
+                for i in range(len(entries) - 1, -1, -1):
+                    group = entries[i]
+                    if {k: v for k, v in group.items() if k != "hooks"} != {k: v for k, v in added.items() if k != "hooks"}:
+                        continue
+                    handlers = group.get("hooks", [])
+                    for j in range(len(handlers) - 1, -1, -1):
+                        if handlers[j] != handler:
+                            continue
+                        handlers.pop(j)
+                        if not handlers and {k: v for k, v in group.items() if k != "hooks"} == {k: v for k, v in added.items() if k != "hooks"}:
+                            entries.pop(i)
+                        found = True
+                        break
+                    if found:
+                        break
+        if not entries:
+            hooks.pop(event, None)
+
+state = read_json(registry) if os.path.isfile(registry) else {}
+created = not os.path.isfile(target)
+if mode == "uninstall" and not state:
+    print("preservado componente sem registro de posse " + target)
+    sys.exit(0)
+if mode == "install" and not state and (os.path.exists(bak) or os.path.exists(owned)):
+    raise ValueError("backup/marcador sem registro de posse; preserve e revise antes de instalar: " + target)
+kind = ("file" if template.endswith(".js") else "hooks") if mode == "install" else state["kind"]
+if kind == "file" and not created and state:
+    with open(target, "rb") as fh:
+        changed = hashlib.sha256(fh.read()).hexdigest() != state["sha256"]
+    if changed:
+        print("preservado componente modificado e seu backup " + target)
+        sys.exit(0)
+if mode == "install":
+    if kind == "hooks":
+        data = read_json(target) if not created else {}
+        had_hooks = state.get("had_hooks", "hooks" in data)
+        null_hooks = state.get("null_hooks", data.get("hooks") is None)
+        hooks = data.get("hooks") or {}
+        remove_managed(hooks, state.get("groups", {}))
+        groups = read_json(template)["hooks"]
+        for event, added in groups.items():
+            hooks[event] = hooks.get(event, []) + added
         data["hooks"] = hooks
-        with open(target, "w", encoding="utf-8") as fh:
-            json.dump(data, fh, indent=2, ensure_ascii=False)
-        print("removidos hooks WillTech de " + target)
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    if not created and not os.path.exists(owned) and not os.path.exists(bak):
+        shutil.copy2(target, bak)
+    if kind == "file":
+        shutil.copyfile(template, target)
+        state = {"kind": kind}
     else:
-        os.remove(target)
-        print("removido " + target)
+        write_json(target, data)
+        state = {"kind": kind, "groups": groups, "had_hooks": had_hooks, "null_hooks": null_hooks}
+    with open(target, "rb") as fh:
+        state["sha256"] = hashlib.sha256(fh.read()).hexdigest()
+    if created:
+        with open(owned, "w", encoding="utf-8"):
+            pass
+    write_json(registry, state)
+    print(("criado " if created else "mesclado ") + target)
+else:
+    if kind == "file":
+        if os.path.isfile(bak):
+            os.replace(bak, target)
+        elif not created and os.path.isfile(owned):
+            os.remove(target)
+    elif not created:
+        with open(target, "rb") as fh:
+            unchanged = hashlib.sha256(fh.read()).hexdigest() == state["sha256"]
+        data = read_json(target)
+        hooks = data.get("hooks") or {}
+        remove_managed(hooks, state["groups"])
+        if hooks:
+            data["hooks"] = hooks
+        elif not state["had_hooks"]:
+            data.pop("hooks", None)
+        else:
+            data["hooks"] = None if state["null_hooks"] else {}
+        if os.path.isfile(bak) and (unchanged or data == read_json(bak)):
+            os.replace(bak, target)
+        else:
+            if os.path.isfile(owned) and not data:
+                os.remove(target)
+            else:
+                write_json(target, data)
+            if os.path.isfile(bak):
+                print("preservado backup original após alterações do usuário " + bak)
+    for path in (owned, registry):
+        if os.path.isfile(path):
+            os.remove(path)
+    print("revertido componente gerenciado " + target)
 PY
 }
 
@@ -118,21 +179,17 @@ fi
 
 if [ "$MODE" = uninstall ]; then
   if [ "$YES" != 1 ]; then
-    echo "Será removido: hooks WillTech de .claude/settings.json e .codex/hooks.json"
-    echo "(restaurando backups pré-instalação quando existirem), o plugin"
-    echo ".opencode/plugins/willtech/ e o marcador .willtech/enabled."
-    echo "O dossiê/cache (evidências) é preservado."
+    echo "Serão revertidos somente os componentes registrados da plataforma $PLATFORM:"
+    echo "handlers WillTech e plugin .opencode/plugins/willtech/index.js, com backups."
+    echo "Serão removidos .willtech/enabled e .willtech/installed.json."
+    echo "Diretórios, arquivos de terceiros, componentes modificados e dossiê/cache são preservados."
     printf "Confirma? [s/N] "
     read -r ans
     case "$ans" in s|S|y|Y) ;; *) echo "cancelado"; exit 0 ;; esac
   fi
-  if want claude; then unmerge_hooks "$REPO/.claude/settings.json"; fi
-  if want codex; then unmerge_hooks "$REPO/.codex/hooks.json"; fi
-  if want opencode; then
-    rm -f "$REPO/.opencode/plugins/willtech/index.js"
-    rmdir "$REPO/.opencode/plugins/willtech" "$REPO/.opencode/plugins" "$REPO/.opencode" 2>/dev/null || true
-    echo "plugin removido"
-  fi
+  if want claude; then update_component uninstall "$REPO/.claude/settings.json" -; fi
+  if want codex; then update_component uninstall "$REPO/.codex/hooks.json" -; fi
+  if want opencode; then update_component uninstall "$REPO/.opencode/plugins/willtech/index.js" -; fi
   rm -f "$BASE/enabled" "$BASE/installed.json"
   echo "uninstall concluído"
   exit 0
@@ -152,15 +209,15 @@ if [ "$YES" != 1 ]; then
 fi
 
 mkdir -p "$BASE"
+if want claude; then update_component install "$REPO/.claude/settings.json" "$SRC/claude-code/settings/willtech-hooks.json"; fi
+if want codex; then update_component install "$REPO/.codex/hooks.json" "$SRC/codex/hooks.json"; fi
+if want opencode; then update_component install "$REPO/.opencode/plugins/willtech/index.js" "$SRC/opencode/plugins/willtech/index.js"; fi
+python3 - "$PLATFORM" "$REPO" "$BASE/installed.json" <<'PY'
+import json, sys
+with open(sys.argv[3], "w", encoding="utf-8") as fh:
+    json.dump({"platform": sys.argv[1], "repo": sys.argv[2]}, fh)
+PY
 : > "$BASE/enabled"
-if want claude; then merge_hooks "$REPO/.claude/settings.json" "$SRC/claude-code/settings/willtech-hooks.json"; fi
-if want codex; then merge_hooks "$REPO/.codex/hooks.json" "$SRC/codex/hooks.json"; fi
-if want opencode; then
-  mkdir -p "$REPO/.opencode/plugins/willtech"
-  cp "$SRC/opencode/plugins/willtech/index.js" "$REPO/.opencode/plugins/willtech/index.js"
-  echo "copiado $REPO/.opencode/plugins/willtech/index.js"
-fi
-printf '{"platform":"%s","repo":"%s"}\n' "$PLATFORM" "$REPO" > "$BASE/installed.json"
 echo "instalação concluída; automação ativa (.willtech/enabled)"
 echo "desativar: willtech-install.sh --disable | reverter: willtech-install.sh --uninstall"
 

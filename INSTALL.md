@@ -82,6 +82,25 @@ restante):
 
 Sem essa profundidade, o General pode não conseguir acionar os especialistas.
 
+### Delegação e autorizações
+
+Os contratos já orientam o comandante a acionar o General e este a selecionar
+especialistas reais. Ao pedir essa cadeia, não encaminhe instruções conflitantes
+como "você mesmo faz a leitura" ao General. Indique explicitamente o arquivo e
+que a leitura cabe ao `willtech-explorador`.
+
+Use um arquivo dentro do workspace autorizado. Se a ação exigir aprovação,
+use a interface interativa oficial: o cliente não interativo pode retornar
+`permission.rejected` porque não consegue consultar o usuário. Não amplie
+permissões nem use aprovação indiscriminada para forçar o teste.
+
+Para o serviço já gerenciado pelo Desktop, prefira a descoberta automática do
+cliente oficial. Uma URL de servidor explícita pode exigir autenticação adicional;
+use apenas autenticação/pareamento oficiais, sem registrar senhas em comandos,
+URLs ou logs e sem desabilitar autenticação. A delegação real já foi observada,
+mas o teste DeepSeek com leitura rejeitada e timeout não homologou a tarefa
+completa; detalhes em EVOLUCAO.md.
+
 ### Rollback
 
 ```sh
@@ -144,9 +163,21 @@ rodada de testes na superfície real.
 ## Automação nativa 2.2.1 (projeto-local, opcional)
 
 Ativa os hooks/plugins que acionam brief, guardas de loop, candidatas de lição,
-revisão goldfish e drift automaticamente. Escreve **apenas dentro do repo alvo**
-(`.claude/`, `.codex/`, `.opencode/`, `.willtech/`); nada global é alterado e as
-telas oficiais de trust/permissão de cada plataforma continuam valendo.
+revisão goldfish e drift automaticamente. O instalador existente já oferece
+**ativação projeto-local com consentimento**: sem `--yes`, lista as alterações
+no alvo e pede confirmação; `--yes` representa consentimento explícito.
+Escreve **apenas dentro do repo alvo** (`.claude/`, `.codex/`, `.opencode/`,
+`.willtech/`); nada global é alterado e as telas oficiais de trust/permissão
+continuam valendo. Não instala agentes globalmente nem altera provedores.
+
+Por padrão, o alvo é este checkout. Para outro projeto, use
+`--repo "/caminho/do/projeto"` (PowerShell: `-Repo "C:\caminho\projeto"`).
+O alvo precisa conter `tools/willtech-auto.py`, `tools/willtech-dossie.py`,
+`tools/willtech-drift.py` e `claude-code/bin/willtech_trace.py`, com caminhos
+relativos preservados. Disponibilize esses arquivos do pacote sem sobrescrever
+arquivos de terceiros; o instalador não copia nem remove essas pastas de código.
+Os templates continuam vindo do checkout de origem. Nenhum caminho pessoal é
+necessário. A ativação acontece somente depois que os componentes são gravados.
 
 ```sh
 sh tools/willtech-install.sh            # lista as mudanças e pede confirmação
@@ -166,9 +197,37 @@ sh tools/willtech-install.sh --uninstall  # restaura backups pré-instalação
 - **OpenCode V2**: copia `opencode/plugins/willtech/index.js` para
   `.opencode/plugins/willtech/` (descoberta automática). V1 não é suportado.
 
-Regressão sem custo de modelo: `sh tools/test-auto.sh` (38 verificações; a
-simulação do plugin V2 usa node quando disponível — `NODE_BIN` aceita um
-binário alternativo; sem node, esse item é SKIP e os demais rodam).
+### Reversão preservando terceiros
+
+`--disable`/`-Disable` remove somente `.willtech/enabled`, sem apagar hooks,
+plugin, diretórios, dossiê ou cache. `--uninstall`/`-Uninstall` usa registros
+`.willtech-managed.json` ao lado dos componentes para retirar somente os
+handlers adicionados; texto semelhante em um hook de terceiros não é critério
+de remoção. `.willtech-created` marca arquivos criados pelo instalador;
+`.willtech-bak` conserva os originais, inclusive o plugin.
+
+Se o componente não foi alterado depois, o backup é restaurado byte a byte.
+Se configurações/hooks de terceiros foram acrescentados ou editados, são
+preservados e o backup original permanece quando restaurá-lo apagaria essas
+mudanças. Plugin modificado pelo usuário, seu backup e registro são preservados
+com aviso. Diretórios não são removidos, nem `tools/`, `claude-code/` ou
+`.willtech/`; os auxiliares de código e arquivos de terceiros ficam intactos.
+
+Componentes sem registro de posse não são apagados. Backups/marcadores antigos
+sem registro também não são adotados automaticamente: a instalação para nesse
+componente, preservando-o. Revise e restaure os originais manualmente antes de
+reinstalar; não apague backups para contornar a proteção. Symlinks no estado de
+instalação e componentes que resolvam fora do alvo são recusados.
+
+Validação direcionada dos instaladores: `python3 tools/test-install.py`.
+Executa o shell real e os blocos Python embutidos do PS1 em laboratório dentro
+do checkout, sem instalar em runtimes pessoais ou chamar modelos. A execução
+do helper PS1 não equivale a homologação nativa do PowerShell.
+
+Suíte geral já existente: `sh tools/test-auto.sh` (40 verificações; a simulação
+do plugin V2 usa node quando disponível — `NODE_BIN` aceita um binário
+alternativo; sem node, esse item é SKIP e os demais rodam). Não foi repetida
+nesta consolidação, pois núcleo/hooks/plugin não foram modificados.
 
 ## Windows nativo (PowerShell)
 
@@ -201,8 +260,8 @@ compatibilidade. A disponibilidade dos runtimes Codex e Claude Code em
 Windows nativo não foi verificada nesta estação; o OpenCode V2 carrega o
 plugin normalmente onde o runtime existir.
 
-**Estado:** núcleo e instalador homologados em Windows nativo real
-(`windows-latest`, Python 3.12.10, Windows PowerShell 5.1):
+**Evidência histórica:** núcleo e instalador da versão `c70e5e8` homologados
+em Windows nativo real (`windows-latest`, Python 3.12.10, Windows PowerShell 5.1):
 [workflow 43892063828 aprovado](https://github.com/hebwil/willtech-general/actions/runs/43892063828).
 Bateria `tools/test-compat.py` 22/22, recusa real de `.env` e ciclo completo
 com backup, merge preservando configurações, idempotência, desativação,
@@ -211,9 +270,11 @@ preservado; plugin copiado e núcleo do laboratório sem alterações.
 A sentinela `@none` preserva o argumento vazio do launcher sem vazar para
 os hooks. Arquivos criados pelo instalador recebem `.willtech-created`,
 removido no uninstall, para não gerar backups indevidos na reinstalação.
-Regressão macOS previamente aprovada reutilizada; código Unix preservado,
-Linux/WSL não exercitados nesta rodada. Runtimes de IA não foram homologados
-por este workflow; nenhum modelo foi chamado.
+A consolidação posterior corrige a reversão em ambos os instaladores, validando
+o shell e o Python embutido do PS1; o ciclo PowerShell não foi reexecutado
+nativamente nessa rodada. Núcleo e testes de compatibilidade já aprovados foram
+preservados, sem repetição. Linux/WSL não exercitados; runtimes de IA não foram
+homologados por este workflow e nenhum modelo foi chamado.
 
 ## Desinstalação
 
