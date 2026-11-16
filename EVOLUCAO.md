@@ -23,6 +23,12 @@ instalações ativas, modelos, provedores, permissões de runtime ou identidade 
 5. **CI determinístico em PRs** — `.github/workflows/ci.yml`: contrato de permissões,
    sintaxe TOML/shell, testes do dossiê (ubuntu) e regressão dos wrappers sandbox
    (macos, único runner com `sandbox-exec`). Zero chamadas de modelo; `contents: read`.
+   **Bloqueio de publicação desta rodada:** o token OAuth do `gh` nesta estação não tem
+   escopo `workflow`; o GitHub recusa push que crie/atualize `.github/workflows/`. O
+   commit do CI está preservado na branch local `qoder/general-2.0-ci-pending` (YAML
+   validado e comandos executados localmente com sucesso). Para publicar: autorizar o
+   escopo (`gh auth refresh -s workflow`) e dar push desse commit, ou criar o arquivo
+   pela interface web do GitHub. Nada mais desta rodada depende dele.
 
 Contratos aplicados aos 7 agentes nas três plataformas e às políticas do comandante
 (`opencode/AGENTS.md`, `claude-code/settings/willtech-routing.md`), sem alterar
