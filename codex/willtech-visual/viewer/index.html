@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WillTech · visualizador complementar Codex (não é painel nativo)</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #070d17; color: #e5edf6; font: 14px system-ui; }
+  header { padding: 16px 22px; background: #1c2a3a; border-bottom: 1px solid #3a5a78; }
+  header strong { color: #a0d2ff; display: block; margin-bottom: 6px; }
+  header small { color: #9fb3c8; }
+  .bar { margin: 14px 22px; }
+  button { background: #24405c; color: #e5edf6; border: 1px solid #3a5a78; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; max-width: 760px; margin: 0 22px 24px; }
+  .wt-card { border: 1px solid #283346; border-left: 3px solid var(--accent); border-radius: 12px; padding: 10px; text-align: center; background: #0d1626; }
+  .wt-card img { display: block; margin: 0 auto 6px; image-rendering: auto; }
+  .wt-card strong { display: block; color: var(--accent); }
+  .wt-state { display: block; margin-top: 4px; font-size: 12px; color: #9fb3c8; }
+  .wt-card[data-state="working"] { box-shadow: 0 0 0 1px var(--accent) inset; }
+  .wt-card[data-state="error"] { border-left-color: #ff6b6b; }
+  .wt-card[data-state="blocked"] { border-left-color: #f6d35f; }
+  @keyframes wt-breathe { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.03); } }
+  .wt-breathe { animation: wt-breathe 2.4s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .wt-breathe { animation: none; } }
+  #root[data-motion="off"] .wt-breathe { animation: none; }
+</style>
+<header>
+  <strong>VISUALIZADOR COMPLEMENTAR · NÃO É PAINEL NATIVO DO CODEX</strong>
+  <small>Independente do aplicativo Codex. Alimentado por hooks oficiais e/ou App Server. Nenhum agente ou modelo é acionado por esta página.</small>
+</header>
+<div class="bar"><button id="motion" type="button">Pausar animações</button></div>
+<div id="root" data-motion="on"><div id="grid"></div></div>
+<script type="module" src="./app.js"></script>
+</html>
