@@ -10,8 +10,12 @@ Origin: WILLTECH custom multi-agent implementation
 <h1 align="center">WILLTECH-GENERAL</h1>
 
 <p align="center">
-  <strong>Orquestração Multiagente para Engenharia de Software</strong><br>
-  <em>Uma arquitetura. Múltiplos especialistas. Um único comando.</em>
+  <strong>Inteligência Multiagente, Memória Contextual e Orquestração Nativa</strong><br>
+  <em>Uma arquitetura. Sete agentes. Inteligência integrada. Um único comando.</em>
+</p>
+
+<p align="center">
+  <sub>Versão atual: <strong>2.2.1</strong> (estabilização E) · Licença MIT · macOS, Linux e CLIs de IA</sub>
 </p>
 
 <p align="center">
@@ -20,19 +24,40 @@ Origin: WILLTECH custom multi-agent implementation
 
 ---
 
-O **WillTech-General** é uma arquitetura modular de orquestração de agentes de inteligência artificial, desenvolvida pela **WILLTECH-BH** para organizar, delegar e supervisionar tarefas complexas de engenharia de software.
+O **WillTech-General** é uma arquitetura open source de orquestração multiagente desenvolvida pela **WILLTECH-BH** para OpenCode, OpenAI Codex e Claude Code.
 
-Projetado para integrar-se ao **Claude Code, OpenCode e OpenAI Codex**, o projeto transforma agentes especializados em uma equipe coordenada, preservando o controle do agente principal de cada plataforma.
+Combina coordenação especializada, aprendizado baseado em evidências, memória contextual, planejamento inteligente, revisão independente e automação nativa — preservando a autoridade do agente principal de cada plataforma.
 
-Em vez de substituir o assistente nativo por outro orquestrador, o WillTech-General acrescenta uma camada subordinada de coordenação, acionada quando a complexidade da tarefa justifica a delegação.
+Incorpora mecanismos próprios inspirados em conceitos do Microsoft TokenEconomizer e do Google Elephant-Goldfish Model, sem exigir a execução desses frameworks externos.
 
-**Seu princípio central: delegar com propósito, executar com controle e concluir com evidências.**
+O resultado é uma arquitetura projetada para reduzir retrabalho, evitar loops, melhorar decisões e oferecer execução supervisionada com evidências verificáveis.
 
 ---
 
-## O conceito
+## Inteligência integrada
 
-O WillTech-General adota uma estrutura hierárquica de três níveis:
+A partir das versões **2.0 → 2.2.1**, a arquitetura deixou de ser apenas hierarquia de delegação e passou a incorporar mecanismos determinísticos de inteligência operacional, acionados pelos hooks e plugins nativos de cada runtime:
+
+| Capacidade | O que faz | Estado |
+|---|---|---|
+| 🧠 **Memória de experiências** | Lições registradas com comando + hash SHA-256 da saída real; nunca conteúdo de arquivo. Recusa caminhos de credenciais na entrada | ✅ Homologada |
+| 🔄 **Aprendizado entre sessões** | Confirmação progressiva, contradição marca a lição antiga como `superseded`, invalidação por commit; `prune` automático descarta o que envelheceu | ✅ Homologada |
+| 📦 **Cache contextual por projeto e commit** | Mapa de contexto com chave `HEAD + working tree`; escopo seletivo por caminhos — sujeira fora do escopo não invalida o cache | ✅ Homologada |
+| 📋 **Brief contextual** | Contexto essencial injetado automaticamente no início de tarefas complexas; tarefa simples não recebe overhead | ✅ Homologada |
+| 🗺️ **Planejamento com evidências** | Requisito → decisão → implementação → teste rastreáveis no dossiê; decisões entram com evidência em hash | 🧪 Validada em simulação |
+| 🐟 **Revisão independente seletiva (Goldfish)** | Revisor em contexto fresco, acionado só em mudança crítica, arquitetural ou de segurança; uma rodada por padrão, sem herdar conclusões do implementador | 🧪 Validada em simulação |
+| ⛔ **Controle determinístico de loops** | Terceira tentativa do mesmo comando falho é negada pelo runtime; registrar a lição verificada libera a guarda; sem juiz LLM, sem custo de modelo | ✅ Homologada |
+| 🎯 **Seleção proporcional de especialistas** | Tarefa simples fica com o comandante; delegação declara apenas os recursos necessários — sem desativação automática de ferramentas | 🧪 Validada em simulação |
+| 🛡️ **Proteção anti-injection e anti-vazamento** | Conteúdo de web/docs é dado, nunca instrução; segredos do trace são redigidos; dossiê corrompido bloqueia o controle (falha fechado) | ✅ Homologada |
+| 🔍 **Detecção de drift** | Gate determinístico entre código, decisões e documentação: README ↔ arquivos, contratos ↔ subcomandos, decisões sem evidência | ✅ Homologada |
+| ⚙️ **Automação nativa por hooks/plugins** | SessionStart, PreToolUse, Stop e afins do Claude Code e Codex; plugin V2 no OpenCode — zero chamadas de modelo, zero comandos manuais | 🧪 Validada em simulação |
+| 🔧 **Instalação reversível** | Idempotente, projeto-local, com consentimento, backup, `--disable` e `--uninstall` que restaura o estado anterior | ✅ Homologada |
+
+> **Nota de rigor:** nenhum percentual de economia de tokens é afirmado. A comparação com/sem otimizações (`tools/willtech-compare.py`) mede deltas de tokens, turnos, falhas e loops sobre transcripts reais, sem extrapolar métricas. A homologação da automação em runtime real (com gasto de modelo) permanece pendente e não é anunciada como concluída — classificação completa e evidências em [EVOLUCAO.md](EVOLUCAO.md).
+
+---
+
+## Arquitetura e hierarquia
 
 ```text
                COMANDANTE NATIVO
@@ -40,7 +65,7 @@ O WillTech-General adota uma estrutura hierárquica de três níveis:
                        |
                        v
                 WILLTECH-GENERAL
-              Coordenação inteligente
+      Coordenação, memória, guardas e evidências
                        |
         +--------------+--------------+
         |              |              |
@@ -52,11 +77,13 @@ O WillTech-General adota uma estrutura hierárquica de três níveis:
    Visual
 ```
 
-### Nível 1 — Comandante
+**Nível 1 — Comandante.** O agente principal da plataforma permanece responsável pelas decisões, autorizações, escopo e entrega final.
 
-O agente principal da plataforma permanece responsável pelas decisões, autorizações, escopo e entrega final.
+**Nível 2 — WillTech-General.** Recebe tarefas complexas, identifica dependências, organiza etapas, seleciona especialistas, acompanha resultados e consolida evidências. Não assume o controle da sessão nem substitui o comandante.
 
-### Nível 2 — WillTech-General
+**Nível 3 — Especialistas.** Seis agentes com responsabilidades específicas. A arquitetura prioriza delegação seletiva, evitando mobilizar toda a equipe para operações simples.
+
+### O coordenador
 
 <p align="center">
   <picture>
@@ -66,19 +93,9 @@ O agente principal da plataforma permanece responsável pelas decisões, autoriz
   </picture>
 </p>
 
-O coordenador recebe tarefas complexas, identifica dependências, organiza etapas, seleciona especialistas, acompanha resultados e consolida evidências.
-
-Não assume o controle da sessão nem substitui o comandante.
-
-### Nível 3 — Especialistas
-
-Seis agentes com responsabilidades específicas, utilizados conforme a natureza do trabalho.
-
-A arquitetura prioriza delegação seletiva, evitando mobilizar toda a equipe para operações simples.
-
 ---
 
-## Equipe especializada
+## Equipe dos sete agentes
 
 <table>
   <tr>
@@ -117,157 +134,84 @@ A arquitetura prioriza delegação seletiva, evitando mobilizar toda a equipe pa
   </tr>
 </table>
 
-Cada agente possui um contrato operacional, com responsabilidades, limites e critérios de entrega.
-
-O modelo de permissões depende das capacidades e configurações de cada runtime. As restrições precisam ser verificadas tecnicamente, não apenas declaradas nos prompts.
+Cada agente possui um contrato operacional, com responsabilidades, limites e critérios de entrega. O modelo de permissões depende das capacidades e configurações de cada runtime — as restrições são verificadas tecnicamente, não apenas declaradas nos prompts.
 
 ---
 
-## Princípios de engenharia
+## Compatibilidade e homologação
 
-### 01 — Comando preservado
+| Plataforma | Implementação | Delegação | Inteligência 2.2.1 | Isolamento |
+|---|---|---|---|---|
+| **OpenCode V2** (2.2.6) | Subagentes Markdown + wrappers sandbox + plugin V2 | ✅ Homologada | 🧪 Automação validada em simulação | ✅ Por agente, aplicado pelo runtime |
+| **OpenAI Codex** | Agentes nativos em TOML | ✅ Validada | 🧪 Automação validada em simulação | ⚠️ Instrucional (limitação do runtime) |
+| **Claude Code** | Subagentes Markdown + hooks | ❌ Não homologada nesta máquina | 🧪 Contratos verificados na documentação oficial | ⚠️ Depende dos controles do runtime |
 
-O agente principal mantém a autoridade. O General coordena, mas não redefine unilateralmente os objetivos.
-
-### 02 — Delegação proporcional
-
-Tarefas simples permanecem com o comandante. Especialistas são acionados quando oferecem benefício concreto.
-
-### 03 — Especialização funcional
-
-Cada agente atua em uma responsabilidade delimitada, reduzindo sobreposição e retrabalho.
-
-### 04 — Execução controlada
-
-Mudanças devem respeitar o escopo autorizado, preservar o código existente e permitir inspeção dos resultados.
-
-### 05 — Verificação independente
-
-Quando necessário, a implementação é submetida a testes e revisão antes da conclusão.
-
-### 06 — Evidências antes de conclusões
-
-Uma tarefa não é considerada concluída apenas pela declaração de um agente. Resultados devem ser sustentados por arquivos, diffs, testes ou outras evidências verificáveis.
-
-### 07 — Recuperação e continuidade
-
-O fluxo prioriza reaproveitamento de trabalho existente, identificação de bloqueios e continuidade controlada, evitando reinícios desnecessários.
+A estrutura conceitual é compartilhada; os mecanismos de delegação, execução e controle de permissões variam entre plataformas.
 
 ---
 
-## Compatibilidade
+## Comece aqui
 
-O projeto mantém implementações específicas para diferentes ambientes de desenvolvimento assistido por IA.
+**Pré-requisitos:** um dos runtimes suportados (OpenCode V2, Codex ou Claude Code) e `git`. As ferramentas de inteligência usam apenas a biblioteca padrão do Python 3 — sem dependências externas e sem custo de modelo.
 
-| Plataforma | Implementação | Estado documentado |
-|---|---|---|
-| **OpenAI Codex** | Agentes nativos em TOML | Delegação hierárquica validada |
-| **OpenCode V2** | Subagentes Markdown | Delegação aninhada validada |
-| **Claude Code** | Subagentes Markdown | Pacote disponível; instalação e delegação ainda não homologadas no ambiente atual |
+### OpenCode V2 (variante homologada no runtime 2.2.6)
 
-A estrutura conceitual é compartilhada, mas os mecanismos de delegação, execução e controle de permissões variam entre plataformas.
+```sh
+# 1. Backup
+STAMP=$(date +%Y%m%d-%H%M%S)
+mkdir -p ~/.willtech-backups/opencode-$STAMP
+cp -a ~/.config/opencode/agent ~/.willtech-backups/opencode-$STAMP/
 
-### Integração sem substituição
+# 2. Instalar agentes, wrappers e política do comandante
+cp opencode/agent/*.md ~/.config/opencode/agent/
+mkdir -p ~/.config/opencode/bin && cp opencode/bin/* ~/.config/opencode/bin/
+chmod +x ~/.config/opencode/bin/*
+cp opencode/AGENTS.md ~/.config/opencode/AGENTS.md
 
-O WillTech-General foi concebido para trabalhar com o agente principal existente, sem exigir que outro framework assuma o comando.
+# 3. Requisito para delegação aninhada (mesclar, sem sobrescrever o resto)
+#    { "experimental": { "subagent_depth": 2 } }  em ~/.config/opencode/opencode.json
 
-As variantes são mantidas separadamente para respeitar as capacidades nativas de cada plataforma.
-
-### Automação nativa (2.2.1)
-
-Com `tools/willtech-install.sh` (instalação idempotente, projeto-local, com consentimento), os mecanismos nativos de cada runtime passam a acionar a inteligência sozinhos: hooks do Claude Code, hooks de projeto do Codex (com trust via `/hooks`) e plugin V2 do OpenCode. O núcleo `tools/willtech-auto.py` injeta o brief contextual, bloqueia a repetição de comandos que já falharam, registra lições candidatas não verificadas e exige revisão independente e drift antes de concluir — sem nenhuma chamada adicional de modelo e sem comandos manuais.
-
-Desativar é simples (`--disable`); reverter também (`--uninstall`, com restauração de backups). A execução é demonstrada por testes determinísticos simulados (`tools/test-auto.sh`); a homologação em runtime real com gasto de modelo permanece pendente e está declarada em [EVOLUCAO.md](EVOLUCAO.md).
-
----
-
-## Estrutura do projeto
-
-```text
-willtech-general/
-├── claude-code/
-│   ├── agents/
-│   ├── bin/
-│   ├── settings/
-│   └── INSTALAR.command
-│
-├── codex/
-│   ├── agents/
-│   └── hooks.json
-│
-├── opencode/
-│   ├── agent/
-│   ├── bin/
-│   ├── plugins/
-│   ├── tests/
-│   ├── AGENTS.md
-│   └── HOMOLOGACAO.md
-│
-├── .github/
-│   └── workflows/
-│
-├── docs/
-│   └── assets/
-│
-├── history/
-│
-├── tools/
-│   ├── willtech-dossie.py
-│   ├── willtech-drift.py
-│   ├── willtech-auto.py
-│   ├── willtech-compare.py
-│   ├── willtech-install.sh
-│   ├── test-dossie.sh
-│   ├── test-trace.sh
-│   ├── test-drift.sh
-│   └── test-auto.sh
-│
-├── README.md
-├── INSTALL.md
-├── HISTORICO.md
-├── AUDITORIA.md
-├── EVOLUCAO.md
-├── NOTICE.md
-└── LICENSE
+# 4. Reiniciar a sessão e verificar
+opencode debug agents
+sh opencode/tests/test-wrappers.sh   # regressão sem custo de modelo
 ```
 
-- **claude-code/** — implementação, ferramentas de instalação e arnês de homologação para Claude Code.
-- **codex/** — agentes adaptados ao runtime Codex nativo.
-- **opencode/** — agentes, wrappers de shell com sandbox, política do comandante
-  e testes de regressão para OpenCode V2.
-- **history/** — preservação de versões históricas da arquitetura.
-- **docs/assets/** — identidade visual da equipe: cards e banner em WebP, animação do General em APNG/GIF com fallback estático e respeito a `prefers-reduced-motion`.
-- **tools/** — dossiê de evidências com hash, cache de mapa por commit e guardas de orçamento (stdlib, sem custo de modelo).
-- **tools/willtech-drift.py** — gate determinístico de divergências: README↔arquivos, contratos↔subcomandos, roster de agentes↔plataformas e, com `--dossie`, decisões sem evidência.
-- **tools/willtech-auto.py** — núcleo determinístico da automação nativa (2.2.1): acionado pelos hooks/plugins de cada runtime, injeta brief, bloqueia loops, registra candidatas de lição e exige revisão/drift no fim de turno — zero chamadas de modelo.
-- **tools/willtech-install.sh** — instalação idempotente e projeto-local da automação, com consentimento, backup, `--disable` e `--uninstall`; nunca altera instalações globais.
-- **tools/willtech-compare.py** — comparação reproduzível com/sem otimizações a partir de transcripts reais (tokens, turnos, duração, falhas, loops); nenhum percentual inventado.
-- **tools/test-trace.sh / tools/test-drift.sh / tools/test-auto.sh** — suítes determinísticas: loops de falha, lições candidatas com evidência em hash, ferramentas ociosas, drift com mutações e os 7 itens objetivos da automação nativa.
-- **opencode/plugins/** — plugin V2 de projeto que liga os hooks do OpenCode ao núcleo (descoberta automática após instalação).
-- **claude-code/settings/willtech-hooks.json / codex/hooks.json** — templates de hooks do ciclo de execução para Claude Code e Codex (trust oficial do usuário continua obrigatório).
-- **.github/workflows/** — gate determinístico de regressão (permissões, sintaxe, suítes) em Pull Requests.
-- **EVOLUCAO.md** — registro das versões 2.0, 2.1 e 2.2: o que entrou, o que foi adiado e por quê.
-- **AUDITORIA.md** — testes, evidências e limitações técnicas documentadas.
+### OpenAI Codex
 
-Consulte [INSTALL.md](INSTALL.md) para os procedimentos de instalação específicos de cada plataforma.
+```sh
+mkdir -p ~/.codex/agents
+cp codex/agents/*.toml ~/.codex/agents/
+# Reinicie a sessão e confirme os sete nomes willtech-*
+```
+
+### Claude Code (pacote disponível; delegação não homologada nesta máquina)
+
+```sh
+mkdir -p ~/.claude/agents
+cp -a claude-code/agents/. ~/.claude/agents/
+```
+
+### Automação nativa 2.2.1 (opcional, projeto-local, com consentimento)
+
+```sh
+sh tools/willtech-install.sh            # lista as mudanças e pede confirmação
+sh tools/willtech-install.sh --platform opencode   # apenas uma plataforma
+sh tools/willtech-install.sh --uninstall           # reverter com restauração de backups
+```
+
+Escreve **apenas dentro do repositório alvo** (`.claude/`, `.codex/`, `.opencode/`, `.willtech/`); as telas oficiais de trust/permissão de cada plataforma continuam valendo.
+
+**Desativação e reversão:** `--disable` desliga sem remover; `--uninstall` restaura os backups pré-instalação. Para desinstalar agentes, remova os arquivos `willtech-*` dos diretórios de agentes da plataforma (instruções completas em [INSTALL.md](INSTALL.md)).
 
 ---
 
-## Segurança e limitações
+## Segurança, automação e limitações
 
-O WillTech-General foi concebido com separação de responsabilidades, proteção do escopo autorizado e revisão de resultados.
-
-Entretanto, **instruções de agentes não constituem, por si só, isolamento de segurança**.
-
-Operações por shell, ferramentas externas e mecanismos de delegação podem exigir políticas adicionais para impedir escrita ou execução não autorizada.
-
-A proteção efetiva deve ser avaliada conforme o runtime utilizado. Os resultados conhecidos, suas limitações e testes de homologação estão documentados em [AUDITORIA.md](AUDITORIA.md).
+O WillTech-General foi concebido com separação de responsabilidades, proteção do escopo autorizado e revisão de resultados. Entretanto, **instruções de agentes não constituem, por si só, isolamento de segurança** — a proteção efetiva depende do runtime e deve ser verificada tecnicamente.
 
 ### OpenCode 2.2.6 — isolamento aplicado
 
-No OpenCode, as permissões são ordenadas e a **última regra que casa vence**. Os
-agentes de leitura negam explicitamente `shell`, `edit`, `subagent`, `execute` e
-as ferramentas nativas `opencode_worktree_create`/`opencode_worktree_remove`.
+No OpenCode, as permissões são ordenadas e a **última regra que casa vence**. Os agentes de leitura negam explicitamente `shell`, `edit`, `subagent`, `execute` e as ferramentas nativas de worktree.
 
 Shell é liberado apenas pelos wrappers:
 
@@ -276,13 +220,7 @@ Shell é liberado apenas pelos wrappers:
 ~/.config/opencode/bin/willtech-test-shell "COMANDO"
 ```
 
-O comando deve ir **inteiro entre aspas duplas**. Sem aspas, o runtime nega a
-chamada; isso impede que `>`, `;`, `&&` e `|` sejam executados fora do sandbox.
-O wrapper de leitura bloqueia escrita; o de teste confina escrita a
-`~/willtech-lab`, bloqueia rede, SSH, `.env` e configurações sensíveis.
-
-Matriz completa e limites em [opencode/HOMOLOGACAO.md](opencode/HOMOLOGACAO.md).
-Regressão sem custo de modelo: `sh opencode/tests/test-wrappers.sh`.
+O comando deve ir **inteiro entre aspas duplas**. Sem aspas, o runtime nega a chamada — isso impede que `>`, `;`, `&&` e `|` sejam executados fora do sandbox. O wrapper de leitura bloqueia escrita; o de teste confina escrita a `~/willtech-lab`, bloqueia rede, SSH, `.env` e configurações sensíveis.
 
 ### Limitações por plataforma
 
@@ -292,17 +230,34 @@ Regressão sem custo de modelo: `sh opencode/tests/test-wrappers.sh`.
 | **Codex** | Instrucional; o TOML não oferece permissão por agente | Sem garantia equivalente |
 | **Claude Code** | Depende dos controles do runtime e do pacote | Não homologado nesta máquina |
 
+Matriz completa, testes adversariais e limitações honestas (incluindo lacunas de runtime classificadas como tais) em [AUDITORIA.md](AUDITORIA.md) e [opencode/HOMOLOGACAO.md](opencode/HOMOLOGACAO.md).
+
 ---
 
-## Filosofia do projeto
+## Documentação técnica
 
-**Mais agentes não significam necessariamente mais inteligência.**
+| Documento | Conteúdo |
+|---|---|
+| [EVOLUCAO.md](EVOLUCAO.md) | Registro completo das rodadas 2.0 → 2.2.1-E: mecanismos, evidências, o que foi adiado e por quê |
+| [AUDITORIA.md](AUDITORIA.md) | Testes de homologação, falhas adversariais e limitações por plataforma |
+| [INSTALL.md](INSTALL.md) | Procedimentos completos de instalação, rollback e automação por plataforma |
+| [HISTORICO.md](HISTORICO.md) | Linhagem das versões desde o executor técnico pré-comercial |
+| [NOTICE.md](NOTICE.md) | Declaração formal de autoria e componentes externos |
+| [opencode/HOMOLOGACAO.md](opencode/HOMOLOGACAO.md) | Matriz de permissões e limites dos wrappers sandbox |
 
-A eficiência de um sistema multiagente depende de como o trabalho é dividido, do momento em que a delegação acontece e da qualidade das evidências produzidas.
+**Estrutura principal:**
 
-O WillTech-General busca uma arquitetura enxuta, supervisionável e extensível, na qual cada especialista tenha uma função clara e o agente principal mantenha o controle.
+```text
+willtech-general/
+├── claude-code/     agentes Markdown, hooks e arnês de homologação (Claude Code)
+├── codex/           agentes TOML e hooks projeto-local (Codex)
+├── opencode/        agentes, wrappers sandbox, plugin V2, política e testes (OpenCode V2)
+├── tools/           dossiê, drift, auto, compare e suítes determinísticas (stdlib)
+├── docs/assets/     identidade visual: cards e banner WebP, APNG/GIF/estático do General
+└── history/         versões históricas da arquitetura
+```
 
-O objetivo não é automatizar indiscriminadamente. É oferecer uma estrutura de engenharia capaz de lidar com tarefas complexas de maneira organizada, verificável e consistente.
+Suítes de regressão sem custo de modelo: `sh tools/test-auto.sh` (40) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7) · `sh opencode/tests/test-wrappers.sh` (41).
 
 ---
 
@@ -322,11 +277,13 @@ O código e os arquivos próprios deste repositório são disponibilizados sob o
 
 ## Créditos e referências
 
-O WillTech-General é uma implementação personalizada da WILLTECH-BH.
+O WillTech-General é uma implementação personalizada da WILLTECH-BH. Os mecanismos de inteligência integrada são implementação própria, inspirados em conceitos públicos de projetos estudados — nenhum código foi copiado:
 
-Entre as referências arquiteturais estudadas está o [Multi-Agent Shogun](https://github.com/yohey-w/multi-agent-shogun), desenvolvido por [yohey-w](https://github.com/yohey-w), especialmente por sua abordagem de coordenação hierárquica de agentes.
+- [Microsoft TokenEconomizer](https://github.com/microsoft/TokenEconomizer) — conceitos adaptados: micro-skills (como lições verificadas por hash) e seleção econômica de ferramentas.
+- [Google Elephant-Goldfish Model](https://github.com/google/elephant-goldfish-model) — conceito adaptado: revisão independente em contexto fresco, acionada seletivamente.
+- [Multi-Agent Shogun](https://github.com/yohey-w/multi-agent-shogun), por [yohey-w](https://github.com/yohey-w) — referência de coordenação hierárquica de agentes.
 
-O WillTech-General não é uma distribuição oficial desse projeto nem possui vínculo com seus mantenedores.
+O WillTech-General não é distribuição oficial desses projetos nem possui vínculo com seus mantenedores.
 
 ---
 
