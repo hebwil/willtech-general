@@ -15,7 +15,7 @@ Origin: WILLTECH custom multi-agent implementation
 </p>
 
 <p align="center">
-  <sub>Versão atual: <strong>2.2.1</strong> (estabilização E) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
+  <sub>Versão atual: <strong>2.3</strong> (inteligência de orquestração) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@ O resultado é uma arquitetura projetada para reduzir retrabalho, evitar loops, 
 
 ## Inteligência integrada
 
-A partir das versões **2.0 → 2.2.1**, a arquitetura deixou de ser apenas hierarquia de delegação e passou a incorporar mecanismos determinísticos de inteligência operacional, acionados pelos hooks e plugins nativos de cada runtime:
+A partir das versões **2.0 → 2.3**, a arquitetura deixou de ser apenas hierarquia de delegação e passou a incorporar mecanismos determinísticos de inteligência operacional, acionados pelos hooks e plugins nativos de cada runtime:
 
 | Capacidade | O que faz | Estado |
 |---|---|---|
@@ -57,6 +57,14 @@ A partir das versões **2.0 → 2.2.1**, a arquitetura deixou de ser apenas hier
 | ⏱️ **Supervisor de delegações** | `tools/willtech-supervisor.py` rastreia cada delegação com soft/hard timeout, bloqueia recursão/duplicação/escrita concorrente, retry único reconciliado; timed_out nunca afirma interrupção; cancelamento só com confirmação do runtime | 🧪 Validada em simulação |
 
 > **Nota de rigor:** nenhum percentual de economia de tokens é afirmado. A comparação com/sem otimizações (`tools/willtech-compare.py`) mede deltas de tokens, turnos, falhas e loops sobre transcripts reais, sem extrapolar métricas. A homologação da automação em runtime real (com gasto de modelo) permanece pendente e não é anunciada como concluída — classificação completa e evidências em [EVOLUCAO.md](EVOLUCAO.md).
+
+### As três melhorias da rodada 2.3 (integradas na `main` via [PR #9](https://github.com/hebwil/willtech-general/pull/9))
+
+1. **Planejamento seletivo Elephant/Goldfish com revisão independente** — `tools/willtech-dossie.py plan` classifica a tarefa por heurísticas determinísticas (DIRECT / PLAN / PLAN+REVIEW): tarefas simples executam direto; tarefas complexas exigem plano escrito com critérios de aceite; mudanças críticas/arquiteturais/de segurança acionam o Revisor em contexto fresco (`review-pack` entrega diff + aceite + evidências, sem conclusões do implementador). `resolve` classifica críticas com evidência em hash e `catalyst` limita a exploração a uma alternativa após impasse. Sem juiz LLM, sem custo de modelo.
+2. **RepoMap incremental compartilhado** — `tools/willtech-repomap.py` mantém um índice de símbolos e dependências por hash de conteúdo: reparse apenas do que mudou, renames reaproveitam símbolos, isolamento por projeto e exclusão de credenciais. **Medição real em bancada** (fixture de 10 arquivos): leitura integral 380 bytes (~95 tokens estimados) vs briefing de 256 bytes (~64); parses na primeira rodada = 10, rodadas seguintes sem mudanças = 0. Valores medidos no cenário de teste, não extrapolados como percentual.
+3. **Supervisor determinístico de delegações** — `tools/willtech-supervisor.py` registra cada delegação com soft/hard timeout honestos (`timed_out` nunca afirma interrupção sem confirmação), cancelamento somente com confirmação do runtime, anti-loop (recursão, duplicação e escrita concorrente bloqueadas) e retry único reconciliado. Estado e evidências ficam no dossiê (hashes, nunca conteúdo).
+
+As três melhorias reutilizam o núcleo existente (dossiê, trace, guardas) e preservam os 7 agentes, hooks, instaladores e contratos das três plataformas (contratos 2.3 / 2.3.1 / 2.3.2). Validação por suítes determinísticas de laboratório; homologação em runtime real com modelo permanece pendente e não é anunciada como concluída.
 
 ---
 
@@ -235,7 +243,11 @@ Escreve **apenas dentro do repositório alvo** (`.claude/`, `.codex/`, `.opencod
 
 ### Painel visual dos agentes (experimental, opt-in)
 
-Contribuição gráfica independente para **OpenCode Desktop 2.2.6**, baseada na API oficial `@opencode/plugin/gui` e no export `gui-experimental`. Reutiliza os sete mascotes, observa eventos nativos sem acionar agentes e respeita movimento reduzido. Não altera os hooks nem é instalada pelo instalador de automação. **Homologação gráfica nativa pendente; não anunciada como suporte validado.** Ativação, reversão e limites de Codex/Claude Code em [INSTALL.md](INSTALL.md#painel-visual-experimental-opencode-desktop).
+Contribuição gráfica independente para **OpenCode Desktop 2.2.6**, baseada na API oficial `@opencode/plugin/gui` e no export `gui-experimental`, integrada na `main` via [PR #8](https://github.com/hebwil/willtech-general/pull/8). Reutiliza os **sete mascotes originais** e exibe cinco estados por agente — **Aguardando, Coordenando/Executando, Concluído, Erro e Interrompido/Bloqueado** — observando apenas eventos nativos de execução, sem acionar agentes nem modelos. Ativação exige opt-in explícito (`enabled: true`), superfície desktop e versão compatível; respeita `prefers-reduced-motion`, oferece pausa reversível e fallback estático WebP, e limpa todas as inscrições no unmount/desconexão. Não altera os hooks nem é instalada pelo instalador de automação.
+
+**Smoke headless de laboratório aprovado com o bundle real e os mascotes originais:** 64/64 verificações em três rodadas consecutivas + 3/3 em modo reduced-motion — carga das sete imagens, associação agente↔imagem por hash SHA-256, avanço de quadros do APNG provado por decodificação WebCodecs (18 quadros), estados, isolamento de eventos do General, deduplicação de atualizações, limpeza pós-unmount e zero chamadas de rede/modelo (evidência de rede: apenas `file://` e `data:`). Resultados, hashes e capturas de tela em [tools/smoke-evidence/](tools/smoke-evidence/).
+
+**Homologação gráfica nativa no OpenCode Desktop: NÃO EXECUTADA.** O smoke é simulação de laboratório em navegador headless e não é anunciado como suporte nativo validado. Ativação, reversão e limites de Codex/Claude Code em [INSTALL.md](INSTALL.md#painel-visual-experimental-opencode-desktop).
 
 ### Smoke tests dos adaptadores
 
@@ -276,7 +288,7 @@ Matriz completa, testes adversariais e limitações honestas (incluindo lacunas 
 
 | Documento | Conteúdo |
 |---|---|
-| [EVOLUCAO.md](EVOLUCAO.md) | Registro completo das rodadas 2.0 → 2.2.1-E: mecanismos, evidências, o que foi adiado e por quê |
+| [EVOLUCAO.md](EVOLUCAO.md) | Registro completo das rodadas 2.0 → 2.3 e da publicação final: mecanismos, evidências, o que foi adiado e por quê |
 | [AUDITORIA.md](AUDITORIA.md) | Testes de homologação, falhas adversariais e limitações por plataforma |
 | [INSTALL.md](INSTALL.md) | Procedimentos completos de instalação, rollback e automação por plataforma |
 | [HISTORICO.md](HISTORICO.md) | Linhagem das versões desde o executor técnico pré-comercial |
@@ -290,14 +302,14 @@ willtech-general/
 ├── claude-code/     agentes Markdown, hooks e arnês de homologação (Claude Code)
 ├── codex/           agentes TOML e hooks projeto-local (Codex)
 ├── opencode/        agentes, wrappers sandbox, plugin V2, política e testes (OpenCode V2)
-├── tools/           dossiê, drift, auto, compare e suítes determinísticas (stdlib)
+├── tools/           dossiê, drift, auto, compare, repomap, supervisor, smoke-evidence e suítes determinísticas (stdlib)
 ├── docs/assets/     identidade visual: cards e banner WebP, APNG/GIF/estático do General
 └── history/         versões históricas da arquitetura
 ```
 
 Validação direcionada de ativação/reversão e preservação de terceiros: `python3 tools/test-install.py` (shell real + Python embutido do PS1; não é homologação nativa Windows).
 
-Suítes de regressão sem custo de modelo: `sh tools/test-auto.sh` (40) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7) · `sh opencode/tests/test-wrappers.sh` (41) · `python3 tools/test-compat.py` (22, cross-platform: locks com processos concorrentes, recuperação anti-loop, dossiê antigo, hooks das 3 plataformas, falha fechado).
+Suítes de regressão sem custo de modelo (executadas e aprovadas; registros em [EVOLUCAO.md](EVOLUCAO.md)): `sh tools/test-auto.sh` (39) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7 + gate de drift 0 divergências) · `sh tools/test-plan.sh` (21) · `sh tools/test-trace.sh` (10) · `python3 tools/test-repomap.py` (10) · `python3 tools/test-supervisor.py` (10) · `sh opencode/tests/test-wrappers.sh` (41) · `python3 tools/test-compat.py` (22, cross-platform: locks com processos concorrentes, recuperação anti-loop, dossiê antigo, hooks das 3 plataformas, falha fechado) · `python3 tools/test-install.py` (16) · `python3 tools/test-gui.py` (4) + eventos do painel em ambas as formas. Smoke headless do painel em navegador: 64/64 (×3 rodadas) + 3/3 reduced-motion, com evidências em [tools/smoke-evidence/](tools/smoke-evidence/).
 
 ---
 

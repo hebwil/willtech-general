@@ -365,7 +365,8 @@ instalações ativas. Branch `qoder/general-2.2.1-stabilization`, PR único.
 - **CI**: scopes do token gh = `gist, read:org, repo` — **sem `workflow`**;
   publicação exigiria nova permissão. Não tentada (OAuth não reaberto).
   Testes locais permanecem reproduzíveis.
-- **Caminhos pessoais**: `git grep '/Users/will'` = 0 ocorrências nos arquivos
+- **Caminhos pessoais**: varredura `git grep` pelo caminho absoluto do usuário
+  da estação = 0 ocorrências nos arquivos
   rastreados. Instalador/hooks/plugin usam apenas caminhos relativos,
   `${CLAUDE_PROJECT_DIR}`, `git rev-parse --show-toplevel` e
   `ctx.location.directory` — nenhum caminho pessoal exigido de outros usuários.
@@ -483,7 +484,7 @@ nativa indisponível). Solução incremental, sem reescrita:
 | Regressão `tools/test-auto.sh` (incl. plugin JS real via Electron-as-node com a nova resolução Python) | 40/40 |
 | Regressão `tools/test-drift.sh` + gate `willtech-drift.py` | 7/7 · 0 divergências |
 | Regressão `opencode/tests/test-wrappers.sh` (sandbox macOS intacto) | todos PASS |
-| Lógica do instalador PS1 simulada deterministicamente: sintaxe dos blocos Python, adaptação `py -3`, preservação de hooks do usuário, backup, idempotência, restauração, caminho `C:/Users/will/Projeto Ação` (espaço + Unicode) | PASS (simulação) |
+| Lógica do instalador PS1 simulada deterministicamente: sintaxe dos blocos Python, adaptação `py -3`, preservação de hooks do usuário, backup, idempotência, restauração, caminho com espaço + Unicode | PASS (simulação) |
 
 **Classificação honesta:** macOS = VALIDADO POR REGRESSÃO (exercitado nesta
 estação). Windows nativo = **PENDENTE DE HOMOLOGAÇÃO NATIVA** — sem runner
@@ -847,5 +848,45 @@ Nenhum agente novo, nenhum framework, nenhuma chamada de modelo extra.
   com os sete estados), `smoke-reduced-motion.png`.
 - Continua **laboratório simulado, não homologação nativa**; nenhum aplicativo
   Desktop aberto, nenhuma instalação pessoal tocada, nenhum push/publicação.
+
+## Rodada de publicação final no GitHub (2026-11-16)
+
+**Autorização expressa do proprietário** para publicar as alterações homologadas
+em laboratório. Executada com mecanismos normais do GitHub, sem force push e
+sem reescrita de histórico publicado.
+
+- **PR #8 — painel visual experimental** (`qoder/agent-activity-panel`):
+  atualizado com os commits `b2e8939` (correção de causa da deduplicação) e
+  `9ac55f1` (smoke headless final + evidências); corpo documentando mascotes,
+  animações, estados, smoke aprovado e limitações (integração nativa no
+  OpenCode Desktop **NÃO EXECUTADA**; contribuição experimental). Retirado de
+  draft e **merged na `main`** — merge commit
+  `01e4ec693c67c44acca48dc2cf73333dd67c0bce`.
+- **PR #9 — inteligência 2.3** (`qoder/intelligence-orchestration`), novo PR
+  separado do #8: Elephant/Goldfish + revisão independente, RepoMap incremental
+  (medição real: 380 B/~95 tokens de leitura integral vs brief 256 B/~64;
+  parses 10 → 0) e supervisor de delegações. Commits `9a6ed7b`, `5a86a28`,
+  `c46442a`, `68b6e96` + merge `f38914b` com `origin/main` (único conflito em
+  EVOLUCAO.md, resolvido em ordem cronológica; README combinado). Gate de drift
+  reexecutado após a resolução: **0 divergências, 7/7 PASS**. Contratos
+  2.3/2.3.1/2.3.2 das três plataformas preservados. **Merged na `main`** —
+  merge commit `edc99506f993df09bb2b8af7ff743570c8098124`.
+- **README premium atualizado na `main`** para o estado real: versão 2.3,
+  seção objetiva das três melhorias com a medição do RepoMap, painel
+  experimental com os cinco estados e o smoke 64/64 (×3) + 3/3 reduced-motion,
+  evidências em `tools/smoke-evidence/`, suítes de regressão com contagens
+  reais, compatibilidade de SO/plataformas e limitações honestas. Design,
+  banner, mascotes, animações e autoria WILLTECH-BH/MIT preservados.
+- **Sanitização forward** deste registro: duas linhas históricas que citavam
+  caminhos absolutos pessoais foram reescritas sem o caminho (sem reescrever
+  histórico publicado). Varredura final dos arquivos rastreados: 0 ocorrências
+  de caminhos pessoais; evidências publicadas contêm apenas hashes, contagens
+  e URLs `file://`/`data:` relativas à bancada.
+- Nenhuma instalação pessoal (OpenCode/Codex/Claude Code), configuração global,
+  VPS ou serviço foi alterado; OpenCode Desktop/Electron não foi aberto; os
+  commits das duas branches não foram misturados.
+- Simulação de laboratório continua **não anunciada como homologação nativa**:
+  painel no Desktop, automação com modelo real e tarefa DeepSeek permanecem
+  pendentes, classificados como tal no README e neste registro.
 
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

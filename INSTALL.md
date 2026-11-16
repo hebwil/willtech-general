@@ -107,6 +107,10 @@ completa; detalhes em EVOLUCAO.md.
 A API `@opencode/plugin/gui` é experimental. Outras versões, inclusive 2.2.7,
 ficam desativadas nesta implementação até a validação do contrato correspondente.
 O painel não funciona no OpenCode terminal nem substitui os sete agentes nativos.
+Integrado na `main` via [PR #8](https://github.com/hebwil/willtech-general/pull/8);
+smoke headless de laboratório aprovado com o bundle real (64/64 em três rodadas
++ 3/3 reduced-motion; evidências em `tools/smoke-evidence/`). O smoke é simulação
+em navegador headless e **não constitui homologação nativa no Desktop**.
 
 O pacote `opencode/plugins/willtech/visual/` contribui somente GUI: não tem
 export de servidor. Assim, carregar o painel não duplica nem modifica o plugin
