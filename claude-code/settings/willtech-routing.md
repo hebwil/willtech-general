@@ -59,3 +59,17 @@ Ferramentas de delegação, EGM e agentes nunca devem ser removidos por tool pru
 - Revisão independente seletiva: acione `willtech-revisor` (contexto fresco) somente em decisão arquitetural crítica, mudança complexa (multi-módulo/contrato público) ou alteração de segurança/permissões; uma rodada por padrão; segunda só após correção de bloqueante, sobre o delta corrigido. Para mudanças triviais/pequenas, gates determinísticos bastam — isto refina a revisão incondicional do método acima.
 - Ferramentas por tarefa: carregue apenas o que a tarefa exige (a regra 7 continua valendo); sem desativação automática de recursos nativos e sem alterar configurações ativas.
 - Inspiração: microsoft/TokenEconomizer (micro-skills) e google/elephant-goldfish-model (revisão em contexto fresco), ambos Apache-2.0; ideias adaptadas, nenhum código copiado. O anti-loop determinístico do 2.0 permanece único (sem juiz LLM contínuo).
+
+## Contrato 2.2 — inteligência nativa unificada
+
+- Planejamento contextual: antes de delegar, rode `brief <dossie> --repo . --cache <cache> --paths <escopo>` (somente leitura, ≤1500 chars) e anexe o pacote à delegação; ele substitui releituras do que já está mapeado/verificado.
+- Memória operacional do fluxo real: `claude-code/bin/willtech_trace.py <transcript>` (já executado por `willtech-homologate.sh`) reporta loops de falha com `guard_key` determinística (alimente `guard-attempt --key`), candidatas de lição falhou→sucedeu com evidência em hash (`verified: false`) e ferramentas ociosas. Confirme a evidência antes de `learn`; candidata sem confirmação nunca vira lição. Segredos em comandos são redigidos pelo parser.
+- Escopo por projeto: lições guardam o projeto de origem; `recall`/`brief` devolvem REVERIFY em outro projeto.
+- Verificação de decisões: `tools/willtech-drift.py` antes de declarar concluído (README↔arquivos, contratos↔subcomandos, roster↔plataformas); exit 1 = corrija a divergência. Com `--dossie <dossiê>` também acusa decisão sem evidência e hash divergente.
+
+## Contrato 2.2.1 — automação nativa (hooks de runtime)
+
+- Instalação idempotente e projeto-local: `tools/willtech-install.sh --yes` (sem `--yes` pede confirmação). Mescla os hooks de `claude-code/settings/willtech-hooks.json` no `.claude/settings.json` do projeto, com backup; nada global é alterado e a tela oficial de trust do projeto continua valendo. Desativar: `--disable`; reverter: `--uninstall`.
+- Com hooks ativos, o núcleo `tools/willtech-auto.py` roda sozinho: SessionStart faz `willtech-dossie.py prune` (higiene da memória) e injeta o brief uma vez; UserPromptSubmit injeta brief só em tarefa complexa (≥200 chars); PreToolUse nega a 3ª repetição de comando que já falhou 2× (falha fechado, `onFailure: block`); PostToolUseFailure registra a tentativa; sucesso após falha registra candidata `verified=false` (confirme e registre `learn`); Stop exige revisão goldfish (≥3 arquivos ou caminhos de segurança) e drift, uma vez por sessão, sem reentrada (`stop_hook_active`).
+- Não repita manualmente o que o hook entregou. Sem automação ativa, o Contrato 2.2 segue como fallback manual.
+- Limitação honesta: contratos de hooks verificados na documentação oficial das 3 plataformas; execução demonstrada por testes determinísticos simulados (`tools/test-auto.sh`). Homologação em runtime real com gasto de modelo permanece pendente; no Codex o trust via `/hooks` é obrigatório e não há `onFailure: block`; no OpenCode V2 o fim de turno é consultivo.

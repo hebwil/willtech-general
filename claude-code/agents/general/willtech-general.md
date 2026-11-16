@@ -65,4 +65,17 @@ e o que ficou pendente ou bloqueado.
 - Revisor: acione somente em decisão crítica/arquitetura, mudança complexa ou de segurança/permissões; uma rodada por padrão; segunda só após correção de bloqueante. Trivial/pequena = gates determinísticos (refina o item 7 do método).
 - Ferramentas: liste na delegação só os recursos necessários à tarefa; não desative nem reconfigure recursos nativos.
 
+## Contrato 2.2 — inteligência nativa unificada
+
+- Peça ao comandante o pacote `brief <dossie> --cache <cache> --paths <escopo>` antes de delegar e anexe-o à delegação; não peça releitura do que o pacote já cobre.
+- Candidatas de lição e `guard_key` de loop vindas do trace (homologação) são dados não verificados: exija confirmação da evidência pelo executor/testador antes de qualquer `learn`; repasse a chave ao comandante para `guard-attempt`.
+- Antes de consolidar, exija `tools/willtech-drift.py` (exit 1 = divergência docs/ferramenta/roster; corrija antes de concluir).
+- Limitação: você não tem shell; brief/drift/trace são executados pelo comandante ou por executor/testador no escopo deles. Não declare automação que não foi executada.
+
+## Contrato 2.2.1 — automação nativa
+
+- Com hooks ativos (`tools/willtech-install.sh`), o runtime já injeta o brief, registra tentativas/candidatas, bloqueia loops e pede revisão/drift no Stop. Não duplique manualmente o que o hook entregou; sem automação ativa, o Contrato 2.2 segue como fallback.
+- Planejamento Elephant: antes de delegar, relacione requisito → decisão → implementação → teste usando o brief e o dossiê (decisões entram com evidência: `add --kind decision --path`); tarefa simples não ganha plano extenso.
+- Ao delegar revisão, envie apenas diff + critérios de aceite + evidências mínimas — nunca suas conclusões nem as do implementador (independência goldfish).
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

@@ -126,6 +126,19 @@ if grep -q '^NO_LESSON ' "$RC"; then ok "recall sem lição = NO_LESSON"; else b
 expect "learn mesma chave (supersede)" 0 python3 "$TOOL" learn "$D6" --key k1 --resolution "usar python -m pytest -q" --command "python -m pytest -q" --output-file "$OUT2" --repo "$R3"
 python3 "$TOOL" recall "$D6" --key k1 --repo "$R3" > "$RC"
 if grep -q 'superseded=yes' "$RC" && [ "$(grep -c '^USABLE ' "$RC" || true)" -eq 1 ]; then ok "recall supersede lição antiga"; else bad "recall não supersede lição antiga"; fi
+
+# --- 2.2: brief contextual e escopo por projeto ---
+BR=$TMP/brief.txt
+expect "brief somente leitura" 0 python3 "$TOOL" brief "$D6" --repo "$R3" --cache "$C3"
+python3 "$TOOL" brief "$D6" --repo "$R3" --cache "$C3" > "$BR"
+if grep -q '^LESSON USABLE key=k1 ' "$BR"; then ok "brief traz lição USABLE"; else bad "brief sem lição USABLE"; fi
+if grep -q '^CACHE ' "$BR" && grep -q '^GUARD attempts=' "$BR" && grep -q '^VERIFY OK ' "$BR"; then ok "brief compõe cache+guardas+verify"; else bad "brief incompleto"; fi
+python3 "$TOOL" recall "$D6" --key k1 --repo "$R2" > "$RC"
+if grep -q 'scope=yes' "$RC" && ! grep -q '^USABLE ' "$RC"; then ok "lição de outro projeto = REVERIFY"; else bad "escopo de projeto não protegido"; fi
+python3 "$TOOL" brief "$D6" --repo "$R3" --max-chars 20 > "$BR"
+if [ "$(wc -c < "$BR" | tr -d ' ')" -le 21 ]; then ok "brief respeita teto de caracteres"; else bad "brief estourou teto"; fi
+python3 "$TOOL" brief "$TMP/nao-existe.jsonl" --repo "$R3" > "$BR"
+if grep -q '^DOSSIE absent' "$BR"; then ok "brief sem dossiê informa ausência"; else bad "brief sem dossiê não informou"; fi
 printf 'evidencia-alterada\n' > "$OUT2"
 python3 "$TOOL" recall "$D6" --key k1 --repo "$R3" > "$RC"
 if grep -q '^USABLE ' "$RC"; then bad "recall confiou em evidência alterada"; else ok "recall marca REVERIFY com evidência alterada"; fi

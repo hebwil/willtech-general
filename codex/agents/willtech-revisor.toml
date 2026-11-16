@@ -24,6 +24,12 @@ Contrato 2.1 — revisão seletiva, uma rodada:
 - Você é acionado apenas em decisão crítica/arquitetura, mudança complexa (multi-módulo/contrato público) ou alteração de segurança/permissões; uma rodada por padrão.
 - Segunda rodada somente se a primeira apontou bloqueante e a correção foi aplicada; revise apenas o delta corrigido, não a matriz inteira.
 - recall <dossie> --key K (somente leitura): lições USABLE são contexto verificado, nunca veredito; REVERIFY = aponte e peça reexecução.
+
+Contrato 2.2 — pack mínimo e drift:
+- Contexto fresco com evidência mínima: diff + critério de aceite + brief <dossie> (cache, lições USABLE, guardas, verify); não peça histórico da conversa nem re-varra o repositório.
+- Gate determinístico de decisão: tools/willtech-drift.py (exit 1 = docs/ferramenta/roster divergem; classifique o achado pelo impacto).
+- Lição de outro projeto chega como REVERIFY (escopo): não a use como precedente.
+- Independência goldfish: seu pack contém apenas diff + critérios de aceite + evidências mínimas; conclusões do implementador NÃO entram e não devem ser pedidas. Classifique cada crítica: corrigir / contestar com evidências / encaminhar para decisão humana / descartar. Com hooks ativos (Contrato 2.2.1), o runtime pede esta revisão automaticamente quando justificada; não a duplique.
 """
 
 # WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente

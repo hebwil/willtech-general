@@ -173,6 +173,12 @@ O WillTech-General foi concebido para trabalhar com o agente principal existente
 
 As variantes são mantidas separadamente para respeitar as capacidades nativas de cada plataforma.
 
+### Automação nativa (2.2.1)
+
+Com `tools/willtech-install.sh` (instalação idempotente, projeto-local, com consentimento), os mecanismos nativos de cada runtime passam a acionar a inteligência sozinhos: hooks do Claude Code, hooks de projeto do Codex (com trust via `/hooks`) e plugin V2 do OpenCode. O núcleo `tools/willtech-auto.py` injeta o brief contextual, bloqueia a repetição de comandos que já falharam, registra lições candidatas não verificadas e exige revisão independente e drift antes de concluir — sem nenhuma chamada adicional de modelo e sem comandos manuais.
+
+Desativar é simples (`--disable`); reverter também (`--uninstall`, com restauração de backups). A execução é demonstrada por testes determinísticos simulados (`tools/test-auto.sh`); a homologação em runtime real com gasto de modelo permanece pendente e está declarada em [EVOLUCAO.md](EVOLUCAO.md).
+
 ---
 
 ## Estrutura do projeto
@@ -182,14 +188,17 @@ willtech-general/
 ├── claude-code/
 │   ├── agents/
 │   ├── bin/
+│   ├── settings/
 │   └── INSTALAR.command
 │
 ├── codex/
-│   └── agents/
+│   ├── agents/
+│   └── hooks.json
 │
 ├── opencode/
 │   ├── agent/
 │   ├── bin/
+│   ├── plugins/
 │   ├── tests/
 │   ├── AGENTS.md
 │   └── HOMOLOGACAO.md
@@ -204,7 +213,14 @@ willtech-general/
 │
 ├── tools/
 │   ├── willtech-dossie.py
-│   └── test-dossie.sh
+│   ├── willtech-drift.py
+│   ├── willtech-auto.py
+│   ├── willtech-compare.py
+│   ├── willtech-install.sh
+│   ├── test-dossie.sh
+│   ├── test-trace.sh
+│   ├── test-drift.sh
+│   └── test-auto.sh
 │
 ├── README.md
 ├── INSTALL.md
@@ -222,8 +238,15 @@ willtech-general/
 - **history/** — preservação de versões históricas da arquitetura.
 - **docs/assets/** — identidade visual da equipe: cards e banner em WebP, animação do General em APNG/GIF com fallback estático e respeito a `prefers-reduced-motion`.
 - **tools/** — dossiê de evidências com hash, cache de mapa por commit e guardas de orçamento (stdlib, sem custo de modelo).
+- **tools/willtech-drift.py** — gate determinístico de divergências: README↔arquivos, contratos↔subcomandos, roster de agentes↔plataformas e, com `--dossie`, decisões sem evidência.
+- **tools/willtech-auto.py** — núcleo determinístico da automação nativa (2.2.1): acionado pelos hooks/plugins de cada runtime, injeta brief, bloqueia loops, registra candidatas de lição e exige revisão/drift no fim de turno — zero chamadas de modelo.
+- **tools/willtech-install.sh** — instalação idempotente e projeto-local da automação, com consentimento, backup, `--disable` e `--uninstall`; nunca altera instalações globais.
+- **tools/willtech-compare.py** — comparação reproduzível com/sem otimizações a partir de transcripts reais (tokens, turnos, duração, falhas, loops); nenhum percentual inventado.
+- **tools/test-trace.sh / tools/test-drift.sh / tools/test-auto.sh** — suítes determinísticas: loops de falha, lições candidatas com evidência em hash, ferramentas ociosas, drift com mutações e os 7 itens objetivos da automação nativa.
+- **opencode/plugins/** — plugin V2 de projeto que liga os hooks do OpenCode ao núcleo (descoberta automática após instalação).
+- **claude-code/settings/willtech-hooks.json / codex/hooks.json** — templates de hooks do ciclo de execução para Claude Code e Codex (trust oficial do usuário continua obrigatório).
 - **.github/workflows/** — gate determinístico de regressão (permissões, sintaxe, suítes) em Pull Requests.
-- **EVOLUCAO.md** — registro da versão 2.0: o que entrou, o que foi adiado e por quê.
+- **EVOLUCAO.md** — registro das versões 2.0, 2.1 e 2.2: o que entrou, o que foi adiado e por quê.
 - **AUDITORIA.md** — testes, evidências e limitações técnicas documentadas.
 
 Consulte [INSTALL.md](INSTALL.md) para os procedimentos de instalação específicos de cada plataforma.

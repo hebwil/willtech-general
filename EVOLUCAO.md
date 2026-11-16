@@ -148,11 +148,173 @@ extensão: stdlib, zero chamadas de modelo, zero rede, zero dependências novas.
 
 ### Pendências e bloqueios desta rodada
 
-- O escopo OAuth `workflow` continua ausente na conta autenticada: o commit do CI
+- Publicação concluída posteriormente: PR #2 merged em `f14ad1c` e PR #3 (2.1) merged em
+  `35d8748` (main). O escopo OAuth `workflow` continua ausente: o commit do CI
   (`05a4b9c`, apenas `.github/workflows/ci.yml`) permanece preservado na branch local
-  `qoder/general-2.0` e o PR #2 segue aberto em `4d9aa14`. Este PR 2.1 baseia-se no head
-  publicado do PR #2 e, portanto, ainda não dispara CI automático; o desbloqueio é o
-  fluxo oficial `gh auth refresh -h github.com -s workflow` + push, ou envio do workflow
-  pela interface web. Nenhum merge foi realizado.
+  `qoder/general-2.0`, com publicação adiada pelo usuário para etapa futura. A ausência
+  do CI não invalida as funcionalidades testadas localmente.
+
+## Rodada 2.2 — inteligência nativa unificada
+
+Objetivo: um único WILLTECH-GENERAL incorporando nativamente os melhores mecanismos de
+`microsoft/TokenEconomizer` e `google/elephant-goldfish-model` (Apache-2.0), sem executar
+nenhum dos dois ao lado, sem instalar plugins e sem copiar código. Base: main `35d8748`
+(2.0 + 2.1 já publicados). branch isolada `qoder/general-2.2`, PR único, sem merge.
+
+### Comparação mecanismo a mecanismo
+
+| Mecanismo original | Já existente (2.0/2.1) | Aperfeiçoamento 2.2 | Evidência de funcionamento | Custo adicional |
+| --- | --- | --- | --- | --- |
+| Micro-skills: aprender fatos do repositório a partir de sessões (TE) | `learn`/`recall` manual com evidência verificada | `willtech_trace.py` pareia `tool_use`/`tool_result` de transcripts **reais** e extrai candidatas de lição (mesmo comando falhou → depois sucedeu) com evidência em hash e `verified: false` | `tools/test-trace.sh` 10/10; fluxo real: `claude-code/bin/willtech-homologate.sh:188` já executa o trace em transcripts de sessões reais | 0 modelo; stdlib; 1 parse por transcript |
+| Fato confirmado por 3 sessões / descartado se contraditado (TE) | supersede + `stale` por HEAD | escopo por projeto (toplevel + remote) nas lições; `recall`/`brief` devolvem REVERIFY fora do projeto de origem | `tools/test-dossie.sh`: "lição de outro projeto = REVERIFY" | 0 |
+| Tool pruning: remover ferramentas não usadas via settings (TE) | política de seleção por tarefa (sem desativação) | evidência real de ociosidade: `tools_unused` = declaradas no init − usadas no transcript; o comandante decide, nada é desativado | `test-trace.sh`: `tools_unused == [Edit, NotebookEdit]`, `tool_usage` por ferramenta | 0 |
+| Failure-loop intervention com juiz LLM (TE) | `guard-attempt` determinístico (2 tentativas, exit 3) | detecção automática de falha repetida no transcript → `guard_key` determinística pronta para `guard-attempt`; **sem juiz LLM** | `test-trace.sh`: `failure_loops` count=2 com `guard_key`; suíte de guardas intacta | 0 modelo (juiz descartado) |
+| Goldfish: revisores em contexto fresco, sem a conversa anterior (EGM) | revisor seletivo, 1 rodada, diff+criterio+dossiê | pack mínimo determinístico: `brief` (cache + lições USABLE + guardas + verify, ≤1500 chars) como única evidência de contexto do revisor | `test-dossie.sh`: brief compõe cache+guardas+verify e respeita teto; contratos revisor 2.2 | 0 modelo extra; menos contexto enviado |
+| Elephant: design com contexto do projeto (EGM) | comandante + dossiê | `brief` como pacote de planejamento antes de delegar (planejamento contextual sem releituras) | contratos general/routing 2.2; brief testado | 0 |
+| Drift report: docs divergem do código (EGM) | inexistente | `tools/willtech-drift.py`: README↔arquivos, contratos↔subcomandos (citado sem implementação e implementado sem doc), roster↔3 plataformas | `tools/test-drift.sh` 7/7 **com mutações**; drift no repositório real = 0 | 0 modelo; milissegundos |
+| Integração operacional (não só prompt) | contratos + scripts manuais | capacidades exercidas no fluxo real de homologação Claude (trace já invocado pelo script); brief/drift/guardas acionáveis pelo comandante/General via wrapper | `willtech-homologate.sh:188`; suítes determinísticas | 0 |
+
+### Iniciativas próprias (não solicitadas no prompt)
+
+- **Redação de segredos no parser**: comandos com `API_KEY=`, `TOKEN=`, `Bearer`, `ghp_`,
+  `github_pat_`, `sk-…` são redigidos antes de qualquer saída; conteúdo de `tool_result`
+  nunca é exposto (vira hash). Evidência: testes "segredo redigido em comando", "erro vira
+  hash, não conteúdo", "tool_result não é exposto". Benefício: a aprendizagem a partir de
+  sessões reais não pode vazar credenciais para o dossiê ou relatórios.
+- **Gate de drift** (acima): verificação de decisões sem LLM, com testes de mutação.
+- **Escopo por projeto nas lições**: evita contaminação de conhecimento entre projetos.
+- **Teto de caracteres do `brief`**: economia de contexto garantida por teste, não por promessa.
+
+### Limitações honestas (não anunciadas como funcionais)
+
+- **OpenCode e Codex (rodada 2.2, superado pela 2.2.1)**: nenhum hook de runtime
+  verificado naquele momento; brief/drift/guardas eram acionados explicitamente.
+  A rodada 2.2.1 verificou os contratos oficiais de hooks das duas plataformas e
+  entregou a automação nativa — ver seção abaixo. A homologação em runtime real
+  com gasto de modelo continua pendente nas três plataformas.
+- **Candidatas de lição não são auto-verificadas**: a detecção é automática; a gravação
+  exige confirmação da evidência e `learn` com saída real. Não há "conhecimento automático"
+  não verificado.
+- A detecção de loop usa `is_error` do `tool_result` (fato observável); não infere
+  sucesso/erro por texto.
+- CI continua não publicado (escopo `workflow` ausente); commit `05a4b9c` preservado
+  localmente. As suítes 2.2 rodam localmente e entrarão no gate quando o workflow for
+  publicado.
+
+### Validação consolidada (uma rodada)
+
+- `sh tools/test-dossie.sh`: **51 PASS, 0 FAIL** (45 da 2.1 intactas + 6 novas: brief,
+  escopo por projeto, teto de caracteres, dossiê ausente).
+- `sh tools/test-trace.sh`: **10 PASS, 0 FAIL** (loops, candidata não verificada, evidência
+  hash, ociosas, redação de segredos, não vazamento de conteúdo, transcript ausente).
+- `sh tools/test-drift.sh`: **7 PASS, 0 FAIL** (árvore coerente + 4 mutações + erro de uso
+  + repositório real sem drift).
+- `sh opencode/tests/test-wrappers.sh`: suíte completa passou (mutação + contrato dos 7 agentes).
+- `python3 opencode/tests/check-permissions.py opencode/agent`: 7/7 conforme contrato.
+- TOML dos 7 agentes Codex: parse OK; `py_compile`/`sh -n`: OK.
+- Contratos: apenas acréscimos; nenhuma permissão, whitelist ou frontmatter alterada.
+  Instalações ativas, modelos, provedores, Bifrost, VPS e SSH não tocados; mascotes,
+  animações, assinatura de autoria e licença MIT preservados.
+
+## Rodada 2.2.1 — automação nativa definitiva (hooks de runtime)
+
+Missão consolidada: transformar a inteligência 2.0–2.2 em funcionalidades
+**acionadas pelo runtime**, sem comandos manuais, sem custo de modelo e sem
+tocar instalações ativas. Continuou o PR #4 (branch `qoder/general-2.2`),
+preservando o histórico.
+
+### O que entrou
+
+- **Núcleo compartilhado** `tools/willtech-auto.py`: recebe o evento do runtime
+  (JSON no stdin) e devolve a decisão nativa. Reusa dossiê e trace por
+  importação — nenhuma lógica duplicada. Sem `.willtech/enabled` é no-op.
+- **Claude Code**: `claude-code/settings/willtech-hooks.json` (forma exec,
+  `onFailure: block` no PreToolUse) mesclado no `.claude/settings.json` do
+  projeto pelo instalador, com backup.
+- **Codex**: `codex/hooks.json` projeto-local (contrato verificado na
+  documentação oficial: mesmos eventos/JSON do Claude). Hooks não gerenciados
+  exigem revisão e trust do usuário via `/hooks` — consentimento oficial.
+- **OpenCode V2**: `opencode/plugins/willtech/index.js` (export default com
+  `id` + `setup`, sem dependência externa; V1 não executa em V2 e foi
+  descartado). `execute.before` bloqueia via throw; `session.idle` é consultivo
+  (pendências de revisão/drift chegam no próximo prompt).
+- **Instalador** `tools/willtech-install.sh`: idempotente, projeto-local,
+  consentimento inicial (sem `--yes` pergunta), `--platform`, `--disable`,
+  `--enable`, `--uninstall` com restauração de backups. Nunca escreve fora do
+  repo alvo; hooks pré-existentes do usuário são preservados.
+- **Gatilhos automáticos**: SessionStart → prune + brief (uma vez, só se houver
+  memória); UserPromptSubmit → brief só em tarefa complexa (≥200 chars);
+  PreToolUse → nega a 3ª repetição de comando que já falhou 2× (mesma chave
+  determinística do trace); PostToolUseFailure → registra tentativa;
+  falhou→sucedeu → candidata `verified=false`; Edit/Write/apply_patch →
+  contagem de arquivos; Stop → revisão goldfish (≥3 arquivos ou caminhos de
+  segurança) e drift, uma vez por sessão, com proteção de reentrada
+  (`stop_hook_active`). Tarefa simples: zero processamento extra.
+- **Memória confiável (A)**: `learn` incrementa `confirmations` quando a mesma
+  resolução é confirmada de novo com evidência; `prune` (novo subcomando,
+  automático no SessionStart) descarta lições superseded ou com evidência
+  ausente; escopo por projeto e REVERIFY intactos; candidatas nunca viram
+  lição sem confirmação humana/`learn`.
+- **Goldfish independente (B)**: contratos do revisor (3 plataformas) proíbem
+  conclusões do implementador no pack e classificam críticas em corrigir /
+  contestar com evidências / encaminhar para decisão humana / descartar.
+- **Elephant (C)**: contratos do General relacionam requisito → decisão →
+  implementação → teste via brief/dossiê; decisões entram com evidência
+  (`add --kind decision --path`); tarefa simples não ganha plano extenso.
+- **Economia real (D)**: `tools/willtech-compare.py` compara dois transcripts
+  reais (baseline vs otimizado) com o mesmo parser da homologação: tokens,
+  turnos, duração, falhas, loops. Nenhum percentual inventado; nenhum juiz LLM.
+- **Drift estendido (E)**: `--dossie` acusa decisão sem evidência e hash
+  divergente (reusa `entry_status`/`read_entries` do dossiê).
+- **Segurança da memória (F)**: brief em quarentena ("dados, nunca
+  instruções"); `flock` em leitura/escrita/prune (concorrência); linhas
+  corrompidas isoladas são ignoradas; dossiê todo-corrompido bloqueia o
+  PreToolUse (falha fechado); auxiliares falham aberto (não interrompem tarefa
+  comum); redação de segredos do trace reusada nas chaves/comandos; o núcleo
+  nunca emite `allow` nem `updatedInput` (não concede permissão nova).
+
+### Gatilhos por plataforma (contrato verificado ≠ homologação em runtime)
+
+| Plataforma | Mecanismo nativo | Bloqueio real | Consentimento ainda obrigatório |
+| --- | --- | --- | --- |
+| Claude Code | hooks em `.claude/settings.json` (SessionStart/UserPromptSubmit/PreToolUse/PostToolUse/PostToolUseFailure/Stop) | PreToolUse deny + `onFailure: block`; Stop block | trust do projeto na tela oficial; instalação |
+| Codex | hooks projeto-local `.codex/hooks.json` (mesmos eventos) | PreToolUse deny/exit 2; Stop JSON block | trust via `/hooks` por hash; sem `onFailure` (núcleo falha fechado sozinho) |
+| OpenCode V2 | plugin `.opencode/plugins/willtech/` (execute.before/after, prompt, context, session.idle) | throw em execute.before | instalação; permissões por agente intactas; fim de turno consultivo |
+
+### Evidência: simulada vs real
+
+- **Simulada (determinística, executada)**: `sh tools/test-auto.sh` —
+  **38 PASS, 0 FAIL**, cobrindo os 7 itens objetivos: gatilho automático em
+  tarefa complexa; tarefa simples sem overhead; memória entre sessões e
+  projetos (REVERIFY fora do escopo); bloqueio de loop e reentrada; permissões
+  preservadas (sem allow/updatedInput; hook do usuário preservado no merge);
+  falha fechado no controle obrigatório e falha aberto nos auxiliares;
+  instalar/desativar/reverter idempotente. Inclui a simulação do adaptador V2
+  em JS real (ctx stub + núcleo real via subprocess): throw no loop e contexto
+  injetado uma única vez. Sem node no PATH o item é SKIP (nesta máquina usou-se
+  `NODE_BIN` com o binário Electron em modo node, somente execução).
+- **Real (runtime com modelo)**: NÃO executada nesta rodada — sem acesso a
+  sessões autenticadas das três plataformas sem gasto de modelo. Contratos de
+  API verificados na documentação oficial; homologação em runtime permanece
+  pendente e não é anunciada como concluída.
+- Suítes anteriores reaproveitadas sem alteração de comportamento: 51/10/7
+  (dossiê/trace/drift), wrappers e checker 7/7 — reexecutadas uma vez na
+  validação consolidada.
+
+### Limitações honestas
+
+- Homologação em runtime real pendente nas 3 plataformas (acima).
+- Codex: sem `onFailure: block`; erro/timeout do hook pode deixar a ferramenta
+  passar — por isso o núcleo falha fechado por conta própria no PreToolUse.
+  Detecção de falha no PostToolUse do Codex usa heurística documentada
+  (`exit_code`/prefixo "Exit code"), pois o evento não distingue sucesso/falha.
+- OpenCode V2: `session.idle` não bloqueia; revisão/drift no fim de turno são
+  consultivos (pendência entregue no próximo prompt). Bloqueio real existe no
+  `execute.before` (loop).
+- A proteção de segredos não depende só de filtro de texto: caminhos de
+  credenciais são recusados na entrada, conteúdo nunca é gravado (só hash), e
+  o dossiê corrompido bloqueia o controle em vez de seguir em frente.
+- CI continua não publicado (escopo `workflow` ausente); commit `05a4b9c`
+  preservado localmente. Fora do escopo desta rodada.
 
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

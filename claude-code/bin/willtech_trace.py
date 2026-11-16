@@ -5,11 +5,59 @@ Lê um transcript stream-json do Claude Code (uma linha JSON por evento) e extra
 apenas fatos observáveis: sessão, agentes disponíveis, skills, chamadas de
 delegação, skill acionada, uso de tokens e negações de permissão.
 
+2.2 — memória operacional a partir do fluxo real: pareia tool_use/tool_result,
+detecta loops de falha repetida (chave determinística para guard-attempt),
+extrai candidatas de lição (mesmo comando falhou e depois sucedeu) com evidência
+em hash, e conta ferramentas usadas/ociosas. Candidatas NUNCA são verificadas
+automaticamente: o comandante confirma e registra via dossiê (learn).
+Segredos em comandos são redigidos antes de qualquer saída.
+
 Não infere. Se um campo não estiver no stream, reporta como ausente.
 Uso: willtech_trace.py <transcript.jsonl> [--json]
 """
+import hashlib
 import json
+import os
+import re
 import sys
+
+SECRET_PATTERNS = (
+    (re.compile(r"(?i)\b([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_?KEY)[A-Z0-9_]*)=\S+"), r"\1=<redacted>"),
+    (re.compile(r"\b(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]+"), r"\1<redacted>"),
+    (re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._\-]+"), r"\1<redacted>"),
+    (re.compile(r"(?i)(--password[= ])\S+"), r"\1<redacted>"),
+    (re.compile(r"\b(sk|pk|rk)-[A-Za-z0-9_\-]{8,}"), r"\1-<redacted>"),
+)
+COMMAND_CAP = 200
+
+
+def redact(text):
+    for pat, repl in SECRET_PATTERNS:
+        text = pat.sub(repl, text)
+    return text
+
+
+def norm(text):
+    return " ".join((text or "").split())
+
+
+def sig(text):
+    return hashlib.sha256(norm(text).encode("utf-8", "replace")).hexdigest()[:12]
+
+
+def result_text(block):
+    content = block.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict) and isinstance(item.get("text"), str):
+                parts.append(item["text"])
+            elif isinstance(item, str):
+                parts.append(item)
+        return "\n".join(parts)
+    return ""
 
 
 def load(path):
@@ -58,9 +106,16 @@ def analyse(events):
                   "cache_read": 0, "cache_creation": 0},
         "result": None,
         "errors": [],
+        "tool_usage": {},
+        "tools_unused": [],
+        "bash_failures": 0,
+        "failure_loops": [],
+        "lesson_candidates": [],
         "init_seen": False,
         "init_fields_missing": [],
     }
+    pending = {}
+    calls = []
 
     for ev in events:
         etype = ev.get("type")
@@ -88,6 +143,13 @@ def analyse(events):
                 name = block.get("name")
                 inp = block.get("input") or {}
                 out["tool_names_used"].append(name)
+                out["tool_usage"][name] = out["tool_usage"].get(name, 0) + 1
+                cmd = redact(norm(inp.get("command", "")))[:COMMAND_CAP] if name == "Bash" else ""
+                rec = {"i": len(calls), "id": block.get("id"), "tool": name, "command": cmd,
+                       "key": sig(name + "\n" + cmd) if name == "Bash" else "", "ok": None}
+                calls.append(rec)
+                if rec["id"]:
+                    pending[rec["id"]] = rec
                 if name in ("Agent", "Task"):
                     rec = {
                         "subagent_type": inp.get("subagent_type"),
@@ -127,6 +189,14 @@ def analyse(events):
 
         elif etype == "user":
             for block in walk_content(ev):
+                if block.get("type") == "tool_result":
+                    rec = pending.pop(block.get("tool_use_id"), None)
+                    if rec is not None:
+                        text = result_text(block)
+                        rec["ok"] = not block.get("is_error", False)
+                        rec["error_sig"] = "" if rec["ok"] else sig(redact(text)[:COMMAND_CAP])
+                        rec["result_sha256"] = hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()
+                    continue
                 text = block.get("content") or block.get("text") or ""
                 if isinstance(text, str) and ("permission" in text.lower() and
                                               ("denied" in text.lower() or "not allowed" in text.lower()
@@ -135,6 +205,38 @@ def analyse(events):
 
         elif etype == "error":
             out["errors"].append(str(ev.get("error") or ev)[:300])
+
+    bash = [c for c in calls if c["tool"] == "Bash" and c["ok"] is not None]
+    out["bash_failures"] = sum(1 for c in bash if not c["ok"])
+    groups = {}
+    for c in bash:
+        if not c["ok"]:
+            groups.setdefault((c["key"], c["error_sig"]), []).append(c)
+    for (key, esig), items in groups.items():
+        if len(items) >= 2:
+            out["failure_loops"].append({"guard_key": key, "error_sig": esig,
+                                         "count": len(items), "command": items[0]["command"]})
+    out["failure_loops"].sort(key=lambda d: -d["count"])
+    out["failure_loops"] = out["failure_loops"][:20]
+    by_key = {}
+    for c in bash:
+        by_key.setdefault(c["key"], []).append(c)
+    for key, items in by_key.items():
+        first_fail = next((c for c in items if not c["ok"]), None)
+        later_ok = next((c for c in items if c["ok"] and first_fail and c["i"] > first_fail["i"]), None)
+        if first_fail and later_ok:
+            out["lesson_candidates"].append({
+                "key": key,
+                "failed_command": first_fail["command"],
+                "resolution_command": later_ok["command"],
+                "evidence": {"tool_use_id": later_ok["id"],
+                             "result_sha256": later_ok["result_sha256"]},
+                "verified": False,
+            })
+    out["lesson_candidates"] = out["lesson_candidates"][:20]
+    if out["tools"]:
+        used = set(out["tool_usage"])
+        out["tools_unused"] = sorted(t for t in out["tools"] if t not in used)
 
     # dedupe preservando ordem
     for k in ("tool_names_used", "skills_invoked", "permission_denials", "errors"):
@@ -150,6 +252,9 @@ def analyse(events):
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
+        return 2
+    if not os.path.isfile(sys.argv[1]):
+        print("transcript ausente")
         return 2
     data = analyse(load(sys.argv[1]))
     if "--json" in sys.argv:
@@ -171,6 +276,12 @@ def main():
           f"{', '.join(str(d['subagent_type']) for d in data['nested_delegations']) or '-'}")
     print(f"skill usada   {', '.join(str(s) for s in data['skills_invoked']) or '-'}")
     print(f"ferr. usadas  {', '.join(str(t) for t in data['tool_names_used']) or '-'}")
+    print(f"falhas Bash   {data['bash_failures']}")
+    for lp in data["failure_loops"]:
+        print(f"  loop suspeito  key={lp['guard_key']} repetições={lp['count']} cmd={lp['command'][:80]}")
+    for lc in data["lesson_candidates"]:
+        print(f"  lição candidata (NÃO verificada) key={lc['key']} resolução={lc['resolution_command'][:80]}")
+    print(f"ferr. ociosas {len(data['tools_unused'])}: {', '.join(data['tools_unused']) or '-'}")
     print(f"negadas       {len(data['permission_denials'])}")
     for d in data["permission_denials"]:
         print(f"  - {d}")
