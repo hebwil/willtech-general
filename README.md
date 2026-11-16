@@ -265,7 +265,7 @@ Os sete mascotes oficiais reagem à atividade real dos agentes em cada plataform
 
 > **Rótulo honesto:** tudo o que está nesta seção foi aprovado em **laboratório** (suítes determinísticas, kit oficial do Claude Code, binário descartável do App Server e capturas headless). **Nenhuma dessas integrações foi homologada em uma sessão nativa real** — exige instalação autorizada e, no Codex, autenticação do proprietário. Por isso o estado declarado é **experimental**; simulação, compilação ou decodificação não são apresentadas como homologação nativa. Detalhes e limitações comprovadas em [EVOLUCAO.md](EVOLUCAO.md).
 
-Para usar: o painel OpenCode acompanha o plugin (opt-in `enabled: true` no Desktop ≥ 2.2.6); o Mod Claude Code instala-se via `claude plugin validate`/`install` a partir de `claude/plugins/willtech-visual/` (comando `/willtech-team` abre o painel); o visualizador Codex sobe com `node codex/willtech-visual/viewer/server.cjs` após mesclar `codex/willtech-visual/hooks/hooks.json` ao `.codex/hooks.json` do projeto (trust via `/hooks`).
+Para usar: o painel OpenCode acompanha o plugin (opt-in `enabled: true` no Desktop ≥ 2.2.6); o Mod Claude Code instala-se via `claude plugin validate`/`install` a partir de `claude/plugins/willtech-visual/` (comando `/willtech-team` abre o painel); o visualizador Codex sobe com `node codex/willtech-visual/viewer/server.cjs` após mesclar `codex/willtech-visual/hooks/hooks.json` ao arquivo .codex/hooks.json do projeto (trust via `/hooks`).
 
 ---
 

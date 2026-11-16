@@ -88,19 +88,10 @@ def write_state(path, st):
 
 
 def dossier_health(path):
-    if not os.path.isfile(path):
-        return [], False
-    ok = bad = 0
-    with open(path, encoding="utf-8", errors="replace") as fh:
-        for line in fh:
-            if not line.strip():
-                continue
-            try:
-                json.loads(line)
-                ok += 1
-            except ValueError:
-                bad += 1
-    return DOSSIE.read_entries(path) or [], (bad > 0 and ok == 0)
+    # N2: corrupção parcial (linhas válidas + inválidas) também é falha fechado.
+    # read_dossie distingue absent/ok/partial/total sem descartar em silêncio.
+    entries, status, _ = DOSSIE.read_dossie(path)
+    return entries or [], status in ("partial", "total")
 
 
 def redact_cmd(command):
@@ -261,7 +252,8 @@ def ev_stop(ev, base, dossie, repo, st, platform):
                   "aceite + evidências verificadas, sem conclusões do implementador) "
                   "e delegue ao willtech-revisor. Classifique cada apontamento com "
                   "willtech-dossie.py resolve (fix/contest com evidência, escalate ou "
-                  "discard). Uma rodada; segunda só diante de problema novo relevante.")
+                  "discard). Uma rodada; segunda só com --new-finding citando evidência "
+                  "verificável de problema novo e relevante.")
         if platform == "opencode":
             st["pending_context"] = reason
             return {}
