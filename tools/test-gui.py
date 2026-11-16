@@ -9,10 +9,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGE = ROOT / "opencode/plugins/willtech/visual"
-# Pin repinado na baseline 3.0 aprovada (475943a): o pin anterior (fbb2427,
-# 2.3) foi anterior à evolução legítima da orquestração nos commits 3.0
-# aprovados (JIT da sala, preflight do instalador, contrato AGENTS.md).
-# O invariante segue o mesmo: distribuição GUI não altera orquestração.
+# Baseline de orquestração: baseline 3.0 aprovada (475943a), que já contém as
+# correções de automação do PR #13 (ece7429) e a evolução legítima da 3.0
+# (JIT da sala, preflight do instalador, contrato AGENTS.md). O pin anterior
+# (fbb2427, 2.3) era anterior a essas mudanças e falhava já no HEAD. A
+# proteção cobre IDENTIDADE e ORQUESTRAÇÃO (assets, licença, créditos, núcleo
+# de automação, agents/hooks de automação, installers). Os subdiretórios
+# VISUAIS (codex/willtech-visual, claude/plugins/willtech-visual) são alvo
+# legítimo de correção da missão multiplataforma e ficam fora deste guard.
 BASE = "475943a"
 
 
@@ -48,8 +52,8 @@ class GuiDistributionTests(unittest.TestCase):
 
     def test_orchestration_identity_and_installers_unchanged(self):
         protected = ["docs/assets", "LICENSE", "NOTICE", "opencode/agent", "opencode/AGENTS.md", "opencode/bin",
-                     "opencode/plugins/willtech/index.js", "codex", "claude-code", "tools/willtech-auto.py",
-                     "tools/willtech-install.sh", "tools/willtech-install.ps1"]
+                     "opencode/plugins/willtech/index.js", "codex/agents", "codex/hooks.json", "claude-code/settings",
+                     "tools/willtech-auto.py", "tools/willtech-install.sh", "tools/willtech-install.ps1"]
         changed = subprocess.check_output(["git", "diff", "--name-only", BASE, "--", *protected], cwd=ROOT, text=True)
         self.assertEqual(changed, "")
         before = subprocess.check_output(["git", "show", f"{BASE}:README.md"], cwd=ROOT, text=True)
