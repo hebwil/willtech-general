@@ -1,7 +1,7 @@
 // Servidor local do visualizador complementar Codex. Serve os arquivos estáticos
 // e um fluxo SSE (/events) que acompanha o feed JSONL produzido pelos hooks
 // oficiais e/ou pelo cliente do App Server. Apenas stdlib do Node; sem IA, sem
-// rede externa. Uso: node server.cjs [porta] [feed.jsonl]
+// rede externa. Uso: node server.cjs [porta] [feed.jsonl] → abra o localhost na porta escolhida.
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
