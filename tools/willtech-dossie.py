@@ -286,6 +286,7 @@ def cmd_learn(a):
         "project": project_id(a.repo),
     }
     append(a.dossie, entry)
+    reset_attempts(a.dossie, a.key)
     print(f"lição registrada key={a.key}")
     return 0
 
@@ -352,30 +353,59 @@ def cmd_brief(a):
     return 0
 
 
-def prune_entries(path):
-    entries = read_entries(path)
-    if entries is None:
+def update_locked(path, keep_fn):
+    # Read-modify-write sob LOCK_EX no próprio dossiê: leitura, filtragem e
+    # substituição atômica sem janela para appends concorrentes se perderem.
+    if not os.path.isfile(path):
         return None
-    latest = {}
-    for i, e in enumerate(entries):
-        if e.get("kind") == "lesson":
-            latest[e.get("key")] = i
-    keep, removed = [], 0
-    for i, e in enumerate(entries):
-        if e.get("kind") == "lesson":
-            op = e.get("output_path")
-            if latest.get(e.get("key")) != i or not op or not os.path.isfile(op):
-                removed += 1
+    with open(path, "r+", encoding="utf-8", errors="replace") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        entries = []
+        for line in fh:
+            line = line.strip()
+            if not line:
                 continue
-        keep.append(e)
-    if removed:
-        tmp = path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
-            fcntl.flock(fh, fcntl.LOCK_EX)
-            for e in keep:
-                fh.write(json.dumps(e, ensure_ascii=False) + "\n")
-        os.replace(tmp, path)
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(e, dict):
+                entries.append(e)
+        kept = keep_fn(entries)
+        removed = len(entries) - len(kept)
+        if removed:
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as out:
+                for e in kept:
+                    out.write(json.dumps(e, ensure_ascii=False) + "\n")
+            os.replace(tmp, path)
     return removed
+
+
+def reset_attempts(path, key):
+    # Lição verificada para a chave = resolução confirmada; a guarda de loop
+    # deixa de bloquear a repetição (recuperação após learn).
+    removed = update_locked(path, lambda es: [
+        e for e in es
+        if not (e.get("kind") == "attempt" and e.get("key") == key)])
+    return removed or 0
+
+
+def prune_entries(path):
+    def keep(es):
+        latest = {}
+        for i, e in enumerate(es):
+            if e.get("kind") == "lesson":
+                latest[e.get("key")] = i
+        out = []
+        for i, e in enumerate(es):
+            if e.get("kind") == "lesson":
+                op = e.get("output_path")
+                if latest.get(e.get("key")) != i or not op or not os.path.isfile(op):
+                    continue
+            out.append(e)
+        return out
+    return update_locked(path, keep)
 
 
 def cmd_prune(a):

@@ -317,4 +317,104 @@ preservando o histórico.
 - CI continua não publicado (escopo `workflow` ausente); commit `05a4b9c`
   preservado localmente. Fora do escopo desta rodada.
 
+## Rodada 2.2.1-E — estabilização e homologação final (2026-11-16)
+
+Missão única de encerramento sobre a main `6d483cd` (2.2.1 publicada). Sem novas
+frentes de desenvolvimento, sem novos agentes, sem gasto de modelo, sem tocar
+instalações ativas. Branch `qoder/general-2.2.1-stabilization`, PR único.
+
+### Correções aplicadas (somente lacuna reproduzida)
+
+- **Recuperação da guarda de loop após `learn`**: a mensagem de deny prometia
+  liberação ao registrar lição verificada, mas as tentativas da chave
+  persistiam — bloqueio permanente mesmo após resolução confirmada (lacuna
+  reproduzível). `learn` agora reseta as tentativas da chave (`reset_attempts`),
+  via read-modify-write sob `LOCK_EX` no próprio dossiê (`update_locked`,
+  também usado pelo `prune`, eliminando a janela de corrida com appends
+  concorrentes). Evidência: teste "learn com evidência libera a guarda".
+- **Concorrência comprovada**: 8 threads × 25 appends paralelos → 200 entradas,
+  zero perda, zero linha corrompida (`flock`). Evidência: teste novo na suíte.
+
+### Reavaliação objetiva de C3/C4/C5 (sem novas sondagens)
+
+- **C3/C4**: observações ao nível do padrão; a semântica do matcher do runtime
+  só se confirma em sessão ativa com modelo (orçamento não autorizado).
+  Exploração de C3 depende de arquivo plantado por terceiro; em C4 o Executor
+  é o agente de escrita autorizada e a barreira principal segue sendo escopo +
+  instrução. **Sem alteração nos componentes** — não transformar mitigação
+  textual em alegação de isolamento. Classificação: LIMITAÇÃO DO RUNTIME.
+- **C5**: Apple Events a apps externos dependem do TCC do macOS; testar
+  acionaria aplicativos pessoais da estação (proibido nesta missão).
+  Classificação: LIMITAÇÃO DO RUNTIME (mecanismo externo).
+- Proteções de memória/hooks/permissões reconfirmadas pelas suítes: dossiê
+  corrompido bloqueia o PreToolUse (falha fechado), núcleo nunca emite
+  `allow`/`updatedInput`, brief em quarentena, caminhos de credenciais
+  recusados, redação de segredos, permissões por agente intactas.
+
+### Evidência de runtimes e versões (sem consumo de modelo)
+
+- **Claude Code CLI 2.1.325** presente (≥ 2.1.295 → `onFailure: block`
+  suportado na versão instalada). Cenários reais não executados: o CLI desta
+  máquina roteia pelo Claude Code Router (gateway ativo do autor); orçamento
+  de modelo não autorizado nesta missão.
+- **OpenCode**: CLI ausente do PATH; `OpenCode.app` presente; sonda headless
+  de versão inconclusiva (sem saída). Plugin V2 executado em **JS real** com
+  ctx stub e núcleo real (simulação de runtime, não homologação).
+- **Codex**: CLI ausente. Contrato de hooks verificado na documentação
+  oficial; trust via `/hooks` continua obrigatório.
+- **CI**: scopes do token gh = `gist, read:org, repo` — **sem `workflow`**;
+  publicação exigiria nova permissão. Não tentada (OAuth não reaberto).
+  Testes locais permanecem reproduzíveis.
+- **Caminhos pessoais**: `git grep '/Users/will'` = 0 ocorrências nos arquivos
+  rastreados. Instalador/hooks/plugin usam apenas caminhos relativos,
+  `${CLAUDE_PROJECT_DIR}`, `git rev-parse --show-toplevel` e
+  `ctx.location.directory` — nenhum caminho pessoal exigido de outros usuários.
+
+### Classificação por capacidade
+
+| Capacidade | Estado | Evidência |
+| --- | --- | --- |
+| Memória de experiências verificadas (hash, recusa de credencial) | HOMOLOGADA | dossiê 51/51; learn/recall/verify determinísticos |
+| Aprendizado entre sessões, confirmação, contradições, invalidação | HOMOLOGADA | supersede→REVERIFY, stale por HEAD, confirmations, prune; auto 40/40 |
+| Isolamento por projeto | HOMOLOGADA | lição de outro projeto = REVERIFY (teste) |
+| Cache e recuperação contextual (brief) | HOMOLOGADA | cache HIT/MISS seletivo; brief ≤ teto; injeção automática testada |
+| Planejamento inteligente com evidências | VALIDADA EM SIMULAÇÃO | brief no prompt complexo; pack de delegação é contrato (runtime pendente) |
+| Revisão Goldfish independente + classificação de críticas | VALIDADA EM SIMULAÇÃO | gate Stop exige revisão com pack mínimo; contratos sem conclusões do implementador nas 3 plataformas; comportamento de modelo não executado |
+| Prevenção automática de loops + recuperação | HOMOLOGADA (núcleo determinístico) | guard-attempt exit 3; PreToolUse deny na 3ª repetição; learn libera; stop_hook_active sem reentrada |
+| Seleção econômica de ferramentas | VALIDADA EM SIMULAÇÃO | tools_unused do trace em transcripts reais (10/10); contrato por tarefa |
+| Drift decisões↔docs↔código | HOMOLOGADA | drift 7/7 com mutações (rodada anterior, componente inalterado); --dossie; repo real = 0 |
+| Proteção contra injection/vazamento | HOMOLOGADA (determinístico) | quarentena, redação, hash-only, recusa de credencial; armadilhas 46/46 (rodada anterior, wrappers inalterados) |
+| Isolamento por agente OpenCode 2.2.6 | HOMOLOGADA (rodada anterior) | matriz + checker 7/7 + mutação; componentes inalterados nesta rodada |
+| Isolamento por agente Codex | LIMITAÇÃO DO RUNTIME | TOML não oferece permissão por agente; instrucional |
+| Automação nativa (Claude/Codex/OpenCode V2) | VALIDADA EM SIMULAÇÃO | contratos oficiais verificados; auto 40/40; plugin V2 em JS real; registro/disparo/reentrada/desativação exercitados por eventos simulados |
+| Homologação em runtime real das 3 plataformas | BLOQUEADA | sem orçamento de modelo autorizado; CLI opencode/codex ausentes; claude via router ativo |
+| C3 (prefixo do glob) / C4 (negações do Executor) | LIMITAÇÃO DO RUNTIME | matcher não confirmável sem sessão ativa com modelo |
+| C5 (Apple Events / TCC) | LIMITAÇÃO DO RUNTIME | sondagem acionaria apps pessoais (proibida) |
+| Instalação limpa, ativação, desativação, rollback | HOMOLOGADA | lab descartável: install 2× idempotente, hook do usuário preservado, --disable no-op, --uninstall restaura backup |
+| Comparação com/sem otimizações | HOMOLOGADA (métricas indiretas) | compare sobre fixtures determinísticas: deltas de tokens/turnos/falhas/loops; sem métricas de runtime real, nenhum percentual inventado |
+| CI público | BLOQUEADA | token sem escopo workflow; OAuth não reaberto por decisão do autor |
+
+### Testes executados nesta rodada (apenas componentes alterados)
+
+- `sh tools/test-dossie.sh`: **51/51** (learn com reset de tentativas não
+  regrediu nenhum teste anterior).
+- `sh tools/test-auto.sh`: **40/40** (38 anteriores + 2 novos: recuperação da
+  guarda pós-learn; concorrência 8×25 appends). Simulação do plugin V2 em JS
+  real incluída (`NODE_BIN` com binário Electron em modo node).
+- `python3 tools/willtech-drift.py .`: **0 divergências**.
+- `py_compile` / `sh -n`: OK.
+- **Não repetidos** (componentes inalterados, aprovados na rodada anterior):
+  trace 10/10, suíte drift 7/7, wrappers, checker 7/7, TOML 7/7.
+
+### Limitações que permanecem (motivo objetivo)
+
+- Homologação em runtime real pendente nas 3 plataformas (orçamento/CLI acima).
+- Codex: detecção de falha no PostToolUse por heurística documentada; sem
+  `onFailure: block` (núcleo falha fechado por conta própria).
+- OpenCode V2: fim de turno consultivo (`session.idle` não bloqueia).
+- CI não publicado (escopo ausente). C3/C4/C5 conforme acima.
+- Nenhuma alegação de estabilidade absoluta ou de eliminação de riscos
+  desconhecidos. Instalações ativas, modelos, provedores, Bifrost, VPS, SSH e
+  credenciais: não tocados. Autoria, MIT, mascotes e animações: preservados.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

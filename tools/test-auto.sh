@@ -121,6 +121,13 @@ else
   ok "núcleo nunca concede permissão nova (sem allow/updatedInput)"
 fi
 
+# --- (6) recuperação: learn verificado libera a guarda de loop ----------------
+KEY=$(python3 -c 'import importlib.util,sys; s=importlib.util.spec_from_file_location("a",sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); print(m.bash_key("pytest -q"))' "$AUTO")
+python3 "$DOSSIE" learn "$D" --key "$KEY" --resolution "fixture ok" \
+  --command "pytest -q" --output-file "$TMP/out.txt" --repo "$LAB" > /dev/null
+OUT=$(ev claude "$PRE")
+[ -z "$OUT" ]; check $? "learn com evidência libera a guarda (recuperação pós-resolução)"
+
 # --- (3) higiene: prune remove superseded e evidência ausente ---------------
 python3 "$DOSSIE" learn "$D" --key k2 --resolution "r1" --command c \
   --output-file "$TMP/out.txt" --repo "$LAB" > /dev/null
@@ -145,6 +152,30 @@ python3 "$DOSSIE" learn "$D" --key k4 --resolution "mesma resolucao" --command c
 OUT=$(python3 "$DOSSIE" recall "$D" --key k4)
 has "$OUT" 'confirmations=2'
 check $? "mesma resolução confirmada 2× incrementa confirmations"
+
+# --- (E) concorrência: appends paralelos sem perda nem corrupção --------------
+OUT=$(python3 - "$DOSSIE" "$D" <<'PY'
+import importlib.util, json, sys, threading
+spec = importlib.util.spec_from_file_location("d", sys.argv[1])
+d = importlib.util.module_from_spec(spec); spec.loader.exec_module(d)
+before = len(d.read_entries(sys.argv[2]) or [])
+def worker(n):
+    for i in range(25):
+        d.append(sys.argv[2], {"kind": "finding", "agent": f"w{n}", "summary": f"s{i}"})
+ts = [threading.Thread(target=worker, args=(n,)) for n in range(8)]
+for t in ts: t.start()
+for t in ts: t.join()
+after = len(d.read_entries(sys.argv[2]) or [])
+bad = 0
+for line in open(sys.argv[2], encoding="utf-8"):
+    if line.strip():
+        try: json.loads(line)
+        except ValueError: bad += 1
+print("CONC-OK" if after - before == 200 and bad == 0 else f"CONC-FAIL delta={after - before} bad={bad}")
+PY
+)
+has "$OUT" 'CONC-OK'
+check $? "8 threads × 25 appends: sem perda nem corrupção (flock)"
 
 # --- (6) linha corrompida isolada não derruba a memória ---------------------
 printf 'linha-corrompida\n' >> "$D"
