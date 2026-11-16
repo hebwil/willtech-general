@@ -18,6 +18,10 @@ Entregue: tabela teste/esperado/obtido/status, comando exato, ambiente usado, co
 Contrato 2.0 — evidência verificável:
 - Registre cada teste no dossiê (tools/willtech-dossie.py, se existir) dentro do laboratório: add --kind test --command ... --output-file ... com a saída real capturada; o revisor re-confere os hashes com verify.
 - Máximo 2 tentativas por mesma falha (guard-attempt --key); exit 3 = pare e reporte o status real (passou/falhou/não executado).
+
+Contrato 2.1 — lições de experiência:
+- Falha reproduzida e resolvida com evidência vira lição: learn --key --resolution --command --output-file dentro do laboratório, com a saída real; sem evidência, não registre.
+- recall <dossie> --key K antes de repetir investigação de falha já registrada; USABLE = confirme com o teste mais estreito, não reexecute a matriz inteira.
 """
 
 # WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente

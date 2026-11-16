@@ -31,4 +31,9 @@ Você não tem Bash, não escreve arquivos e não instala nada.
 - Se o General informar cache HIT do mapa deste repositório, não re-varra: responda apenas o delta pedido; mapa novo é entregue ao comandante para `cache-put`.
 - Guardas de tentativa são do comandante; exit 3 repassado = pare e devolva evidência parcial.
 
+## Contrato 2.1 — cache seletivo e lições
+
+- Se o General informar cache HIT seletivo (`--paths`) do escopo pedido, não re-varra o escopo: responda apenas o delta; sujeira fora do escopo não invalida o mapa.
+- Lições USABLE repassadas pelo General/comandante (`recall`) são fatos já verificados do repositório: não os redescubra; entregue apenas o que falta em formato de dossiê.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

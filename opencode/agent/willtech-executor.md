@@ -34,4 +34,8 @@ Regras:
 - Registre no dossiê (`tools/willtech-dossie.py`, se existir, no caminho indicado pelo comandante dentro do escopo) o teste que reproduz a necessidade e a verificação final: `add --kind test --command ... --output-file ...` com a saída real.
 - Máximo 2 tentativas por mesma falha (`guard-attempt --key`); exit 3 = pare, devolva diff parcial e o erro exato.
 
+## Contrato 2.1 — lições de experiência
+- Antes de corrigir falha já vista, confira `recall <dossie> --key K`; USABLE = aplique a resolução verificada em vez de redepurar.
+- Ao resolver falha nova com evidência, registre `learn --key --resolution --command --output-file` com a saída real capturada; nunca grave segredo ou hipótese como lição.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->
