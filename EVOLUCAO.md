@@ -656,4 +656,68 @@ memória, anti-loop e revisão independente permanecem intactos.
 Banner, sete mascotes, APNG/GIF/estáticos, layout premium, autoria WILLTECH-BH,
 MIT e créditos preservados.
 
+## Painel visual experimental — OpenCode Desktop (2026-11-16)
+
+Base publicada: `57f8bb458218e1dfb844722fc19b9abba1d94add`. Branch isolada:
+`qoder/agent-activity-panel`. Nenhum subagente, modelo, instalação pessoal,
+configuração de provedor ou permissão foi acionado/modificado nesta rodada.
+
+### Implementação e contrato oficial
+
+- SDK GUI confirmado na fonte da release oficial OpenCode **2.2.6**, incluindo
+  `Plugin.define`, `Panel`, `Command`, `Style`, `createKeyed` e `gui-experimental`.
+- Contribuição em `opencode/plugins/willtech/visual/`, **GUI-only**, opt-in e
+  limitada à versão/superfície verificadas. Nenhum export de servidor: carregar
+  o pacote não executa nem duplica o plugin de automação.
+- Estado proveniente de `Session.Info.agent`, família de sessões sincronizada,
+  execução nativa `session.execution.*` e pedidos de permissão. Marcadores
+  otimistas, títulos e texto de respostas não simulam trabalho.
+- Oito imagens originais embutidas byte a byte: sete WebP e APNG do General.
+  Bundle reproduzível de **830948 bytes**, sem build dependencies, polling,
+  chamadas de ferramenta/modelo, escrita, WebGL ou nova delegação.
+- Movimento somente durante trabalho observado, com pausa local, suspensão
+  quando o painel fica oculto e `prefers-reduced-motion`. Desativação pelo
+  ciclo de vida oficial retira recursos sem interferir na automação.
+
+### Validação consolidada e bloqueios
+
+- **4/4 testes determinísticos** de distribuição, em 0,040 s: build idêntico,
+  oito imagens originais, pacote sem servidor/dependências e preservação de
+  núcleo, instaladores, agentes, hooks, assets, HTML premium, MIT e créditos.
+- `git diff --check`: aprovado. Não foram repetidas auditorias/suítes anteriores.
+- Bancada Browser Use com bundle real e **host/eventos simulados** percorreu os
+  estados dos sete agentes, pausa, ocultação, permissão, fim/erro/interrupção,
+  desconexão, troca de sessão e servidor incompatível até a montagem final.
+  Inspeção estrutural encontrou sete imagens completas com dimensões válidas.
+  **Não há resultado PASS consolidado da bancada:** a chamada atingiu o timeout
+  do navegador de 15 s enquanto aguardava `image.decode()` do APNG.
+- Screenshot: **BLOQUEADO** por `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`, com
+  `visible=false` e `visibilityState=hidden`. A seleção oficial com
+  `bringToFront=true` não tornou a superfície visível. Nenhuma imagem de uma
+  interface fictícia foi criada para substituir essa evidência.
+- Helper da bancada passou a aguardar eventos de carga com timeout e impedir
+  execução concorrente. **Correção não revalidada**, para não repetir a rodada.
+- Carregamento no OpenCode Desktop, evento de agente real, término/erro real e
+  não regressão gráfica/orquestração: **NÃO TESTADOS**. Código preservado e
+  simulação não equivalem à homologação nativa. O escopo não autoriza acessar
+  instalações pessoais nem iniciar IA para gerar essa demonstração.
+
+O único PR desta rodada deve permanecer **draft, sem merge**. A autorização de
+merge é condicional aos testes necessários; não foi satisfeita pela simulação.
+A contribuição permanece experimental, desativada por padrão e não anunciada
+como plataforma efetivamente homologada.
+
+### Codex e Claude Code
+
+Codex documenta plugins/MCP e recursos UI em hosts MCP Apps, particularmente
+ChatGPT, mas as fontes consultadas não comprovam painel nativo passivo Codex
+com assinatura dos eventos dos agentes. Nada gráfico foi implementado no Codex.
+
+Claude Code documenta agora **mods** com panes, `ui.render` e `$.agent.list()`
+em versões mais novas (referência 2.1.290+), e diferentes elementos por
+superfície. `Image` consta para terminal, não Desktop/VS Code. Não se afirma
+que Claude Code não possui API de extensão visual; a animação dos mascotes
+originais não foi homologada e nenhuma GUI Claude Code é distribuída.
+Fontes oficiais e configuração opt-in estão em INSTALL.md.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

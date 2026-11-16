@@ -101,6 +101,112 @@ URLs ou logs e sem desabilitar autenticação. A delegação real já foi observ
 mas o teste DeepSeek com leitura rejeitada e timeout não homologou a tarefa
 completa; detalhes em EVOLUCAO.md.
 
+### Painel visual experimental (OpenCode Desktop)
+
+**Contrato oficial verificado para 2.2.6; homologação gráfica nativa pendente.**
+A API `@opencode/plugin/gui` é experimental. Outras versões, inclusive 2.2.7,
+ficam desativadas nesta implementação até a validação do contrato correspondente.
+O painel não funciona no OpenCode terminal nem substitui os sete agentes nativos.
+
+O pacote `opencode/plugins/willtech/visual/` contribui somente GUI: não tem
+export de servidor. Assim, carregar o painel não duplica nem modifica o plugin
+de automação `opencode/plugins/willtech/index.js`. O instalador projeto-local
+continua copiando apenas a automação; `--disable` e `--uninstall` da automação
+não controlam este pacote visual independente.
+
+Para experimentar, mantenha o checkout deste repositório disponível e, pela
+configuração oficial do Desktop, **mescle uma única entrada** no array `plugins`
+do `opencode.json` ou `opencode.jsonc` que seu servidor de fundo efetivamente
+carrega. Não substitua o arquivo nem o array existente:
+
+```json
+{
+  "plugins": [
+    {
+      "package": "./opencode/plugins/willtech/visual",
+      "options": { "enabled": true }
+    }
+  ]
+}
+```
+
+O caminho relativo acima pressupõe configuração na raiz deste checkout.
+Em outra localização, use o caminho absoluto da pasta `visual` no checkout,
+selecionado por você. Isso não altera provedores, modelos, permissões, agentes
+ou profundidade de delegação. Nenhuma configuração pessoal é modificada por
+scripts deste pacote. O Desktop carrega GUI pelos plugins de **seu próprio
+servidor de fundo**: instalar o plugin em um projeto/servidor remoto não garante
+que sua GUI apareça na janela. Não registre novamente o plugin de automação.
+
+Recarregue pela interface oficial de extensões e use o comando
+**WillTech: mostrar/ocultar equipe** com uma sessão aberta. O painel começa
+fechado. Ele mostra somente a família da sessão aberta e sessões que o cliente
+já sincronizou; agentes não observados ficam aguardando, nunca trabalhando.
+Os nomes vêm de `Session.Info.agent`, não de títulos, prompts ou mensagens.
+Sessões de fork não são usadas como execução própria.
+
+| Evidência nativa | Indicação |
+| --- | --- |
+| Sem execução observada ou sem dados suficientes | Aguardando |
+| `session.execution.started`, ou execução em dados sincronizados | Trabalhando na especialidade correspondente |
+| `session.execution.succeeded` | Concluído |
+| `session.execution.failed` | Erro |
+| Pedido de permissão pendente durante execução | Aguardando autorização |
+| `session.execution.interrupted` | Interrompido, nunca concluído com sucesso |
+| Desconexão/servidor incompatível | Sem conexão, sem animação |
+
+O marcador otimista `running` do cliente, sozinho, não indica trabalho.
+Falhas recuperáveis de ferramentas não são confundidas com falha terminal da
+execução. O General usa o APNG original somente durante trabalho observado;
+os demais mascotes mantêm seus WebP originais com efeito CSS leve. Pausar,
+ocultar o painel e `prefers-reduced-motion` removem o movimento, usando o WebP
+estático do General. Nenhum WebGL, modelo, polling, ferramenta, escrita ou
+nova delegação é acionado pelo painel. Os oito arquivos de imagem usados são
+embutidos com seus bytes originais no bundle, sem CDN ou requisições externas.
+
+**Reversão segura:** desligue o pacote visual em Settings > Extensions > Plugins,
+ou mude sua opção `enabled` para `false`, ou remova **somente sua entrada** do
+array `plugins`. Inscrições e contribuições GUI são retiradas pelo ciclo de vida
+oficial. Não apague diretórios compartilhados nem remova a automação. O botão
+Pausar animações afeta somente a apresentação, não interrompe agentes.
+
+**Outras plataformas:** a documentação do Codex descreve plugins/MCP e UI em
+hosts MCP Apps, particularmente ChatGPT; não comprova uma API passiva de painel
+nativo Codex com eventos de todos os agentes. Nenhuma GUI Codex é distribuída.
+Claude Code possui agora uma API oficial de **mods**, com `Pane`, `ui.render`
+e `$.agent.list()` em versões mais novas (referência 2.1.290+); portanto não se
+afirma ausência de extensão gráfica. Seu suporte a elementos varia por
+superfície: `Image` é documentado para terminal, não para Desktop/VS Code.
+A animação dos mascotes originais por essa API não foi homologada nesta entrega;
+nenhuma GUI Claude Code é distribuída e os hooks existentes permanecem intactos.
+
+Build reproduzível, sem instalar dependências:
+
+```sh
+python3 tools/build-gui.py
+python3 tools/test-gui.py
+```
+
+`tools/test-gui.html` é uma bancada de navegador com **host e eventos simulados**,
+rotulada como tal. Sirva a raiz do checkout em um servidor HTTP local que envie
+`.cjs` como JavaScript, abra essa página e use seu botão de execução única.
+Seu resultado não prova carregamento no Desktop nem execução real dos agentes.
+Nesta rodada, o navegador embutido permaneceu oculto: a captura foi bloqueada
+por `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`, e a bancada não retornou resultado
+consolidado ao aguardar `image.decode()` do APNG. O helper foi limitado a eventos
+de carga com timeout, sem repetir a rodada; essa correção da bancada não foi
+revalidada. Nenhum screenshot ou PASS gráfico é anunciado. Para homologar, ainda são necessários carregamento pela API
+no Desktop 2.2.6, evento de agente real, término/erro, sete identidades,
+regressão de orquestração e desativação segura. Não execute chamadas pagas
+somente para produzir uma demonstração, nem apresente replay como teste nativo.
+
+Fontes oficiais, verificadas em 2026-11-16:
+- [OpenCode GUI API](https://opencode.ai/docs/build/plugins/gui/)
+- [SDK da release 2.2.6](https://github.com/anomalyco/opencode/blob/v2.2.6/packages/plugin/src/gui/index.ts)
+- [Sessões e projeção de eventos 2.2.6](https://github.com/anomalyco/opencode/blob/v2.2.6/packages/client/src/solid/data.ts)
+- [UI de plugins OpenAI/MCP Apps](https://developers.openai.com/plugins/build/chatgpt-ui)
+- [Mods e superfícies Claude Code](https://code.claude.com/docs/en/plugins/mods/reference.md)
+
 ### Rollback
 
 ```sh
