@@ -106,6 +106,21 @@ Evidências reproduzíveis sem custo de modelo: `sh opencode/tests/test-wrappers
 - `opencode.json`, provedores, MCPs, Bifrost e VPS não foram alterados.
 - `opencode debug agents` confirmou as permissões novas nos sete agentes.
 
+### Estado final do repositório
+
+| Item | Valor confirmado |
+|---|---|
+| Branch | `main` |
+| Commit das correções | `52295092b1c39d31865e9b6efa99c0dc8b1aa34b` |
+| Push para `origin/main` | confirmado por `git ls-remote` e API do GitHub |
+| Visibilidade | **privada** |
+| Árvore de trabalho | limpa e sincronizada |
+| Wrappers/testes versionados | 3 arquivos com modo `100755` |
+| Regressão pós-rebase | 37 PASS, 0 FAIL |
+
+O commit documental imediatamente posterior registra este estado; o hash acima é
+o commit de código e configuração efetivamente enviado ao remoto.
+
 ### Codex
 
 - Os sete arquivos `.toml` permanecem idênticos aos agentes ativos.
