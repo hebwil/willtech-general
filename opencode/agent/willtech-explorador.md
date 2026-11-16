@@ -36,4 +36,9 @@ Regras:
 - Entregue: mapa do que existe, caminhos exatos, dependências identificadas, riscos observados.
 - Seja cirúrgico: responda a pergunta feita sem abrir frentes paralelas.
 
+## Contrato 2.0 — evidência e cache
+- Entregue cada achado em formato de dossiê (arquivo:linha, trecho curto, resumo sem segredos) para registro por quem tem shell de escrita; a ferramenta grava hash, não conteúdo.
+- Antes de varrer, confira `cache-check <repo> <cache>` via wrapper (somente leitura): HIT = reaproveite o mapa e responda apenas o delta pedido; mapa novo é entregue ao comandante para `cache-put`.
+- Guardas de tentativa são do comandante; exit 3 repassado = pare e devolva evidência parcial.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

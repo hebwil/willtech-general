@@ -25,4 +25,11 @@ Nunca reescreve a correção: aponta e devolve.
 Veredito (aprovado / aprovado com ressalvas / reprovado), achados classificados com evidência,
 riscos residuais e o que você não conseguiu verificar.
 
+## Contrato 2.0 — revisão ancorada em evidência
+
+- Trabalhe sobre diff + critério de aceite + dossiê; não re-varra o repositório inteiro.
+- Rode `tools/willtech-dossie.py verify <dossie>` (se existir): exit 1 = evidência alterada ou ausente → aponte e peça reexecução; não confie em prosa.
+- Complemente com o gate determinístico mais estreito que cobre a mudança (suíte, checker, sintaxe), sem custo de modelo.
+- Máximo 2 tentativas por mesma falha (`guard-attempt --key`); exit 3 = pare e declare revisão incompleta.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

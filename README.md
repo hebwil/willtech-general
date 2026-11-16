@@ -194,15 +194,23 @@ willtech-general/
 │   ├── AGENTS.md
 │   └── HOMOLOGACAO.md
 │
+├── .github/
+│   └── workflows/
+│
 ├── docs/
 │   └── assets/
 │
 ├── history/
 │
+├── tools/
+│   ├── willtech-dossie.py
+│   └── test-dossie.sh
+│
 ├── README.md
 ├── INSTALL.md
 ├── HISTORICO.md
 ├── AUDITORIA.md
+├── EVOLUCAO.md
 ├── NOTICE.md
 └── LICENSE
 ```
@@ -213,6 +221,9 @@ willtech-general/
   e testes de regressão para OpenCode V2.
 - **history/** — preservação de versões históricas da arquitetura.
 - **docs/assets/** — identidade visual da equipe: cards e banner em WebP, animação do General em APNG/GIF com fallback estático e respeito a `prefers-reduced-motion`.
+- **tools/** — dossiê de evidências com hash, cache de mapa por commit e guardas de orçamento (stdlib, sem custo de modelo).
+- **.github/workflows/** — gate determinístico de regressão (permissões, sintaxe, suítes) em Pull Requests.
+- **EVOLUCAO.md** — registro da versão 2.0: o que entrou, o que foi adiado e por quê.
 - **AUDITORIA.md** — testes, evidências e limitações técnicas documentadas.
 
 Consulte [INSTALL.md](INSTALL.md) para os procedimentos de instalação específicos de cada plataforma.

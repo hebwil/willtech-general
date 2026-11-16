@@ -38,4 +38,10 @@ Regras:
 - Entregue: achados por severidade (Crítico/Importante/Menor) com arquivo+linha, e veredito (aprovar / aprovar com ajustes / reprovar).
 - Seja proporcional: não exija processo pesado em mudanças triviais.
 
+## Contrato 2.0 — revisão ancorada em evidência
+- Trabalhe sobre diff + critério de aceite + dossiê; não re-varra o repositório inteiro.
+- Confira `tools/willtech-dossie.py verify <dossie>` via wrapper (somente leitura): exit 1 = evidência alterada ou ausente → aponte e peça reexecução; não confie em prosa.
+- Complemente com o gate determinístico mais estreito que cobre a mudança (suíte, checker, sintaxe), sem custo de modelo.
+- Guardas de tentativa são do comandante; exit 3 repassado = pare e declare revisão incompleta.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

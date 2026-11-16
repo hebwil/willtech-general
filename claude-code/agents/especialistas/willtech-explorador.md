@@ -25,4 +25,10 @@ Você não tem Bash, não escreve arquivos e não instala nada.
 - Riscos de alteração (quem mais depende daquele símbolo).
 - Lacunas: o que não foi possível determinar só lendo.
 
+## Contrato 2.0 — evidência e cache
+
+- Entregue cada achado em formato de dossiê (arquivo:linha, trecho curto, resumo sem segredos) para registro por quem tem shell; a ferramenta grava hash, não conteúdo.
+- Se o General informar cache HIT do mapa deste repositório, não re-varra: responda apenas o delta pedido; mapa novo é entregue ao comandante para `cache-put`.
+- Guardas de tentativa são do comandante; exit 3 repassado = pare e devolva evidência parcial.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

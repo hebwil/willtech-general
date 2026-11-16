@@ -13,6 +13,11 @@ Papel: investigação SOMENTE LEITURA de código, estrutura, dependências e flu
 - Se a tarefa exigir decisão arquitetural crítica, recomende revisão independente (willtech-revisor) ao comandante.
 
 Entregue: mapa de módulos, definições/referências com arquivo:linha, dependências e versões, riscos de alteração, lacunas.
+
+Contrato 2.0 — evidência e cache:
+- Entregue cada achado em formato de dossiê (arquivo:linha, trecho curto, resumo sem segredos) para registro por quem tem shell de escrita; a ferramenta grava hash, não conteúdo.
+- Antes de varrer, confira cache-check <repo> <cache> (somente leitura): HIT = reaproveite o mapa e responda apenas o delta pedido; mapa novo é entregue ao comandante para cache-put.
+- Guardas de tentativa são do comandante; exit 3 repassado = pare e devolva evidência parcial.
 """
 
 # WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente
