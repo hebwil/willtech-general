@@ -1,29 +1,29 @@
 {
-  "description": "WillTech visual COMPLEMENTAR para Codex (independente do núcleo de automação). Mescla estes hooks ao .codex/hooks.json do projeto. Exige trust do usuário via /hooks. Não altera o aplicativo Codex; apenas observa eventos oficiais e alimenta o visualizador local. Nenhum hook chama modelo ou faz rede.",
+  "description": "WillTech visual COMPLEMENTAR para Codex (independente do núcleo de automação). Hooks bundled de plugin: o Codex define PLUGIN_ROOT/PLUGIN_DATA, então o caminho do bridge é portável e não presume uma cópia completa do WillTech no repositório de trabalho. commandWindows cobre Windows nativo (py -3). Mescla/aprova via /hooks (trust). Não altera o aplicativo Codex; apenas observa eventos oficiais e alimenta o visualizador local. Nenhum hook chama modelo ou faz rede.",
   "hooks": {
     "SessionStart": [
-      { "matcher": "startup|resume|clear|compact", "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/codex/willtech-visual/hooks/willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
+      { "matcher": "startup|resume|clear|compact", "hooks": [ { "type": "command", "command": "python3 \"${PLUGIN_ROOT}/hooks/willtech_bridge.py\"", "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
     ],
     "SessionEnd": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/codex/willtech-visual/hooks/willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
+      { "hooks": [ { "type": "command", "command": "python3 \"${PLUGIN_ROOT}/hooks/willtech_bridge.py\"", "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\willtech_bridge.py\"", "async": true, "timeout": 3 } ] }
     ],
     "UserPromptSubmit": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/codex/willtech-visual/hooks/willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
+      { "hooks": [ { "type": "command", "command": "python3 \"${PLUGIN_ROOT}/hooks/willtech_bridge.py\"", "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
     ],
     "SubagentStart": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/codex/willtech-visual/hooks/willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
+      { "hooks": [ { "type": "command", "command": "python3 \"${PLUGIN_ROOT}/hooks/willtech_bridge.py\"", "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
     ],
     "SubagentStop": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/codex/willtech-visual/hooks/willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
+      { "hooks": [ { "type": "command", "command": "python3 \"${PLUGIN_ROOT}/hooks/willtech_bridge.py\"", "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
     ],
     "PermissionRequest": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/codex/willtech-visual/hooks/willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
+      { "hooks": [ { "type": "command", "command": "python3 \"${PLUGIN_ROOT}/hooks/willtech_bridge.py\"", "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
     ],
     "Stop": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/codex/willtech-visual/hooks/willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
+      { "hooks": [ { "type": "command", "command": "python3 \"${PLUGIN_ROOT}/hooks/willtech_bridge.py\"", "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
     ],
     "Interrupt": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/codex/willtech-visual/hooks/willtech_bridge.py\"", "async": true, "timeout": 5 } ] }
+      { "hooks": [ { "type": "command", "command": "python3 \"${PLUGIN_ROOT}/hooks/willtech_bridge.py\"", "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\willtech_bridge.py\"", "async": true, "timeout": 3 } ] }
     ]
   }
 }

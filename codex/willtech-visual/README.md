@@ -23,13 +23,18 @@ atividade real é um visualizador externo que consome os eventos oficiais.
 
 ## Fontes de eventos reais (oficiais)
 
-1. **Hooks de projeto** (`.codex/hooks.json`): `SessionStart`, `SessionEnd`,
-   `UserPromptSubmit`, `SubagentStart`/`SubagentStop` (com `agent_id`/`agent_type`),
-   `PermissionRequest`, `Stop`, `Interrupt`. O runtime envia JSON por stdin
-   (`session_id`, `hook_event_name`, `agent_id`, `agent_type`, `cwd`, ...).
-   `hooks/willtech_bridge.py` normaliza cada evento e acrescenta uma linha ao
-   feed JSONL. `async: true`, fail-open, sem modelo/rede. Exige trust do usuário
-   via `/hooks` (consentimento oficial).
+1. **Hooks bundled de plugin** (`.codex-plugin/plugin.json` → `hooks/hooks.json`):
+   `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `SubagentStart`/`SubagentStop`
+   (com `agent_id`/`agent_type`), `PermissionRequest`, `Stop`, `Interrupt`. O
+   runtime envia JSON por stdin (`session_id`, `hook_event_name`, `agent_id`,
+   `agent_type`, `cwd`, ...). `hooks/willtech_bridge.py` normaliza cada evento e
+   acrescenta uma linha ao feed JSONL. `async: true`, fail-open, sem modelo/rede.
+   Exige trust do usuário via `/hooks` (consentimento oficial). O caminho do
+   bridge usa `PLUGIN_ROOT` (variável oficial definida pelo Codex para hooks de
+   plugin), então **não presume uma cópia completa do WillTech no repositório de
+   trabalho**. Cada handler traz `commandWindows` (`py -3 "%PLUGIN_ROOT%\..."`)
+   para Windows nativo, além do `command` Unix (`python3 "${PLUGIN_ROOT}/..."`).
+   `SessionEnd`/`Interrupt` usam `timeout: 3` (máximo oficial desses eventos).
 2. **App Server** (JSON-RPC sobre stdio, JSONL): `appserver/client.cjs` faz o
    handshake oficial (`initialize`/`initialized`) e traduz notificações reais
    (`turn/started`, `turn/completed`, `thread/status/changed`) para os mesmos
@@ -56,18 +61,32 @@ Os sete mascotes oficiais (`docs/assets/willtech-*.webp`) são embutidos em
 ```bash
 python3 tools/build-codex.py                 # gera core.js + assets.js
 node viewer/server.cjs 8741 .codex/willtech-events.jsonl
-# abra http://localhost:8741 — feed SSE dos hooks/App Server
+# abra http://127.0.0.1:8741 — feed SSE dos hooks/App Server
 ```
 
-Para alimentar pelos hooks reais, mescle `hooks/hooks.json` ao `.codex/hooks.json`
-do projeto e aprove o trust em `/hooks`. O feed padrão é
+O servidor escuta **somente em loopback (`127.0.0.1`) por padrão**: `/history` e
+`/events` expõem atividade de sessões e não devem ficar acessíveis pela rede.
+`WILLTECH_CODEX_HOST` permite um override explícito (use apenas em ambiente
+controlado). `SessionEnd` remove apenas a sessão encerrada, preservando sessões
+concorrentes ativas (sem limpar o estado das demais).
+
+Para alimentar pelos hooks reais, instale este diretório como **plugin do Codex**
+(manifesto `.codex-plugin/plugin.json`); o Codex define `PLUGIN_ROOT`/`PLUGIN_DATA`
+e carrega `hooks/hooks.json`. Aprove o trust em `/hooks`. O feed padrão é
 `.codex/willtech-events.jsonl` (ou `WILLTECH_CODEX_FEED`).
 
 ## Testes
 
 - `python3 -m unittest tools.test-codex` — determinísticos (núcleo sem drift,
   mapeamento de hooks oficiais, mapeamento de notificações do App Server,
-  assets, formato oficial de hooks.json, somente-observação sem IA/rede).
+  assets, formato oficial de hooks.json, **portabilidade Windows**
+  (`commandWindows`/`PLUGIN_ROOT`, timeouts `SessionEnd`/`Interrupt` ≤ 3s),
+  **bind loopback** do servidor (prova real via `server.address()` e rejeição de
+  interface externa), **reset de sessão escopado** (app.js real em harness DOM,
+  sessões concorrentes preservadas) e somente-observação sem IA/rede).
+  Descoberta de Node portável: `WILLTECH_NODE` > `node`/`nodejs` no PATH; os
+  testes que executam JS pulam com motivo explícito quando não há Node (não
+  contam como PASS).
 - `WILLTECH_CODEX_BIN=<binário> python3 -m unittest tools.test-appserver` —
   protocolo **real** contra um binário descartável do `codex-app-server`
   (handshake `initialize` + `thread/list`, `CODEX_HOME` isolado, sem auth/modelo).

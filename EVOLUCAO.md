@@ -958,4 +958,42 @@ README premium e identidade visual foi tocado.
   homologação nativa. README, INSTALL e EVOLUCAO declaram as três integrações
   como **experimentais**, com estas limitações explícitas.
 
+## Rodada correção definitiva multiplataforma (2026-11-16)
+
+Branch `qoder/multiplataforma-integracao`, worktree isolado de `main`@`ece7429`
+(PRs #10–#13). Sem push/merge/release. Relatório completo com matriz 10×3 e
+evidências RED→GREEN em `HOMOLOGACAO-MULTIPLATAFORMA.md`.
+
+Defeitos reais reproduzidos e corrigidos (não apenas OpenCode):
+- **D1 Codex (segurança):** `server.listen(PORT)` sem host → bind em todas as
+  interfaces (`TCP *:8799`), expondo `/history`//`/events`. Corrigido para
+  loopback `127.0.0.1` por padrão; teste real de `server.address()` e rejeição
+  de interface externa.
+- **D2 Codex:** `SessionEnd` fazia `clear()` global e apagava sessões concorrentes
+  ativas. Corrigido para remover só a sessão encerrada; harness DOM real prova
+  preservação.
+- **D3 Codex (Windows/portabilidade):** hooks POSIX sem `commandWindows`,
+  presumindo checkout completo, e `SessionEnd`/`Interrupt` `timeout:5` (máx
+  oficial 3s). Pacote virou plugin bundled (`.codex-plugin/plugin.json`), caminho
+  via `PLUGIN_ROOT` (oficial), `commandWindows` `py -3`, timeouts 3s. Comando real
+  executa em repo descartável sem cópia do WillTech.
+- **D4 Codex:** suíte hard-codava Node pessoal e não cobria D1/D2/D3. Descoberta
+  portável (`WILLTECH_NODE`/PATH) + regressões (loopback, reset, Windows,
+  history/replay, SSE ao vivo). 12/12.
+- **D5 OpenCode:** instalador projeto-local não distribuía/registrava o GUI
+  (exige config global do Desktop). Nova ferramenta opt-in portável reversível
+  `tools/willtech-gui.py` (backup/posse/idempotente/preserva terceiros); 9/9 em
+  fixtures descartáveis. Render nativo Desktop permanece não comprovado.
+- **D6 guarda obsoleto:** `test-gui.py` pinava base anterior ao PR #13 e já falhava
+  no HEAD. Baseline atualizada e escopo restrito à identidade/orquestração
+  (assets/licença/créditos/núcleo/agents/hooks/installers); visuais ficam fora do
+  guard de orquestração. Proteção integral mantida.
+
+Regressão consolidada única: **277 asserções determinísticas + 2 scripts Node
+PASS, 0 falhas, 0 regressões**. Bundle GUI OpenCode byte-idêntico (smoke headless
+anterior válido). Limitações honestas: sessão real com modelo, render nativo
+Desktop/Claude e Windows nativo não homologados (sem aplicações descartáveis;
+instalações pessoais não tocadas). Codex não expõe painel nativo de 7 agentes
+(visualizador complementar).
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

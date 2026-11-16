@@ -8,6 +8,9 @@ const path = require("node:path");
 
 const DIR = __dirname;
 const PORT = Number(process.argv[2] || 8741);
+// Loopback por padrão: /history e /events expõem atividade de sessões e não
+// devem ficar acessíveis pela rede. WILLTECH_CODEX_HOST permite override explícito.
+const HOST = process.env.WILLTECH_CODEX_HOST || "127.0.0.1";
 const FEED = process.argv[3] || process.env.WILLTECH_CODEX_FEED || path.join(process.cwd(), ".codex", "willtech-events.jsonl");
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".webp": "image/webp" };
 
@@ -26,7 +29,8 @@ function pump() {
     }
   });
 }
-setInterval(pump, 300);
+const pumpTimer = setInterval(pump, 300);
+if (pumpTimer.unref) pumpTimer.unref();
 
 const server = http.createServer((req, res) => {
   if (req.url === "/history") {
@@ -55,4 +59,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" });
   fs.createReadStream(file).pipe(res);
 });
-server.listen(PORT, () => console.log(`willtech-codex-viewer em localhost:${PORT} feed=${FEED}`));
+if (require.main === module) {
+  server.listen(PORT, HOST, () => console.log(`willtech-codex-viewer em ${HOST}:${PORT} feed=${FEED}`));
+}
+module.exports = { server, HOST, PORT, FEED };

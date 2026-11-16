@@ -1,0 +1,8 @@
+{
+  "name": "willtech-visual",
+  "version": "0.1.0",
+  "description": "Visualizador COMPLEMENTAR dos sete agentes WillTech-General para Codex (não é painel nativo do aplicativo). Hooks bundled de somente-observação alimentam um visualizador local; PLUGIN_ROOT/PLUGIN_DATA tornam o caminho do bridge portável (Unix e Windows nativo via commandWindows). Sem IA, sem rede externa.",
+  "author": { "name": "WillTech-General / WILLTECH-BH", "url": "https://github.com/hebwil" },
+  "license": "MIT",
+  "hooks": "./hooks/hooks.json"
+}

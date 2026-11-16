@@ -104,8 +104,9 @@ completa; detalhes em EVOLUCAO.md.
 ### Painel visual experimental (OpenCode Desktop)
 
 **Contrato oficial verificado para 2.2.6; homologação gráfica nativa pendente.**
-A API `@opencode/plugin/gui` é experimental. Outras versões, inclusive 2.2.7,
-ficam desativadas nesta implementação até a validação do contrato correspondente.
+A API `@opencode/plugin/gui` é experimental. O gate usa um **piso** `>= 2.2.6`
+(`versionAtLeast`), liberando as versões atuais do Desktop (2.2.7, 2.3.0) em vez
+de travar num pin exato; versões anteriores a 2.2.6 ficam desativadas.
 O painel não funciona no OpenCode terminal nem substitui os sete agentes nativos.
 Integrado na `main` via [PR #8](https://github.com/hebwil/willtech-general/pull/8);
 smoke headless de laboratório aprovado com o bundle real (64/64 em três rodadas
@@ -118,10 +119,28 @@ de automação `opencode/plugins/willtech/index.js`. O instalador projeto-local
 continua copiando apenas a automação; `--disable` e `--uninstall` da automação
 não controlam este pacote visual independente.
 
-Para experimentar, mantenha o checkout deste repositório disponível e, pela
-configuração oficial do Desktop, **mescle uma única entrada** no array `plugins`
-do `opencode.json` ou `opencode.jsonc` que seu servidor de fundo efetivamente
-carrega. Não substitua o arquivo nem o array existente:
+**Ativação automatizada, portável e reversível (recomendada).** A ferramenta
+dedicada `tools/willtech-gui.py` mescla uma única entrada no array `plugins` do
+`opencode.json` que o servidor de fundo do Desktop carrega, com backup prévio,
+registro de posse e preservação de plugins/ajustes de terceiros. O caminho do
+pacote é resolvido a partir da localização do próprio checkout (sem caminho
+absoluto fixo de uma máquina específica):
+
+```bash
+python3 tools/willtech-gui.py --install            # ativa (enabled=true); pede confirmação
+python3 tools/willtech-gui.py --install --yes      # sem prompt
+python3 tools/willtech-gui.py --disable            # enabled=false (mantém a entrada)
+python3 tools/willtech-gui.py --enable             # religa
+python3 tools/willtech-gui.py --uninstall          # remove só a entrada WillTech; restaura backup
+# --config PATH sobrescreve o alvo (padrão ~/.config/opencode/opencode.json);
+# use um fixture descartável para testes. Nada é alterado sem o comando.
+```
+
+A ativação GUI é separada do instalador de automação projeto-local
+(`willtech-install.sh/.ps1`), que nunca toca configs globais; `--disable`/
+`--uninstall` da automação não controlam este pacote visual independente.
+Alternativa manual: mescle você mesmo uma única entrada, sem substituir o arquivo
+nem o array existente:
 
 ```json
 {
@@ -134,11 +153,10 @@ carrega. Não substitua o arquivo nem o array existente:
 }
 ```
 
-O caminho relativo acima pressupõe configuração na raiz deste checkout.
-Em outra localização, use o caminho absoluto da pasta `visual` no checkout,
-selecionado por você. Isso não altera provedores, modelos, permissões, agentes
-ou profundidade de delegação. Nenhuma configuração pessoal é modificada por
-scripts deste pacote. O Desktop carrega GUI pelos plugins de **seu próprio
+O caminho relativo acima pressupõe configuração na raiz deste checkout; em outra
+localização, use o caminho absoluto da pasta `visual` (a ferramenta calcula isso
+automaticamente). Isso não altera provedores, modelos, permissões, agentes ou
+profundidade de delegação. O Desktop carrega GUI pelos plugins de **seu próprio
 servidor de fundo**: instalar o plugin em um projeto/servidor remoto não garante
 que sua GUI apareça na janela. Não registre novamente o plugin de automação.
 
