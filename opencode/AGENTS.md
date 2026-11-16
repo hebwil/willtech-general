@@ -76,6 +76,12 @@ Ao delegar, passe o pedido original, o escopo permitido e o critério de aceite.
 - Impasse demonstrado (≥2 falhas na mesma chave): `willtech-dossie.py catalyst <dossie> --key K` libera a avaliação de UMA alternativa viável; segunda avaliação da mesma chave = exit 3 (exploração indefinida bloqueada). Sem impasse demonstrado, recusado.
 - Nada de novo agente, modelo extra ou framework: são subcomandos determinísticos do dossiê; a decisão final continua com o comandante nativo.
 
+## Contrato 2.3.1 — RepoMap incremental compartilhado
+- Índice estrutural local: `tools/willtech-repomap.py update <repo> <index.json>` indexa símbolos/assinaturas/dependências (Python via ast, JS/TS e shell via regex), nunca conteúdo nem credenciais; tetos de arquivos, símbolos e bytes. Incremental: reparse só do hash que mudou; renames reaproveitam símbolos; remoções saem do índice.
+- Antes de delegar exploração, entregue ao especialista `tools/willtech-repomap.py brief <index> --paths <escopo>` (pacote pequeno em quarentena) em vez de releituras; o explorador ainda confirma a fonte ao vivo.
+- Busca: `tools/willtech-repomap.py query <index> --symbol S|--path P|--refs M [--repo DIR]`; trechos retornados são lidos da fonte e revalidados por hash (STALE = rode update; o índice nunca substitui a fonte). Isolamento por projeto: índice de outro projeto é recusado.
+- Economia só com medição: bytes/tokens/tempo/parses antes/depois medidos por `tools/test-repomap.py`; nenhum percentual anunciado sem medição.
+
 ## Segurança
 - Sem sudo, sem git push sem aprovação, sem tocar em credenciais, .env, gateways, VPS, Bifrost, produção.
 - Não modifique a configuração do Claude Desktop a partir daqui.
