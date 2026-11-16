@@ -26,7 +26,8 @@ param(
 $ErrorActionPreference = 'Stop'
 # Windows PowerShell 5.1 corrompe aspas embutidas em argumentos de executáveis
 # nativos (-c); o código Python vai por stdin (python - args), sem aspas no argv.
-$OutputEncoding = [System.Text.Encoding]::UTF8
+# UTF8 sem BOM: [Encoding]::UTF8 do PS 5.1 emite U+FEFF e quebra o programa.
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
 $Src = Split-Path -Parent $PSScriptRoot
 if (-not $Repo) { $Repo = $Src }
@@ -58,7 +59,7 @@ py = json.loads(pyjson)
 data = {}
 created = not os.path.isfile(target)
 if not created:
-    with open(target, encoding="utf-8") as fh:
+    with open(target, encoding="utf-8-sig") as fh:
         data = json.load(fh)
     bak = target + ".willtech-bak"
     if not os.path.exists(bak):
@@ -108,7 +109,7 @@ if os.path.isfile(bak):
     os.replace(bak, target)
     print("restaurado backup " + target)
 elif os.path.isfile(target):
-    with open(target, encoding="utf-8") as fh:
+    with open(target, encoding="utf-8-sig") as fh:
         data = json.load(fh)
     hooks = data.get("hooks") or {}
     for event in list(hooks):
