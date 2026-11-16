@@ -59,11 +59,12 @@ prefix = "" if prefix == "@none" else prefix
 py = [exe] + [p for p in prefix.split(",") if p]
 data = {}
 created = not os.path.isfile(target)
+owned = target + ".willtech-created"
 if not created:
     with open(target, encoding="utf-8-sig") as fh:
         data = json.load(fh)
     bak = target + ".willtech-bak"
-    if not os.path.exists(bak):
+    if not os.path.exists(bak) and not os.path.exists(owned):
         with open(bak, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2, ensure_ascii=False)
 hooks = data.get("hooks") or {}
@@ -93,6 +94,9 @@ data["hooks"] = hooks
 os.makedirs(os.path.dirname(target), exist_ok=True)
 with open(target, "w", encoding="utf-8") as fh:
     json.dump(data, fh, indent=2, ensure_ascii=False)
+if created:
+    with open(owned, "w", encoding="utf-8"):
+        pass
 print(("criado " if created else "mesclado ") + target)
 '@
   #_argv sem aspas duplas: PS 5.1 as corrompe em chamadas nativas; o prefixo
@@ -134,6 +138,9 @@ elif os.path.isfile(target):
     else:
         os.remove(target)
         print("removido " + target)
+owned = target + ".willtech-created"
+if os.path.isfile(owned):
+    os.remove(owned)
 '@
   $exe = $py[0]; $pre = $py[1]
   $code | & $exe @pre - $target
