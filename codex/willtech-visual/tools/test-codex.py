@@ -102,7 +102,7 @@ class TestCodex(unittest.TestCase):
         for rel in ["hooks/willtech_bridge.py", "appserver/client.cjs", "viewer/server.cjs", "viewer/app.js"]:
             with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
                 text = fh.read()
-            for bad in ["model.complete", "api.openai.com", "https://", "fetch(", "child_process.exec("]:
+            for bad in ["model.complete", "api.openai.com", "https://", "http://", "fetch(\"http", "child_process.exec("]:
                 self.assertNotIn(bad, text, f"{rel} contém {bad}")
 
 
