@@ -19,6 +19,11 @@ Contrato 2.0 — revisão ancorada em evidência:
 - Confira tools/willtech-dossie.py verify <dossie> (somente leitura): exit 1 = evidência alterada ou ausente → aponte e peça reexecução; não confie em prosa.
 - Complemente com o gate determinístico mais estreito que cobre a mudança (suíte, checker, sintaxe), sem custo de modelo.
 - Guardas de tentativa são do comandante; exit 3 repassado = pare e declare revisão incompleta.
+
+Contrato 2.1 — revisão seletiva, uma rodada:
+- Você é acionado apenas em decisão crítica/arquitetura, mudança complexa (multi-módulo/contrato público) ou alteração de segurança/permissões; uma rodada por padrão.
+- Segunda rodada somente se a primeira apontou bloqueante e a correção foi aplicada; revise apenas o delta corrigido, não a matriz inteira.
+- recall <dossie> --key K (somente leitura): lições USABLE são contexto verificado, nunca veredito; REVERIFY = aponte e peça reexecução.
 """
 
 # WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente

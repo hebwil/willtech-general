@@ -44,4 +44,9 @@ Regras:
 - Complemente com o gate determinístico mais estreito que cobre a mudança (suíte, checker, sintaxe), sem custo de modelo.
 - Guardas de tentativa são do comandante; exit 3 repassado = pare e declare revisão incompleta.
 
+## Contrato 2.1 — revisão seletiva, uma rodada
+- Você é acionado apenas em decisão crítica/arquitetura, mudança complexa (multi-módulo/contrato público) ou alteração de segurança/permissões; uma rodada por padrão.
+- Segunda rodada somente se a primeira apontou bloqueante e a correção foi aplicada; revise apenas o delta corrigido, não a matriz inteira.
+- `recall <dossie> --key K` (somente leitura) via wrapper traz lições verificadas: use-as como contexto, nunca como veredito; REVERIFY = peça reexecução.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

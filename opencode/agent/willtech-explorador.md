@@ -41,4 +41,8 @@ Regras:
 - Antes de varrer, confira `cache-check <repo> <cache>` via wrapper (somente leitura): HIT = reaproveite o mapa e responda apenas o delta pedido; mapa novo é entregue ao comandante para `cache-put`.
 - Guardas de tentativa são do comandante; exit 3 repassado = pare e devolva evidência parcial.
 
+## Contrato 2.1 — cache seletivo e lições
+- `cache-check <repo> <cache> --paths a,b` via wrapper (somente leitura): HIT com sujeira fora do escopo = reaproveite o mapa e responda só o delta do escopo pedido.
+- `recall <dossie> --key K` (somente leitura): USABLE = fato já verificado do repositório, não o redescubra; REVERIFY/NO_LESSON = trate como desconhecido e entregue o achado em formato de dossiê.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->
