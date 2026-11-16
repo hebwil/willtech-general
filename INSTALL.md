@@ -2,14 +2,15 @@
 
 ## Sistemas operacionais
 
-Todos os comandos deste documento são Unix (`sh`). Eles executam em **macOS**
-(validado nesta estação) e seguem os mesmos requisitos em **Linux** e dentro do
-**WSL** (python3, git, shell POSIX) — esses dois caminhos não foram exercitados
-aqui e não têm suporte anunciado. **Não execute estes comandos diretamente no
-PowerShell/Windows nativo**: o núcleo importa `fcntl` (Unix), os scripts são
-`sh` e não há instalador Windows nesta versão. Os wrappers de sandbox do
-OpenCode usam `sandbox-exec`, exclusivo do macOS; em Linux/WSL permanecem as
-permissões por agente do runtime, sem esse sandbox adicional.
+Os comandos das seções por plataforma são Unix (`sh`): executam em **macOS**
+(validado nesta estação) e seguem os mesmos requisitos em **Linux** e dentro
+do **WSL** (python3, git, shell POSIX) — esses dois caminhos não foram
+exercitados aqui e não têm suporte anunciado. **Não execute comandos `sh`
+diretamente no PowerShell**: para Windows nativo use o instalador PowerShell
+dedicado (seção abaixo). Os wrappers de sandbox do OpenCode usam
+`sandbox-exec`, exclusivo do macOS; em Linux/WSL/Windows permanecem as
+permissões por agente do runtime, sem esse sandbox adicional — no Windows os
+wrappers não são instalados e o shell dos agentes segue restrito.
 
 As três integrações de IA (Codex, OpenCode V2, Claude Code) são independentes
 do sistema operacional e estão separadas abaixo.
@@ -169,8 +170,49 @@ Regressão sem custo de modelo: `sh tools/test-auto.sh` (38 verificações; a
 simulação do plugin V2 usa node quando disponível — `NODE_BIN` aceita um
 binário alternativo; sem node, esse item é SKIP e os demais rodam).
 
+## Windows nativo (PowerShell)
+
+**Requisitos:** Windows 10/11, Python 3 (`python3`, `python` ou `py -3` no
+PATH) e `git`. O núcleo usa lock real do sistema (`msvcrt.locking` em sidecar
+`.lock`) — a mesma exclusão mútua do `flock` Unix, sem arquivos-sentinela.
+
+```powershell
+# A partir da raiz do repositório. -ExecutionPolicy Bypass vale SOMENTE para
+# este processo; nenhuma política global é alterada.
+powershell -ExecutionPolicy Bypass -File tools\willtech-install.ps1            # lista mudanças e pede confirmação
+powershell -ExecutionPolicy Bypass -File tools\willtech-install.ps1 -Yes      # instalação idempotente (consentimento dado)
+powershell -ExecutionPolicy Bypass -File tools\willtech-install.ps1 -Platform opencode
+powershell -ExecutionPolicy Bypass -File tools\willtech-install.ps1 -Disable  # desliga (remove .willtech\enabled)
+powershell -ExecutionPolicy Bypass -File tools\willtech-install.ps1 -Enable   # religa
+powershell -ExecutionPolicy Bypass -File tools\willtech-install.ps1 -Uninstall  # restaura backups pré-instalação
+```
+
+O instalador é projeto-local (`.claude\`, `.codex\`, `.opencode\`,
+`.willtech\`), faz backup prévio das configurações existentes
+(`.willtech-bak`), preserva hooks do usuário e é idempotente. Sem Python
+detectado, a instalação é **recusada** (os controles obrigatórios não
+rodariam). Os hooks gravados usam o comando Python detectado no lugar de
+`python3`; o formato JSON dos contratos não muda.
+
+**Limites de segurança no Windows:** os wrappers `sandbox-exec` (macOS) não
+são instalados; as ferramentas de shell dos agentes permanecem negadas pelas
+permissões do runtime — nenhuma execução irrestrita é liberada para simular
+compatibilidade. A disponibilidade dos runtimes Codex e Claude Code em
+Windows nativo não foi verificada nesta estação; o OpenCode V2 carrega o
+plugin normalmente onde o runtime existir.
+
+**Estado:** implementação validada por regressão Unix completa e simulação
+determinística da lógica do instalador (merge/backup/idempotência/restauração,
+caminhos com espaços e Unicode). A execução nativa em Windows
+**PENDENTE DE HOMOLOGAÇÃO** — sem runner Windows acessível (escopo
+`workflow` ausente no token; sem máquina Windows). Regressão local:
+`python3 tools\test-compat.py` (22 verificações, cross-platform).
+
 ## Desinstalação
 
 - OpenCode: remover os arquivos `~/.config/opencode/agent/willtech-*.md`.
 - Claude Code: remover `~/.claude/agents/general/` e `~/.claude/agents/especialistas/`
   (ou apenas os arquivos `willtech-*.md`).
+- Windows nativo: `tools\willtech-install.ps1 -Uninstall` reverte a automação
+  com restauração de backups; agentes copiados manualmente são removidos dos
+  diretórios de agentes de cada runtime.

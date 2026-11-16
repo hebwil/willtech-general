@@ -27,9 +27,12 @@ só entram com evidência verificável (comando + hash da saída); recall re-con
 hash e HEAD e marca REVERIFY o que mudou, foi superseded ou perdeu evidência.
 Lições carregam escopo de projeto (toplevel + remote): recall/brief devolvem
 REVERIFY quando o projeto atual difere do projeto onde a lição foi aprendida.
+Locks: flock no próprio dossiê em macOS/Linux (comportamento histórico);
+msvcrt.locking num sidecar .lock no Windows — exclusão mútua real do SO,
+nunca arquivos-sentinela; leitura também exclui no Windows (mais forte).
 """
 import argparse
-import fcntl
+import contextlib
 import hashlib
 import json
 import os
@@ -38,6 +41,11 @@ import subprocess
 import sys
 import time
 from pathlib import PurePosixPath
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 KINDS = ("finding", "test", "decision", "delegation")
 DENY_PREFIXES = (
@@ -55,6 +63,7 @@ DENY_NAMES = (
 )
 SUMMARY_CAP = 240
 MAP_CAP = 20000
+LOCK_TIMEOUT = 10.0
 
 
 def sha256_file(path):
@@ -66,38 +75,83 @@ def sha256_file(path):
 
 
 def is_credential_path(path):
+    path = path.replace("\\", "/")
     s = "/" + path.strip("/") + "/"
     for pref in DENY_PREFIXES:
         if "/" + pref + "/" in s:
             return True
     if PurePosixPath(path).name in DENY_NAMES:
         return True
-    return bool(re.search(r"/\.env(\.[^/]*)?$", s))
+    return bool(re.search(r"/\.env(\.[^/]*)?/?$", s))
+
+
+def _parse(fh):
+    entries = []
+    for line in fh:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(e, dict):
+            entries.append(e)
+    return entries
+
+
+@contextlib.contextmanager
+def _nt_lock(path):
+    # Windows: lock OS real (msvcrt.locking) num sidecar .lock, não sentinela.
+    # O arquivo de dados nunca fica aberto durante os.replace (o Windows
+    # proíbe substituir arquivo aberto); a exclusão mútua cobre todo o ciclo
+    # ler-modificar-gravar porque append/read/update tomam o mesmo sidecar.
+    # msvcrt não tem lock compartilhado: leitura também exclui (mais forte).
+    lp = path + ".lock"
+    with open(lp, "a+b") as lf:
+        lf.seek(0, 2)
+        if lf.tell() == 0:
+            lf.write(b"\0")
+            lf.flush()
+        lf.seek(0)
+        deadline = time.monotonic() + LOCK_TIMEOUT
+        while True:
+            try:
+                msvcrt.locking(lf.fileno(), msvcrt.LK_NBLCK, 1)
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            lf.seek(0)
+            msvcrt.locking(lf.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 def read_entries(path):
     if not os.path.isfile(path):
         return None
-    entries = []
+    if os.name == "nt":
+        with _nt_lock(path):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                return _parse(fh)
     with open(path, encoding="utf-8", errors="replace") as fh:
         fcntl.flock(fh, fcntl.LOCK_SH)
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                e = json.loads(line)
-            except ValueError:
-                continue
-            if isinstance(e, dict):
-                entries.append(e)
-    return entries
+        return _parse(fh)
 
 
 def append(path, entry):
+    line = json.dumps(entry, ensure_ascii=False) + "\n"
+    if os.name == "nt":
+        with _nt_lock(path):
+            with open(path, "a", encoding="utf-8") as fh:
+                fh.write(line)
+        return
     with open(path, "a", encoding="utf-8") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
-        fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        fh.write(line)
 
 
 def git_state(repo):
@@ -354,23 +408,27 @@ def cmd_brief(a):
 
 
 def update_locked(path, keep_fn):
-    # Read-modify-write sob LOCK_EX no próprio dossiê: leitura, filtragem e
-    # substituição atômica sem janela para appends concorrentes se perderem.
+    # Read-modify-write sob lock exclusivo: leitura, filtragem e substituição
+    # atômica sem janela para appends concorrentes se perderem.
     if not os.path.isfile(path):
         return None
+    if os.name == "nt":
+        with _nt_lock(path):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                entries = _parse(fh)
+            kept = keep_fn(entries)
+            removed = len(entries) - len(kept)
+            if removed:
+                tmp = path + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as out:
+                    for e in kept:
+                        out.write(json.dumps(e, ensure_ascii=False) + "\n")
+                os.replace(tmp, path)
+        return removed
+    # POSIX: lock no próprio dossiê (comportamento histórico preservado).
     with open(path, "r+", encoding="utf-8", errors="replace") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
-        entries = []
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                e = json.loads(line)
-            except ValueError:
-                continue
-            if isinstance(e, dict):
-                entries.append(e)
+        entries = _parse(fh)
         kept = keep_fn(entries)
         removed = len(entries) - len(kept)
         if removed:

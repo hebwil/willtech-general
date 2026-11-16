@@ -1,7 +1,7 @@
 // WillTech-General 2.2 — automação nativa OpenCode V2 (plugin de projeto).
 // Descoberto automaticamente em .opencode/plugins/ após instalação.
-// Chama o núcleo determinístico tools/willtech-auto.py via python3: zero
-// chamadas de modelo. Auxiliares falham aberto; a guarda de loop bloqueia
+// Chama o núcleo determinístico tools/willtech-auto.py via python3/python/py:
+// zero chamadas de modelo. Auxiliares falham aberto; a guarda de loop bloqueia
 // via throw no execute.before (contrato V2). Desativação: remover
 // .willtech/enabled (núcleo vira no-op) ou willtech-install.sh --uninstall.
 // V1 não executa em V2: este plugin é exclusivamente V2 (export default com
@@ -13,15 +13,33 @@ import { join } from "node:path";
 const TIMEOUT_MS = 8000;
 const BUFFER_CAP = 1 << 20;
 
+// python3 (Unix) ou python/py -3 (Windows): primeiro que responder, em cache.
+let PY = null;
+function pythonCmd() {
+  if (PY) return PY;
+  for (const cand of [["python3", []], ["python", []], ["py", ["-3"]]]) {
+    try {
+      const r = spawnSync(cand[0], [...cand[1], "--version"], {
+        timeout: 3000, encoding: "utf8", windowsHide: true,
+      });
+      if (r.status === 0) { PY = cand; return PY; }
+    } catch {}
+  }
+  return null;
+}
+
 function core(dir, event) {
   const tool = join(dir, "tools", "willtech-auto.py");
   if (!existsSync(tool)) return {};
+  const py = pythonCmd();
+  if (!py) return {};
   try {
-    const r = spawnSync("python3", [tool, "opencode"], {
+    const r = spawnSync(py[0], [...py[1], tool, "opencode"], {
       input: JSON.stringify(event),
       timeout: TIMEOUT_MS,
       maxBuffer: BUFFER_CAP,
       encoding: "utf8",
+      windowsHide: true,
     });
     if (r.status !== 0 || !r.stdout) return {};
     const d = JSON.parse(r.stdout);

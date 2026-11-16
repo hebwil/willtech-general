@@ -443,4 +443,55 @@ Revisão documental única, sem alterações em agentes, núcleo ou instalador.
 - **Preservação:** banner, APNG/GIF, seis mascotes, layout, textos corretos,
   assinaturas de autoria e MIT intactos.
 
+## Rodada compatibilidade Windows — implementação controlada (2026-11-16)
+
+Branch `qoder/windows-compat`, PR único, sem merge automático (homologação
+nativa indisponível). Solução incremental, sem reescrita:
+
+- **Locks (bloqueio real, não sentinela):** macOS/Linux preservam
+  `fcntl.flock` no próprio dossiê (caminho histórico byte-idêntico). Windows:
+  `msvcrt.locking` (LK_NBLCK com espera até 10 s, liberação em `finally`) num
+  sidecar `.lock`; o arquivo de dados nunca fica aberto durante `os.replace`
+  (o Windows proíbe substituir arquivo aberto). Leituras também excluem no
+  Windows (msvcrt não tem lock compartilhado — mais forte, nunca mais fraco).
+  `append`, `read_entries`, `update_locked` (learn/prune/reset_attempts)
+  cobertos pelo mesmo lock.
+- **Caminhos/credenciais:** `is_credential_path` normaliza separadores
+  Windows; corrigida falha pré-existente da âncora `.env` (o `/` final
+  impedia o casamento — rejeição agora efetiva para `.env` e `.env.*`).
+- **Processos:** plugin OpenCode resolve `python3` → `python` → `py -3`
+  (primeiro que responder, em cache; `windowsHide`). Núcleo `auto.py` já era
+  portável (`os.path`, `sys.executable`) — não alterado.
+- **Instalador Windows:** `tools/willtech-install.ps1` projeto-local,
+  consentimento, backup `.willtech-bak`, idempotente, `-Disable/-Enable/
+  -Uninstall` com restauração; recusa instalar sem Python; hooks gravados com
+  o comando Python detectado (formato JSON dos contratos intacto);
+  ExecutionPolicy jamais alterada globalmente (flag de processo documentada).
+  Lógica de merge/unmerge reutilizada do instalador sh via Python embutido.
+- **Segurança preservada:** wrappers `sandbox-exec` (macOS) intactos e NÃO
+  instalados no Windows — shell dos agentes segue restrito pelas permissões
+  do runtime; nenhuma execução/escrita irrestrita liberada. Hierarquia,
+  memória, cache, goldfish, anti-loop, segredos, delegação e as 3 integrações
+  inalterados. Autoria/MIT/identidade visual preservados.
+
+**Testes efetivamente executados (uma bateria consolidada, custo zero):**
+
+| Verificação | Resultado |
+|---|---|
+| `tools/test-compat.py` (nova, cross-platform): import do núcleo, 8 processos × 25 appends + prune concorrente (200/200, 0 corrupção), recuperação anti-loop pós-learn, dossiê pré-2.2 legível, credenciais com `\`, deny da 3ª tentativa nas 3 plataformas, Stop→goldfish, falha fechado com dossiê corrompido | 22/22 PASS (POSIX) |
+| Regressão `tools/test-dossie.sh` | 51/51 |
+| Regressão `tools/test-auto.sh` (incl. plugin JS real via Electron-as-node com a nova resolução Python) | 40/40 |
+| Regressão `tools/test-drift.sh` + gate `willtech-drift.py` | 7/7 · 0 divergências |
+| Regressão `opencode/tests/test-wrappers.sh` (sandbox macOS intacto) | todos PASS |
+| Lógica do instalador PS1 simulada deterministicamente: sintaxe dos blocos Python, adaptação `py -3`, preservação de hooks do usuário, backup, idempotência, restauração, caminho `C:/Users/will/Projeto Ação` (espaço + Unicode) | PASS (simulação) |
+
+**Classificação honesta:** macOS = VALIDADO POR REGRESSÃO (exercitado nesta
+estação). Windows nativo = **PENDENTE DE HOMOLOGAÇÃO NATIVA** — sem runner
+Windows acessível (0 workflows no repo; token sem escopo `workflow`, não
+solicitado; sem máquina Windows, sem pwsh/wine nesta estação). A execução
+real do PS1, dos locks `msvcrt` e dos hooks em Windows não foi exercitada;
+nada foi anunciado como aprovado nativamente. Linux/WSL = não exercitados
+(sem ambiente), requisitos inalterados. O PR permanece aberto até que um
+runner Windows real execute `python3 tools/test-compat.py` e o instalador.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->
