@@ -1,0 +1,7 @@
+{
+  "name": "willtech-visual",
+  "version": "0.1.0",
+  "description": "Painel opcional dos sete agentes WillTech-General com mascotes e estados reais (Mod oficial Claude Code)",
+  "author": { "name": "WillTech-General / WILLTECH-BH", "url": "https://github.com/hebwil" },
+  "license": "MIT"
+}
