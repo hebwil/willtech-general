@@ -44,6 +44,40 @@ for path in "$BASE" "$BASE/enabled" "$BASE/installed.json"; do
   fi
 done
 
+# N3: valida o layout de distribuição ANTES de qualquer alteração. Informa
+# precisamente qual componente está ausente/inválido e impede instalação
+# parcial (nenhum arquivo é tocado se a origem estiver incompleta).
+if [ "$MODE" = install ]; then
+  python3 - "$SRC" "$REPO" "$PLATFORM" <<'PY'
+import json, os, sys
+src, repo, platform = sys.argv[1:4]
+def want(p): return platform in ("all", p)
+required = [("tools/willtech-auto.py", repo, "núcleo de automação"),
+            ("tools/willtech-dossie.py", repo, "dossiê/cache/guardas")]
+if want("claude"): required.append(("claude-code/settings/willtech-hooks.json", src, "template hooks claude"))
+if want("codex"): required.append(("codex/hooks.json", src, "template hooks codex"))
+if want("opencode"): required.append(("opencode/plugins/willtech/index.js", src, "plugin opencode"))
+problems = []
+for rel, base, label in required:
+    path = os.path.join(base, rel)
+    if os.path.islink(path):
+        problems.append(f"{rel} ({label}): symlink recusado em {base}")
+    elif not os.path.isfile(path):
+        problems.append(f"{rel} ({label}): ausente em {base}")
+    elif rel.endswith(".json"):
+        try:
+            with open(path, encoding="utf-8-sig") as fh:
+                json.load(fh)
+        except (OSError, ValueError):
+            problems.append(f"{rel} ({label}): JSON inválido em {base}")
+if problems:
+    print("erro: layout de distribuição inválido; instalação abortada antes de qualquer alteração:")
+    for p in problems:
+        print("  " + p)
+    sys.exit(2)
+PY
+fi
+
 update_component() {
   python3 - "$1" "$2" "$3" "$REPO" <<'PY'
 import hashlib, json, os, shutil, sys

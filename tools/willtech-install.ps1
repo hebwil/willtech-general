@@ -220,6 +220,43 @@ if (-not $py) {
   exit 2
 }
 
+# N3: valida o layout de distribuição ANTES de qualquer alteração (espelha o
+# preflight do .sh). Componente ausente/inválido/symlink = erro preciso, exit 2,
+# nenhuma instalação parcial.
+if (-not $Uninstall) {
+  $preflight = @'
+import json, os, sys
+src, repo, platform = sys.argv[1:4]
+def want(p): return platform in ("all", p)
+required = [("tools/willtech-auto.py", repo, "núcleo de automação"),
+            ("tools/willtech-dossie.py", repo, "dossiê/cache/guardas")]
+if want("claude"): required.append(("claude-code/settings/willtech-hooks.json", src, "template hooks claude"))
+if want("codex"): required.append(("codex/hooks.json", src, "template hooks codex"))
+if want("opencode"): required.append(("opencode/plugins/willtech/index.js", src, "plugin opencode"))
+problems = []
+for rel, base, label in required:
+    path = os.path.join(base, rel)
+    if os.path.islink(path):
+        problems.append(f"{rel} ({label}): symlink recusado em {base}")
+    elif not os.path.isfile(path):
+        problems.append(f"{rel} ({label}): ausente em {base}")
+    elif rel.endswith(".json"):
+        try:
+            with open(path, encoding="utf-8-sig") as fh:
+                json.load(fh)
+        except (OSError, ValueError):
+            problems.append(f"{rel} ({label}): JSON inválido em {base}")
+if problems:
+    print("erro: layout de distribuição inválido; instalação abortada antes de qualquer alteração:")
+    for p in problems:
+        print("  " + p)
+    sys.exit(2)
+'@
+  $exe = $py[0]; $pre = $py[1]
+  $preflight | & $exe @pre - $Src $Repo $Platform
+  if ($LASTEXITCODE -ne 0) { exit 2 }
+}
+
 if ($Uninstall) {
   if (-not (Confirm "Serão revertidos somente os componentes registrados da plataforma $Platform: handlers WillTech e plugin .opencode/plugins/willtech/index.js, com backups. Serão removidos .willtech/enabled e .willtech/installed.json. Diretórios, arquivos de terceiros, componentes modificados e dossiê/cache são preservados.")) {
     Write-Host 'cancelado'; exit 0
