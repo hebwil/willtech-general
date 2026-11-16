@@ -55,4 +55,4 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" });
   fs.createReadStream(file).pipe(res);
 });
-server.listen(PORT, () => console.log(`willtech-codex-viewer http://localhost:${PORT} feed=${FEED}`));
+server.listen(PORT, () => console.log(`willtech-codex-viewer em localhost:${PORT} feed=${FEED}`));
