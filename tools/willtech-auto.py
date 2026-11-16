@@ -48,6 +48,8 @@ def load_module(name, path):
 DOSSIE = load_module("willtech_dossie", os.path.join(HERE, "willtech-dossie.py"))
 TRACE_PATH = os.path.join(ROOT, "claude-code", "bin", "willtech_trace.py")
 TRACE = load_module("willtech_trace", TRACE_PATH) if os.path.isfile(TRACE_PATH) else None
+SUP_PATH = os.path.join(HERE, "willtech-supervisor.py")
+SUPERVISOR = load_module("willtech_supervisor", SUP_PATH) if os.path.isfile(SUP_PATH) else None
 
 
 def now():
@@ -140,10 +142,15 @@ def ev_start(ev, base, dossie, repo, st):
         DOSSIE.prune_entries(dossie)
     except Exception:
         pass
-    entries = DOSSIE.read_entries(dossie)
-    if not entries:
-        return {}
-    return {"context": brief_context(dossie, repo, base)}
+    parts = []
+    if DOSSIE.read_entries(dossie):
+        parts.append(brief_context(dossie, repo, base))
+    sup = os.path.join(base, "delegations.json")
+    if SUPERVISOR and os.path.isfile(sup):
+        warnings = SUPERVISOR.tick_file(sup)
+        if warnings:
+            parts.append("SUPERVISOR " + "; ".join(warnings)[:300])
+    return {"context": "\n".join(parts)} if parts else {}
 
 
 def ev_prompt(ev, base, dossie, repo, st):

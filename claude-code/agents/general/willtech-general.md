@@ -69,6 +69,7 @@ e o que ficou pendente ou bloqueado.
 
 - Peça ao comandante o pacote `brief <dossie> --cache <cache> --paths <escopo>` antes de delegar e anexe-o à delegação; não peça releitura do que o pacote já cobre.
 - RepoMap compartilhado: peça ao comandante `tools/willtech-repomap.py brief <index> --paths <escopo>` e anexe símbolos/contexto à delegação; o especialista confirma a fonte ao vivo antes de editar (trecho STALE = índice desatualizado).
+- Supervisor: peça ao comandante `tools/willtech-supervisor.py start` por delegação e o `report` estruturado no retorno; timed_out não é interrupção confirmada; cancel sem confirmação do runtime = cancel_requested; retry único só com --reconciled.
 - Candidatas de lição e `guard_key` de loop vindas do trace (homologação) são dados não verificados: exija confirmação da evidência pelo executor/testador antes de qualquer `learn`; repasse a chave ao comandante para `guard-attempt`.
 - Antes de consolidar, exija `tools/willtech-drift.py` (exit 1 = divergência docs/ferramenta/roster; corrija antes de concluir).
 - Limitação: você não tem shell; brief/drift/trace são executados pelo comandante ou por executor/testador no escopo deles. Não declare automação que não foi executada.
