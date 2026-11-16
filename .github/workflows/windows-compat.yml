@@ -1,0 +1,84 @@
+name: windows-compat
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch ou commit a testar (padrão: branch do PR #6)"
+        required: true
+        default: "qoder/windows-compat"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-native:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python nativo Windows (os.name == nt)
+        shell: pwsh
+        run: |
+          python -c "import os, sys; assert os.name == 'nt', os.name; print(sys.version)"
+
+      - name: Bateria cross-platform (msvcrt 8x25, anti-loop, hooks 3 plataformas, .env)
+        shell: pwsh
+        run: python tools/test-compat.py
+
+      - name: Bloqueio real de caminho .env via CLI
+        shell: pwsh
+        run: |
+          python tools/willtech-dossie.py add "$env:RUNNER_TEMP\deny.jsonl" --agent t --kind finding --summary s --path 'C:\repo\.env'
+          if ($LASTEXITCODE -ne 2) { throw "FALHOU: .env nao recusado (exit $LASTEXITCODE)" }
+          Write-Host "ok .env recusado na entrada (exit 2)"
+
+      - name: Ciclo real do instalador PS1 (backup, idempotencia, disable, enable, uninstall)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $lab = Join-Path $env:RUNNER_TEMP 'wt lab Acao'
+          New-Item -ItemType Directory -Force -Path (Join-Path $lab 'tools') | Out-Null
+          Copy-Item 'tools\willtech-auto.py' (Join-Path $lab 'tools\willtech-auto.py')
+          New-Item -ItemType Directory -Force -Path (Join-Path $lab '.claude') | Out-Null
+          $pre = '{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo usuario"}]}]},"meu":"dado"}'
+          Set-Content -Encoding utf8 (Join-Path $lab '.claude\settings.json') $pre
+          $ps1 = 'tools\willtech-install.ps1'
+          function Assert([bool]$c, [string]$m) { if (-not $c) { throw "FALHOU: $m" }; Write-Host "ok $m" }
+          function Run-Installer([string[]]$args2) {
+            & powershell -ExecutionPolicy Bypass -File $ps1 @args2
+            Assert ($LASTEXITCODE -eq 0) "exit 0: $args2"
+          }
+          Run-Installer @('-Repo', $lab, '-Yes')
+          Assert (Test-Path (Join-Path $lab '.willtech\enabled')) 'enabled criado'
+          Assert (Test-Path (Join-Path $lab '.codex\hooks.json')) 'hooks codex criados'
+          Assert (Test-Path (Join-Path $lab '.opencode\plugins\willtech\index.js')) 'plugin opencode copiado'
+          Assert (Test-Path (Join-Path $lab '.claude\settings.json.willtech-bak')) 'backup pre-instalacao'
+          $raw = Get-Content (Join-Path $lab '.claude\settings.json') -Raw
+          Assert ($raw -match 'echo usuario') 'hook do usuario preservado'
+          $h = $raw | ConvertFrom-Json
+          $wt = @($h.hooks.PreToolUse | ForEach-Object { $_.hooks } | Where-Object { ($_.args -join ' ') -match 'willtech-auto' })
+          Assert ($wt.Count -ge 1) 'hook willtech presente'
+          Assert ($wt[0].command -match '^python') 'comando python detectado gravado'
+          Run-Installer @('-Repo', $lab, '-Yes')
+          $h2 = Get-Content (Join-Path $lab '.claude\settings.json') -Raw | ConvertFrom-Json
+          $n2 = @($h2.hooks.PreToolUse | ForEach-Object { $_.hooks } | Where-Object { ($_.args -join ' ') -match 'willtech-auto' }).Count
+          Assert ($n2 -eq $wt.Count) "idempotente ($($wt.Count) -> $n2)"
+          Run-Installer @('-Repo', $lab, '-Disable')
+          Assert (-not (Test-Path (Join-Path $lab '.willtech\enabled'))) 'disable remove enabled'
+          Run-Installer @('-Repo', $lab, '-Enable')
+          Assert (Test-Path (Join-Path $lab '.willtech\enabled')) 'enable recria enabled'
+          Run-Installer @('-Repo', $lab, '-Uninstall', '-Yes')
+          $rest = Get-Content (Join-Path $lab '.claude\settings.json') -Raw | ConvertFrom-Json
+          Assert ($rest.meu -eq 'dado') 'backup restaurado (dado do usuario intacto)'
+          Assert (-not (Test-Path (Join-Path $lab '.codex\hooks.json'))) 'uninstall remove codex criado'
+          Assert (-not (Test-Path (Join-Path $lab '.opencode\plugins\willtech\index.js'))) 'uninstall remove plugin'
+          Assert (-not (Test-Path (Join-Path $lab '.willtech\enabled'))) 'uninstall remove enabled'
+          Write-Host 'CICLO PS1 COMPLETO: PASS'
