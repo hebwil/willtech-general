@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGE = ROOT / "opencode/plugins/willtech/visual"
-BASE = "57f8bb458218e1dfb844722fc19b9abba1d94add"
+BASE = "fbb2427"
 
 
 class GuiDistributionTests(unittest.TestCase):
@@ -36,7 +36,7 @@ class GuiDistributionTests(unittest.TestCase):
         self.assertNotIn("dependencies", manifest)
         source = (PACKAGE / "gui-source.cjs").read_text()
         self.assertIn('ctx.options.enabled !== true', source)
-        self.assertIn('ctx.app.version !== "2.2.6"', source)
+        self.assertIn('versionAtLeast(ctx.app.version, "2.2.6")', source)
         self.assertIn('ctx.app.platform !== "desktop"', source)
         self.assertNotRegex(source, r'\b(setInterval|fetch|spawn|exec|eval|innerHTML|WebGL)\s*\(')
         self.assertNotIn("ctx.client", source)

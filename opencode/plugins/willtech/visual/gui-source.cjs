@@ -141,9 +141,21 @@ function renderPanel(props, ctx) {
   return root;
 }
 
+// A API GUI é experimental e acompanha o Desktop; o piso 2.2.6 mantém o contrato
+// verificado e libera as versões atuais (2.2.7, 2.3.0) em vez de travar num pin exato.
+function versionAtLeast(version, minimum) {
+  const parse = (value) => String(value).split(".").map((part) => parseInt(part, 10) || 0);
+  const current = parse(version);
+  const floor = parse(minimum);
+  for (let index = 0; index < 3; index += 1) {
+    if ((current[index] || 0) !== (floor[index] || 0)) return (current[index] || 0) > (floor[index] || 0);
+  }
+  return true;
+}
+
 module.exports.default = Plugin.define({
   setup(ctx) {
-    if (ctx.options.enabled !== true || ctx.app.platform !== "desktop" || ctx.app.version !== "2.2.6") return;
+    if (ctx.options.enabled !== true || ctx.app.platform !== "desktop" || !versionAtLeast(ctx.app.version, "2.2.6")) return;
     ctx.add(Style, CSS);
     const tab = { id: "team", title: "WillTech · Equipe", closable: "compact", fallback: true };
     ctx.add(Panel, {

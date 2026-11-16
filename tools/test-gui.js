@@ -139,9 +139,14 @@
     const check = (condition, name) => { if (!condition) throw new Error(name); passed.push(name); };
     let active;
     try {
-      for (const overrides of [{ options: {} }, { options: { enabled: false } }, { app: { platform: "web", version: "2.2.6" } }, { app: { platform: "desktop", version: "2.2.5" } }, { app: { platform: "desktop", version: "2.2.7" } }]) {
+      for (const overrides of [{ options: {} }, { options: { enabled: false } }, { app: { platform: "web", version: "2.2.6" } }, { app: { platform: "desktop", version: "2.2.5" } }]) {
         const f = fixture(overrides);
         check(f.registrations.length === 0, `Opt-in/versão/superfície: ${JSON.stringify(overrides)}`);
+        f.dispose();
+      }
+      for (const version of ["2.2.6", "2.2.7", "2.3.0"]) {
+        const f = fixture({ app: { platform: "desktop", version } });
+        check(f.registrations.length === 3, `Versão atual aceita pelo piso 2.2.6: ${version}`);
         f.dispose();
       }
       active = fixture();

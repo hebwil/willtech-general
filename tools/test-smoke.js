@@ -43,7 +43,7 @@
     const target = { effects: new Set(), cleanups: [] };
     const ctx = {
       id: "willtech-general-visual", options: { enabled: true },
-      app: { platform: "desktop", version: "2.2.6" }, signal: controller.signal,
+      app: { platform: "desktop", version: "2.3.0" }, signal: controller.signal,
       sessions: { current: () => props.session },
       layout: { state: () => visible() ? "visible" : "closed", toggle() {} },
       add(registry, value) { registrations.push({ registry, value }); },
