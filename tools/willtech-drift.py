@@ -13,9 +13,12 @@ agentes — sem modelo, sem rede, sem inferência semântica:
      Claude Code.
 
 Exit 0 = sem drift; 1 = drift listado; 2 = erro de uso (árvore ilegível).
-Uso: willtech-drift.py [raiz]
+Uso: willtech-drift.py [raiz] [--dossie CAMINHO]
+Com --dossie (2.2): decisões sem evidência e entradas com hash divergente
+também contam como drift (reusa entry_status/read_entries do dossiê).
 """
 import glob
+import importlib.util
 import os
 import re
 import sys
@@ -99,8 +102,38 @@ def check_roster(root, problems):
             problems.append(f"{platform} com agentes a mais: {', '.join(sorted(extra))}")
 
 
+def check_dossie(root, dossie, problems):
+    if not os.path.isfile(dossie):
+        problems.append(f"dossiê ausente: {dossie}")
+        return
+    tool = os.path.join(root, "tools", "willtech-dossie.py")
+    if not os.path.isfile(tool):
+        problems.append("tools/willtech-dossie.py ausente (checagem de dossiê)")
+        return
+    spec = importlib.util.spec_from_file_location("willtech_dossie", tool)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    for e in mod.read_entries(dossie) or []:
+        label = e.get("path") or e.get("summary", "")[:60]
+        if e.get("kind") == "decision" and not (e.get("path") or e.get("output_path")):
+            problems.append(f"decisão sem evidência: {label}")
+            continue
+        status = mod.entry_status(e)
+        if status != "OK":
+            problems.append(f"evidência divergente ({status}): {label}")
+
+
 def main():
-    root = sys.argv[1] if len(sys.argv) > 1 else "."
+    args = sys.argv[1:]
+    dossie = None
+    if "--dossie" in args:
+        i = args.index("--dossie")
+        if i + 1 >= len(args):
+            print("erro: --dossie exige um caminho")
+            return 2
+        dossie = args[i + 1]
+        del args[i:i + 2]
+    root = args[0] if args else "."
     if not os.path.isdir(root):
         print("erro: raiz não é um diretório")
         return 2
@@ -108,6 +141,8 @@ def main():
     check_readme(root, problems)
     check_subcommands(root, problems)
     check_roster(root, problems)
+    if dossie:
+        check_dossie(root, dossie, problems)
     for p in problems:
         print(f"DRIFT {p}")
     print(f"{len(problems)} divergências")

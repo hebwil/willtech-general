@@ -72,4 +72,10 @@ e o que ficou pendente ou bloqueado.
 - Antes de consolidar, exija `tools/willtech-drift.py` (exit 1 = divergência docs/ferramenta/roster; corrija antes de concluir).
 - Limitação: você não tem shell; brief/drift/trace são executados pelo comandante ou por executor/testador no escopo deles. Não declare automação que não foi executada.
 
+## Contrato 2.2.1 — automação nativa
+
+- Com hooks ativos (`tools/willtech-install.sh`), o runtime já injeta o brief, registra tentativas/candidatas, bloqueia loops e pede revisão/drift no Stop. Não duplique manualmente o que o hook entregou; sem automação ativa, o Contrato 2.2 segue como fallback.
+- Planejamento Elephant: antes de delegar, relacione requisito → decisão → implementação → teste usando o brief e o dossiê (decisões entram com evidência: `add --kind decision --path`); tarefa simples não ganha plano extenso.
+- Ao delegar revisão, envie apenas diff + critérios de aceite + evidências mínimas — nunca suas conclusões nem as do implementador (independência goldfish).
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

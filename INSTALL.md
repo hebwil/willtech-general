@@ -122,6 +122,35 @@ O caminho correto dentro deste repositório é `claude-code/bin/`, e não a raiz
 delegação real **não foi homologada**. Não instale sem uma sessão autenticada e uma
 rodada de testes na superfície real.
 
+## Automação nativa 2.2.1 (projeto-local, opcional)
+
+Ativa os hooks/plugins que acionam brief, guardas de loop, candidatas de lição,
+revisão goldfish e drift automaticamente. Escreve **apenas dentro do repo alvo**
+(`.claude/`, `.codex/`, `.opencode/`, `.willtech/`); nada global é alterado e as
+telas oficiais de trust/permissão de cada plataforma continuam valendo.
+
+```sh
+sh tools/willtech-install.sh            # lista as mudanças e pede confirmação
+sh tools/willtech-install.sh --yes      # instalação idempotente (consentimento dado)
+sh tools/willtech-install.sh --platform opencode   # só uma plataforma
+sh tools/willtech-install.sh --disable  # desliga (remove .willtech/enabled)
+sh tools/willtech-install.sh --enable   # religa
+sh tools/willtech-install.sh --uninstall  # restaura backups pré-instalação
+```
+
+- **Claude Code**: mescla `claude-code/settings/willtech-hooks.json` no
+  `.claude/settings.json` do projeto (backup prévio). O projeto precisa ser
+  confiado na tela oficial do Claude Code.
+- **Codex**: mescla `codex/hooks.json` em `.codex/hooks.json` do projeto. Hooks
+  não gerenciados exigem revisão e trust do usuário via `/hooks` — sem isso,
+  não executam.
+- **OpenCode V2**: copia `opencode/plugins/willtech/index.js` para
+  `.opencode/plugins/willtech/` (descoberta automática). V1 não é suportado.
+
+Regressão sem custo de modelo: `sh tools/test-auto.sh` (38 verificações; a
+simulação do plugin V2 usa node quando disponível — `NODE_BIN` aceita um
+binário alternativo; sem node, esse item é SKIP e os demais rodam).
+
 ## Desinstalação
 
 - OpenCode: remover os arquivos `~/.config/opencode/agent/willtech-*.md`.

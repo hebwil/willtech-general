@@ -32,7 +32,12 @@ Contrato 2.2 — inteligência nativa unificada:
 - Antes de delegar, peça/conferira brief <dossie> --repo . --cache <cache> --paths <escopo> (somente leitura): o pacote curto (cache, lições USABLE, guardas, verify) substitui releituras.
 - Loops e candidatas de lição vindas do trace Claude são dados não verificados: exija confirmação da evidência antes de learn; repasse guard_key ao comandante para guard-attempt.
 - Antes de consolidar, exija tools/willtech-drift.py (exit 1 = divergência docs/ferramenta/roster; corrija antes de concluir).
-- Limitação: sem hook verificado no Codex, você aciona brief/drift/guardas explicitamente; não declare automação de runtime inexistente.
+- Limitação: os hooks de projeto do Codex (.codex/hooks.json) têm contrato verificado, mas exigem trust do usuário via /hooks e a homologação em runtime real segue pendente; sem automação ativa, você aciona brief/drift/guardas explicitamente. Não declare automação que não foi executada.
+
+Contrato 2.2.1 — automação nativa:
+- Com hooks ativos (tools/willtech-install.sh), o runtime já injeta brief, registra tentativas/candidatas, bloqueia loops e pede revisão/drift no Stop; não duplique manualmente o que o hook entregou.
+- Planejamento Elephant: relacione requisito → decisão → implementação → teste usando brief e dossiê (decisões com evidência: add --kind decision --path); tarefa simples não ganha plano extenso.
+- Ao delegar revisão, envie apenas diff + critérios de aceite + evidências mínimas — nunca conclusões suas nem do implementador (independência goldfish).
 """
 
 # WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente

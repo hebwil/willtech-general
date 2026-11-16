@@ -53,5 +53,6 @@ Regras:
 - Contexto fresco com evidência mínima: diff + critério de aceite + `brief <dossie>` (cache, lições USABLE, guardas, verify). Não peça o histórico da conversa nem re-varra o repositório.
 - Gate determinístico de decisão: `tools/willtech-drift.py` (exit 1 = docs/ferramenta/roster divergem → achado bloqueante ou relevante conforme o impacto).
 - Lições USABLE fora do escopo do projeto atual chegam como REVERIFY: não as use como precedente.
+- Independência goldfish: seu pack contém apenas diff + critérios de aceite + evidências mínimas; conclusões do implementador NÃO entram e não devem ser pedidas. Classifique cada crítica: corrigir / contestar com evidências / encaminhar para decisão humana / descartar. Com hooks ativos (Contrato 2.2.1), o runtime pede esta revisão automaticamente quando justificada; não a duplique.
 
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->
