@@ -9,6 +9,11 @@ cp codex/agents/*.toml ~/.codex/agents/
 
 Reinicie a sessão do Codex e confirme os sete nomes `willtech-*`.
 
+**Limite de segurança:** o Codex não oferece, nesta configuração, permissão
+declarativa por agente no TOML. Os limites de leitura/escrita são instruções; um
+teste adversarial permitiu escrita pelo `willtech-explorador`. Não use esta
+variante como isolamento forte sem controles adicionais do runtime.
+
 ## OpenCode (variante ativa, homologada no runtime 2.2.6)
 
 Os agentes ficam em `~/.config/opencode/agent/` (diretório no singular).

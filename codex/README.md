@@ -32,4 +32,7 @@ especialista apropriado.
 
 - 7 agentes registrados em sessão real do Codex.
 - Delegação comandante → General → especialista confirmada.
-- Tentativa de escrita pelo `willtech-explorador` negada pelo runtime em 15/11/2026.
+- Em teste adversarial de 15/11/2026, o runtime **permitiu** que o
+  `willtech-explorador` escrevesse. Isso confirma que o TOML/instruções não são
+  uma barreira de segurança no Codex; não trate esta variante como isolamento
+  equivalente ao OpenCode.
