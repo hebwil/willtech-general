@@ -146,8 +146,8 @@ Cada agente possui um contrato operacional, com responsabilidades, limites e cri
 |---|---|---|
 | **macOS** | Validado | Suítes determinísticas e smoke tests exercitados em macOS (arm64). Os wrappers de sandbox do OpenCode usam `sandbox-exec`, exclusivo do macOS |
 | **Linux** | Não validado nesta estação | Código Unix (python3 stdlib + shell POSIX + git, com `fcntl` disponível em Linux). Requisitos: python3, git, sh. Sem ambiente Linux disponível para exercício; o sandbox `sandbox-exec` dos wrappers não se aplica |
-| **Windows nativo** | Não suportado | O dossiê e o núcleo importam `fcntl` (Unix); os scripts são `sh` e não executam em PowerShell; `sandbox-exec` é macOS. Não há instalador Windows nesta versão |
-| **Windows via WSL** | Não validado | O caminho seria o Linux dentro da distribuição WSL (python3, git, sh). Sem ambiente Windows/WSL disponível para exercício; mesmas condições do Linux |
+| **Windows nativo** | Núcleo e instalador PowerShell homologados em Windows real | [Workflow nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/43892063828): `msvcrt.locking` 22/22 (8 processos × 25, anti-loop, hooks das 3 plataformas, `.env` recusado) e ciclo PowerShell 5.1 completo: backup, merge preservando configurações, idempotência, disable/enable/uninstall, caminho Unicode e integridade dos arquivos. Wrappers `sandbox-exec` não instalados — shell dos agentes segue restrito pelo runtime. Runtimes de IA em Windows não homologados por este teste |
+| **Windows via WSL** | Não validado | Caminho Linux dentro da distribuição WSL (python3, git, sh; instalador `sh` utilizável). Sem ambiente Windows/WSL disponível para exercício; mesmas condições do Linux |
 
 As três integrações de IA abaixo são independentes do sistema operacional: cada uma usa os mecanismos nativos do seu runtime.
 
@@ -286,7 +286,7 @@ willtech-general/
 └── history/         versões históricas da arquitetura
 ```
 
-Suítes de regressão sem custo de modelo: `sh tools/test-auto.sh` (40) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7) · `sh opencode/tests/test-wrappers.sh` (41).
+Suítes de regressão sem custo de modelo: `sh tools/test-auto.sh` (40) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7) · `sh opencode/tests/test-wrappers.sh` (41) · `python3 tools/test-compat.py` (22, cross-platform: locks com processos concorrentes, recuperação anti-loop, dossiê antigo, hooks das 3 plataformas, falha fechado).
 
 ---
 
