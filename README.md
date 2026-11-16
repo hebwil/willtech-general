@@ -146,7 +146,7 @@ Cada agente possui um contrato operacional, com responsabilidades, limites e cri
 |---|---|---|
 | **macOS** | Validado | Suítes determinísticas e smoke tests exercitados em macOS (arm64). Os wrappers de sandbox do OpenCode usam `sandbox-exec`, exclusivo do macOS |
 | **Linux** | Não validado nesta estação | Código Unix (python3 stdlib + shell POSIX + git, com `fcntl` disponível em Linux). Requisitos: python3, git, sh. Sem ambiente Linux disponível para exercício; o sandbox `sandbox-exec` dos wrappers não se aplica |
-| **Windows nativo** | Núcleo e instalador PowerShell homologados em Windows real | [Workflow nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/43892063828): `msvcrt.locking` 22/22 (8 processos × 25, anti-loop, hooks das 3 plataformas, `.env` recusado) e ciclo PowerShell 5.1 completo: backup, merge preservando configurações, idempotência, disable/enable/uninstall, caminho Unicode e integridade dos arquivos. Wrappers `sandbox-exec` não instalados — shell dos agentes segue restrito pelo runtime. Runtimes de IA em Windows não homologados por este teste |
+| **Windows nativo** | Núcleo homologado; instalador homologado na versão `c70e5e8` | [Workflow nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/43892063828): `msvcrt.locking` 22/22 (8 processos × 25, anti-loop, hooks das 3 plataformas, `.env` recusado) e ciclo PowerShell 5.1 completo: backup, merge preservando configurações, idempotência, disable/enable/uninstall, caminho Unicode e integridade dos arquivos. Wrappers `sandbox-exec` não instalados — shell dos agentes segue restrito pelo runtime. Runtimes de IA em Windows não homologados por este teste |
 | **Windows via WSL** | Não validado | Caminho Linux dentro da distribuição WSL (python3, git, sh; instalador `sh` utilizável). Sem ambiente Windows/WSL disponível para exercício; mesmas condições do Linux |
 
 As três integrações de IA abaixo são independentes do sistema operacional: cada uma usa os mecanismos nativos do seu runtime.
@@ -155,7 +155,7 @@ As três integrações de IA abaixo são independentes do sistema operacional: c
 
 | Plataforma | Agentes | Delegação hierárquica | Hooks / plugins (2.2.1) | Memória, revisão e controle de loops | Isolamento por agente |
 |---|---|---|---|---|---|
-| **OpenCode V2** | Subagentes Markdown + wrappers sandbox + plugin V2 | Homologada em runtime real | Plugin V2 nativo | Contratos ativos; automação validada em simulação | Aplicado pelo runtime (2.2.6) |
+| **OpenCode V2** | Subagentes Markdown + wrappers sandbox + plugin V2 | Delegação real comprovada; tarefa DeepSeek não homologada (leitura rejeitada) | Plugin V2 nativo | Contratos ativos; automação validada em simulação | Aplicado pelo runtime (2.2.6) |
 | **OpenAI Codex** | Agentes nativos em TOML | Validada em runtime real | Hooks projeto-local com trust via `/hooks` | Contratos ativos; automação validada em simulação | Instrucional (limitação do runtime) |
 | **Claude Code** | Subagentes Markdown + templates de hooks | Pacote implementado; homologação de runtime pendente | Templates de hooks com `onFailure: block` | Contratos ativos; automação validada em simulação | Depende dos controles do runtime |
 
@@ -226,7 +226,9 @@ sh tools/willtech-install.sh --uninstall           # reverter com restauração 
 
 Escreve **apenas dentro do repositório alvo** (`.claude/`, `.codex/`, `.opencode/`, `.willtech/`); as telas oficiais de trust/permissão de cada plataforma continuam valendo.
 
-**Desativação e reversão:** `--disable` desliga sem remover; `--uninstall` restaura os backups pré-instalação. Para desinstalar agentes, remova os arquivos `willtech-*` dos diretórios de agentes da plataforma (instruções completas em [INSTALL.md](INSTALL.md)).
+**Desativação e reversão:** `--disable` remove somente `.willtech/enabled`; `--uninstall` remove apenas handlers registrados pelo instalador e restaura os backups dos componentes, inclusive do plugin. Arquivos de terceiros, configurações acrescentadas depois, dossiê/cache e diretórios preexistentes são preservados. Componentes sem registro de posse ou plugins modificados pelo usuário não são apagados. Detalhes de distribuição por projeto e reversão em [INSTALL.md](INSTALL.md).
+
+**Delegação DeepSeek — evidência parcial:** no OpenCode Desktop 2.2.6, o comandante acionou o General e este chamou o Explorador real por `subagent`, recebendo seu retorno de erro. A leitura foi rejeitada por `permission.rejected` no cliente não interativo; o processo terminou por timeout de 60 segundos. Isso comprova comunicação real, **não homologação completa da tarefa**. Profundidade 2 e permissões corretas não substituem a aprovação oficial do runtime. Registros e limitações em [EVOLUCAO.md](EVOLUCAO.md).
 
 ### Smoke tests dos adaptadores
 
@@ -285,6 +287,8 @@ willtech-general/
 ├── docs/assets/     identidade visual: cards e banner WebP, APNG/GIF/estático do General
 └── history/         versões históricas da arquitetura
 ```
+
+Validação direcionada de ativação/reversão e preservação de terceiros: `python3 tools/test-install.py` (shell real + Python embutido do PS1; não é homologação nativa Windows).
 
 Suítes de regressão sem custo de modelo: `sh tools/test-auto.sh` (40) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7) · `sh opencode/tests/test-wrappers.sh` (41) · `python3 tools/test-compat.py` (22, cross-platform: locks com processos concorrentes, recuperação anti-loop, dossiê antigo, hooks das 3 plataformas, falha fechado).
 

@@ -570,4 +570,90 @@ Sem bloqueio remanescente para publicar o PR #6. Homologação de runtimes de
 IA em Windows não faz parte deste workflow; os três incrementos futuros
 não foram iniciados.
 
+## Consolidação distribuível — ativação, reversão e delegação (2026-11-16)
+
+Base publicada: `38ce81b5fb9f173a4823c33300c37edd6559d010` (PR #6 incorporado).
+Escopo exclusivo do repositório; nenhuma instalação pessoal acessada nesta
+consolidação e nenhuma nova chamada de modelo. Evidências de IA abaixo são
+reaproveitadas de execuções anteriores, não repetidas nesta rodada.
+
+### Ativação e reversão
+
+- **Já existente:** instaladores oficiais sh/PowerShell, alvo projeto-local,
+  consentimento inicial, seleção de plataforma e disable/enable/uninstall.
+  Não foi criado outro instalador. INSTALL.md esclarece o uso de `--repo`/`-Repo`
+  e os quatro auxiliares necessários no alvo, sem caminhos pessoais.
+- **Lacunas corrigidas:** o instalador Unix ainda criava backup de arquivos que
+  ele próprio havia criado na reinstalação; ambos removiam hooks por substring
+  e podiam apagar JSON com dados de terceiros quando não restassem hooks.
+  O plugin era sobrescrito/removido sem backup; diretórios preexistentes vazios
+  também podiam ser removidos.
+- **Reversão por posse:** `.willtech-managed.json` registra somente os handlers
+  adicionados ou o hash do plugin; `.willtech-created` marca arquivos criados;
+  `.willtech-bak` conserva o arquivo original byte a byte. Reinstalação remove
+  somente handlers registrados, não ocorrências de texto em hooks de terceiros.
+  Uninstall restaura o original intacto quando não houve alteração posterior;
+  caso contrário, retira só os handlers registrados e preserva os outros dados.
+  Configuração alterada conserva o backup quando restaurá-lo apagaria mudanças.
+  Plugin modificado pelo usuário e seu backup são preservados, com aviso.
+  Backups/marcadores sem registro não são adotados automaticamente: a instalação
+  para nesse componente e exige revisão manual, sem apagá-los.
+- **Preservação:** arquivos sem registro de posse não são removidos. Diretórios
+  não são apagados, nem `tools/`, `claude-code/` ou `.willtech/`; auxiliares,
+  dossiê/cache e arquivos de terceiros permanecem. Symlinks no estado de
+  instalação e componentes fora do alvo são recusados. O marcador de ativação
+  é gravado somente após os componentes, nunca antes de uma instalação falha.
+- **Validação direcionada:** uma execução de `python3 tools/test-install.py`:
+  **16 testes aprovados, zero falhas, 2,075 s**. Exercita somente os instaladores
+  modificados e a integridade documental/visual. O shell é
+  executado no código real do repositório; os blocos Python embutidos do PS1
+  são executados deterministicamente, preservando `@none`, `py -3` e Unicode.
+  Isso não é uma nova homologação nativa do PowerShell. O workflow Windows
+  histórico `43892063828` continua comprovando a versão `c70e5e8`; núcleo,
+  locks e plugin não foram modificados nem retestados nesta consolidação.
+
+### Delegação real — resultado parcial, não homologação completa
+
+OpenCode Desktop 2.2.6; modelo registrado nas sessões:
+`willtech-bifrost2/deepseek-v4.1-1017`. O modelo interno upstream e o custo de
+faturamento do provedor não foram verificados; `cost: 0` do runtime não prova
+execução gratuita.
+
+- No smoke anterior, comandante → General aconteceu, mas o encaminhamento
+  dizia "você mesmo faz a leitura"; o General executou três `read`, sem chamar
+  especialista. Esse registro não comprova bloqueio do mecanismo de delegação.
+- Profundidade efetiva 2 permite Comandante → General → Explorador. O General
+  tinha permissão de `subagent`; Explorador estava registrado e invocável.
+  Não houve bloqueio objetivo de configuração que justificasse alterá-la.
+- Uma tentativa de cliente externo falhou antes de criar sessão por exigir
+  autenticação: 0,154 s, zero tokens de modelo. Não foi falha dos agentes ou
+  do DeepSeek. O acesso foi resolvido depois pela descoberta autenticada do
+  cliente oficial do serviço existente, sem expor senha nem mudar configuração.
+
+| Sessão real | Evento comprovado | Resultado |
+|---|---|---|
+| Comandante `ses_e1afc2e47ffel1fNHvegYZkXDV` | `subagent` criou o General como filho | Interrompido no timeout |
+| General `ses_e1afbb7f7ffeO4TuZF2bQLiON6` | `subagent` para `willtech-explorador`, filho real, chamada concluída | Recebeu retorno de erro; resposta final ao comandante interrompida |
+| Explorador `ses_e1afb91f6ffepg1nGR7N5W3K1j` | Uma chamada `read` no arquivo pequeno autorizado | `permission.rejected`; devolveu a impossibilidade, sem inventar função |
+
+Erro real: `This non-interactive run cannot ask the user for permission, so the request was rejected. Continue without this action.` O estado `succeeded`
+da sessão do Explorador significa que devolveu a resposta de erro, **não**
+que conseguiu ler o arquivo. Nenhum nome de função foi obtido.
+
+**Resultado do processo: TIMEOUT.** Uma execução; SIGINT aos 60,005 s;
+encerramento aos 60,079 s, exit 130. Comandante e General confirmados
+`interrupted`; arquivo de teste intacto até a remoção do laboratório. Tokens registrados nas três
+sessões: entrada 44.056, saída 699, raciocínio 251, cache lido 256, cache escrito 0;
+contabilização possivelmente parcial pelo cancelamento.
+
+A comunicação General → Explorador → General está comprovada com retorno de
+erro. A leitura e a consolidação completa da tarefa **não estão homologadas**.
+A correção distribuível necessária é documental: usar workspace autorizado e
+aprovação interativa oficial quando exigida, sem flexibilizar permissões ou
+repetir testes pagos. Contratos dos sete agentes, hierarquia, hooks/plugin,
+memória, anti-loop e revisão independente permanecem intactos.
+
+Banner, sete mascotes, APNG/GIF/estáticos, layout premium, autoria WILLTECH-BH,
+MIT e créditos preservados.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->
