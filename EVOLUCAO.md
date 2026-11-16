@@ -760,7 +760,9 @@ Nenhum agente novo, nenhum framework, nenhuma chamada de modelo extra.
   palavras-chave); PLAN critical com REVIEW obrigatória para caminhos de
   segurança. `review-pack`: pack independente (diff + aceite + evidências
   verificadas, sem conclusões do executor), uma rodada por diff (segunda só
-  com --new-finding, senão exit 3). `resolve`: fix/contest exigem evidência;
+  com `--new-finding REF` citando evidência verificável de problema novo —
+  arquivo existente; flag vazia/sem evidência = exit 2, mesmo achado = exit 3,
+  sem flag = exit 3). `resolve`: fix/contest exigem evidência;
   escalate/discard registrados. `catalyst`: uma alternativa após impasse
   demonstrado (≥2 falhas); segunda exploração = exit 3.
 - `willtech-auto.py` reusa as constantes compartilhadas e o Stop aponta para

@@ -68,7 +68,9 @@ case "$pack" in
   *) ok "pack não entrega conclusão do executor como verdade" ;;
 esac
 expect "segunda rodada do mesmo diff bloqueada" 3 python3 "$TOOL" review-pack "$D" --repo "$R"
-expect "segunda rodada com problema novo relevante permitida" 0 python3 "$TOOL" review-pack "$D" --repo "$R" --new-finding
+expect "segunda rodada com problema novo relevante permitida" 0 python3 "$TOOL" review-pack "$D" --repo "$R" --new-finding "mod.py:2 problema novo relevante"
+expect "segunda rodada com flag vazia bloqueada" 2 python3 "$TOOL" review-pack "$D" --repo "$R" --new-finding
+expect "mesmo achado repetido bloqueado" 3 python3 "$TOOL" review-pack "$D" --repo "$R" --new-finding "mod.py:2 problema novo relevante"
 printf 'a = 3\n' > "$R/mod.py"
 expect "diff novo = nova rodada legítima" 0 python3 "$TOOL" review-pack "$D" --repo "$R"
 expect "review-pack sem repositório git falha claro" 2 python3 "$TOOL" review-pack "$D" --repo "$TMP"
