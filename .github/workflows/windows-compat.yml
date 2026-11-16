@@ -45,12 +45,14 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $lab = Join-Path $env:RUNNER_TEMP 'wt lab Acao'
+          $lab = Join-Path $env:RUNNER_TEMP ('wt lab A' + [char]0x00E7 + [char]0x00E3 + 'o')
           New-Item -ItemType Directory -Force -Path (Join-Path $lab 'tools') | Out-Null
           Copy-Item 'tools\willtech-auto.py' (Join-Path $lab 'tools\willtech-auto.py')
+          $coreHash = (Get-FileHash (Join-Path $lab 'tools\willtech-auto.py')).Hash
           New-Item -ItemType Directory -Force -Path (Join-Path $lab '.claude') | Out-Null
           $pre = '{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo usuario"}]}]},"meu":"dado"}'
           Set-Content -Encoding utf8 (Join-Path $lab '.claude\settings.json') $pre
+          $original = $pre | ConvertFrom-Json | ConvertTo-Json -Depth 20 -Compress
           $ps1 = 'tools\willtech-install.ps1'
           function Assert([bool]$c, [string]$m) { if (-not $c) { throw "FALHOU: $m" }; Write-Host "ok $m" }
           function Run-Installer([string[]]$args2) {
@@ -68,6 +70,12 @@ jobs:
           $wt = @($h.hooks.PreToolUse | ForEach-Object { $_.hooks } | Where-Object { ($_.args -join ' ') -match 'willtech-auto' })
           Assert ($wt.Count -ge 1) 'hook willtech presente'
           Assert ($wt[0].command -match '^python') 'comando python detectado gravado'
+          Assert ($h.meu -eq 'dado') 'configuracao do usuario preservada no merge'
+          Assert ($raw -notmatch '@none') 'sentinela nao vaza para hooks'
+          $codex = Get-Content -Encoding UTF8 (Join-Path $lab '.codex\hooks.json') -Raw | ConvertFrom-Json
+          $codexCmd = $codex.hooks.PreToolUse[0].hooks[0].command
+          Assert ($codexCmd.Contains($lab.Replace('\', '/') + '/tools/willtech-auto.py')) 'caminho Unicode preservado nos hooks codex'
+          Assert ((Get-FileHash 'opencode\plugins\willtech\index.js').Hash -eq (Get-FileHash (Join-Path $lab '.opencode\plugins\willtech\index.js')).Hash) 'plugin copiado sem alteracoes'
           Run-Installer @('-Repo', $lab, '-Yes')
           $h2 = Get-Content (Join-Path $lab '.claude\settings.json') -Raw | ConvertFrom-Json
           $n2 = @($h2.hooks.PreToolUse | ForEach-Object { $_.hooks } | Where-Object { ($_.args -join ' ') -match 'willtech-auto' }).Count
@@ -79,6 +87,8 @@ jobs:
           Run-Installer @('-Repo', $lab, '-Uninstall', '-Yes')
           $rest = Get-Content (Join-Path $lab '.claude\settings.json') -Raw | ConvertFrom-Json
           Assert ($rest.meu -eq 'dado') 'backup restaurado (dado do usuario intacto)'
+          Assert (($rest | ConvertTo-Json -Depth 20 -Compress) -eq $original) 'configuracao original restaurada integralmente'
+          Assert ((Get-FileHash (Join-Path $lab 'tools\willtech-auto.py')).Hash -eq $coreHash) 'nucleo do laboratorio inalterado'
           Assert (-not (Test-Path (Join-Path $lab '.codex\hooks.json'))) 'uninstall remove codex criado'
           Assert (-not (Test-Path (Join-Path $lab '.opencode\plugins\willtech\index.js'))) 'uninstall remove plugin'
           Assert (-not (Test-Path (Join-Path $lab '.willtech\enabled'))) 'uninstall remove enabled'
