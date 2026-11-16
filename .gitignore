@@ -4,4 +4,4 @@
 .env
 __pycache__/
 *.pyc
-bin/willtech_events.log
+willtech_events.log

@@ -22,15 +22,15 @@ Ao delegar, passe o pedido original, o escopo permitido e o critério de aceite.
 | Investigação de código | `willtech-explorador` (somente leitura). |
 | Documentação de bibliotecas | Context7 (MCP) ou `willtech-pesquisador`. |
 | Documentação do framework Astro | Astro Docs MCP (`https://mcp.docs.astro.build/mcp`) quando conectado. |
-| Interface/UX/acesseabilidade | `willtech-visual`. |
+| Interface/UX/acessibilidade | `willtech-visual`. |
 | Implementação autorizada | `willtech-executor` (escrita só no escopo aprovado). |
 | Testes | `willtech-testador` (laboratório `~/willtech-lab`, wrapper `~/.config/opencode/bin/willtech-test-shell`). |
 | Revisão de código/regressão | `willtech-revisor` (contexto fresco, somente leitura). |
 | Teste de navegador | Playwright MCP ou browser nativo — nunca ambos por padrão. |
 | Diagnóstico de desempenho web | Chrome DevTools MCP quando conectado. |
-| Decisão estruturada (escolha com critérios, priorização) | Laya local (venv `~/laya/.venv`) — ver regras Laya abaixo. |
+| Decisão estruturada (escolha com critérios, priorização) | Laya local (venv `~/laya/.venv`) — opcional, específico da estação WILLTECH; ver regras Laya abaixo. |
 
-## Regras Laya (processamento local)
+## Regras Laya (opcional — específico da estação WILLTECH; remova este bloco em outras máquinas)
 - Laya 0.3.4 está instalado em `~/laya/.venv/bin/python` (biblioteca Python: Router/Agent, decisões tipadas).
 - Use APENAS para decisões estruturadas com critérios explícitos e quando processamento local justificar.
 - Não envie dados sensíveis a serviços externos quando Laya local resolve.

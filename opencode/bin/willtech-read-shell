@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+# Regras subpath do sandbox exigem caminho canônico: /tmp e /var são symlinks.
+HOME_REAL="$(cd "$HOME" && pwd -P)"
+
 PROFILE="(version 1)
 (allow default)
 (deny file-write*)
@@ -8,10 +11,39 @@ PROFILE="(version 1)
 (allow file-write* (literal \"/dev/tty\"))
 (allow file-write* (literal \"/dev/stdout\"))
 (allow file-write* (literal \"/dev/stderr\"))
-(deny file-read* (subpath \"$HOME/.ssh\"))
-(deny file-read* (subpath \"$HOME/.config/opencode\"))
-(deny file-read* (subpath \"$HOME/.config/bifrost\"))
-(deny file-read* (subpath \"$HOME/.config/willtech-bifrost2\"))
+(deny file-read* (subpath \"$HOME_REAL/.ssh\"))
+(deny file-read* (subpath \"$HOME_REAL/.config/opencode\"))
+(deny file-read* (subpath \"$HOME_REAL/.config/bifrost\"))
+(deny file-read* (subpath \"$HOME_REAL/.config/willtech-bifrost2\"))
+(deny file-read* (subpath \"$HOME_REAL/.config/gh\"))
+(deny file-read* (subpath \"$HOME_REAL/.config/gcloud\"))
+(deny file-read* (subpath \"$HOME_REAL/.aws\"))
+(deny file-read* (subpath \"$HOME_REAL/.azure\"))
+(deny file-read* (subpath \"$HOME_REAL/.docker\"))
+(deny file-read* (subpath \"$HOME_REAL/.codex\"))
+(deny file-read* (subpath \"$HOME_REAL/.claude\"))
+(deny file-read* (subpath \"$HOME_REAL/.kube\"))
+(deny file-read* (subpath \"$HOME_REAL/.gnupg\"))
+(deny file-read* (subpath \"$HOME_REAL/Library/Keychains\"))
+(deny file-read* (subpath \"$HOME_REAL/Library/Cookies\"))
+(deny file-read* (subpath \"$HOME_REAL/Library/Application Support/Google/Chrome\"))
+(deny file-read* (subpath \"$HOME_REAL/Library/Application Support/Chromium\"))
+(deny file-read* (subpath \"$HOME_REAL/Library/Application Support/BraveSoftware\"))
+(deny file-read* (subpath \"$HOME_REAL/Library/Application Support/Microsoft Edge\"))
+(deny file-read* (subpath \"$HOME_REAL/Library/Application Support/Firefox\"))
+(deny file-read* (subpath \"$HOME_REAL/Library/Application Support/Claude\"))
+(deny file-read* (literal \"$HOME_REAL/.netrc\"))
+(deny file-read* (literal \"$HOME_REAL/.git-credentials\"))
+(deny file-read* (literal \"$HOME_REAL/.npmrc\"))
+(deny file-read* (literal \"$HOME_REAL/.pypirc\"))
+(deny file-read* (literal \"$HOME_REAL/.zsh_history\"))
+(deny file-read* (literal \"$HOME_REAL/.bash_history\"))
+(deny file-read* (literal \"$HOME_REAL/.sh_history\"))
+(deny file-read* (literal \"$HOME_REAL/.zhistory\"))
+(deny file-read* (literal \"$HOME_REAL/.python_history\"))
+(deny file-read* (literal \"$HOME_REAL/.node_repl_history\"))
+(deny file-read* (literal \"$HOME_REAL/.mysql_history\"))
+(deny file-read* (literal \"$HOME_REAL/.psql_history\"))
 (deny file-read* (regex #\"/\\\\.env(\\\\..*)?$\"))
 (deny network*)
 (deny ipc-posix*)
@@ -21,3 +53,5 @@ export GIT_OPTIONAL_LOCKS=0
 export PYTHONDONTWRITEBYTECODE=1
 
 exec sandbox-exec -p "$PROFILE" /bin/sh -c "$*"
+
+# WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil

@@ -142,3 +142,12 @@ o commit de código e configuração efetivamente enviado ao remoto.
 - Referências quebradas ao `INSTALAR.command` foram resolvidas com o arquivo real.
 - Caminhos de instalação do Claude Code corrigidos em `INSTALL.md`.
 - Licença MIT presente e registrada no `README.md`.
+
+## Nota de estado — 16/11/2026
+
+- A visibilidade registrada acima (**privada**) era a vigente na data desta auditoria.
+  O repositório foi tornado público posteriormente; acesso anônimo à API do GitHub
+  confirmado em 16/11/2026. O registro histórico foi preservado sem alteração.
+- Rodada independente de 16/11/2026 (Qoder): regressão dos wrappers reproduzida
+  (37/37 na suíte original), denylist de credenciais ampliada, suíte endurecida com
+  contrato estrutural e teste de mutação. Detalhes em `opencode/HOMOLOGACAO.md`.

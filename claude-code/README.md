@@ -43,6 +43,7 @@ willtech-station/
 ├── bin/_willtech_find_claude.sh  localização do runtime (usado pelos dois scripts)
 ├── bin/willtech-bootstrap.sh     instalador idempotente com backup e inventário
 ├── bin/willtech-homologate.sh    arnês dos testes A–I em sessões reais
+├── bin/willtech-verify-agents.sh verificação de registro sem custo de token
 ├── bin/willtech_trace.py         parser de evidência do stream-json
 └── HOMOLOGACAO.md                estado real: o que está provado e o que falta
 ```

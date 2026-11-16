@@ -88,3 +88,55 @@ as declarações de permissão dos sete agentes.
   arbitrário sem quebrar a implementação autorizada.
 - O comando do wrapper deve ir **inteiro entre aspas duplas**. Hábitos antigos com
   `wrapper cmd` passam a ser negados pelo runtime; isso é intencional.
+
+## Rodada independente — 16/11/2026 (Qoder)
+
+Reauditoria do commit `e1b8bb2` com correções aplicadas em branch de trabalho.
+
+### Correções aplicadas
+
+1. **Denylist de credenciais ampliada (C1, falha comprovada na auditoria).**
+   Sondas somente-metadados mostraram que `~/.config/gh/hosts.yml` e `~/.zsh_history`
+   eram legíveis pelo wrapper de leitura. Os dois wrappers agora negam também:
+   `.config/gh`, `.config/gcloud`, `.aws`, `.azure`, `.docker`, `.codex`, `.claude`,
+   `.kube`, `.gnupg`, `Library/Keychains`, `Library/Cookies`, dados de Chrome/Chromium/
+   Brave/Edge/Firefox, `Library/Application Support/Claude`, `.netrc`,
+   `.git-credentials`, `.npmrc`, `.pypirc` e históricos de shell/banco
+   (`.zsh_history`, `.bash_history`, `.sh_history`, `.zhistory`, `.python_history`,
+   `.node_repl_history`, `.mysql_history`, `.psql_history`).
+   Validado com 23 arquivos-armadilha (conteúdo fictício) em HOME descartável:
+   **46/46 leituras bloqueadas** nos dois wrappers; leitura legítima de código preservada.
+2. **`$HOME` canônico no perfil.** Regras `subpath` do sandbox não seguem symlinks
+   (`/tmp` → `/private/tmp`); os wrappers agora resolvem `HOME_REAL` com `pwd -P`.
+3. **Suíte endurecida (C2, falha comprovada por mutação).** A suíte original aprovava
+   `edit: allow` no Explorador (37/37 mesmo com a permissão invertida). Agora:
+   `tests/check-permissions.py` compara o contrato exato (action, resource, effect,
+   em ordem) dos 7 agentes; a suíte inclui teste negativo de mutação e as armadilhas
+   de credenciais. **41 verificações, 0 falhas**; inverter uma permissão em cópia
+   descartável produz `FAIL` e exit 1 (critério verificado).
+
+### Riscos potenciais investigados — NÃO confirmados como brecha explorável
+
+- **C3 (prefixo arbitrário no padrão allow do wrapper):** o glob
+  `*/.config/opencode/bin/willtech-read-shell "*"` casa, no nível do padrão, com um
+  wrapper falso plantado em outro diretório. A semântica exata do matcher do runtime
+  2.2.6 não foi confirmada nesta rodada (exigiria sessão ativa com modelo). Exploração
+  real depende de arquivo plantado por terceiro. **Sem alteração no componente**;
+  reavaliar em rodada adversarial no runtime.
+- **C4 (negações do Executor contornáveis por texto):** `git push` sem argumento,
+  `git -C … push`, `sudo` puro, `rm -fr` não casam com os globs atuais (demonstrado no
+  nível do padrão). Matcher do runtime não confirmado. O Executor é o agente de escrita
+  autorizada; a barreira principal segue sendo escopo + instrução. **Sem alteração.**
+- **C5 (IPC Mach no sandbox):** em laboratório descartável, `osascript` autocontido
+  executa dentro do sandbox (`return 40+2` → 42) e `launchctl list` foi bloqueado.
+  Envio de Apple Events a apps externos (vetor teórico de fuga) depende do TCC do
+  macOS e **não foi testado** — exigiria tocar apps ativos da estação. **Sem alteração
+  no perfil**; registrar como limitação conhecida até rodada adversarial dedicada.
+
+### Limitações adicionais desta rodada
+
+- A matriz de runtime real (seções acima) não foi reexecutada: depende da instalação
+  ativa do OpenCode 2.2.6, fora do escopo autorizado. As correções de denylist foram
+  validadas diretamente contra o `sandbox-exec` com arquivos-armadilha.
+- O contrato estrutural da suíte é estrito de propósito: qualquer mudança legítima de
+  permissão exige atualizar `tests/check-permissions.py` no mesmo commit.

@@ -22,3 +22,16 @@ case "$REPLY" in
 esac
 
 printf '\nConcluído. Abra uma sessão nova do Claude Code e verifique os sete agentes willtech-*.\n'
+
+printf '\nA homologação (testes A–I) abre sessões reais e consome tokens da sua conta.\n'
+read -r "REPLY?Rodar a homologação agora? [y/N] "
+case "$REPLY" in
+  [Yy]|[Yy][Ee][Ss])
+    ./bin/willtech-homologate.sh --run --yes-spend
+    ;;
+  *)
+    printf '\nHomologação adiada. Para ver o plano sem custo: ./bin/willtech-homologate.sh --plan\n'
+    ;;
+esac
+
+# WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil
