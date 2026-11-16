@@ -339,6 +339,52 @@ do plugin V2 usa node quando disponível — `NODE_BIN` aceita um binário
 alternativo; sem node, esse item é SKIP e os demais rodam). Não foi repetida
 nesta consolidação, pois núcleo/hooks/plugin não foram modificados.
 
+## Interface visual dos sete agentes (experimental)
+
+Painel/visualizador dos sete mascotes reagindo à atividade real. Núcleo único
+de interpretação (`opencode/plugins/willtech/visual/activity.cjs`); zero
+chamadas de IA. **Estado experimental**: aprovado em laboratório (suítes
+determinísticas, kit oficial do Claude Code, binário descartável do App
+Server, capturas headless); homologação nativa em sessão real **não
+realizada** — limitações detalhadas em EVOLUCAO.md.
+
+### OpenCode Desktop (painel nativo do plugin, ≥ 2.2.6)
+
+O painel já acompanha o plugin visual existente (`opencode/plugins/willtech/`,
+opt-in `enabled: true`). Correção 2.3: versões atuais do Desktop (2.2.7+,
+2.3.0) voltam a exibir o painel, que antes era travado ao pin exato 2.2.6.
+
+### Claude Code (Mod oficial)
+
+```sh
+claude plugin validate claude/plugins/willtech-visual   # validação oficial
+claude plugin test claude/plugins/willtech-visual       # kit oficial (3/3)
+claude plugin install ./claude/plugins/willtech-visual  # instalação
+```
+
+No aplicativo, o comando `/willtech-team` abre o painel com os sete mascotes
+(desktop: SVG+SMIL; terminal: `Image` + `$.ui.blit`). Pausa manual e
+`options.reducedMotion` controlam a animação (Mods não expõem API de SO para
+reduced-motion).
+
+### Codex (visualizador complementar, independente)
+
+O Codex não expõe painel nativo de 7 agentes; este visualizador é uma página
+local separada alimentada pelos hooks oficiais e pelo App Server. O aplicativo
+Codex não é modificado.
+
+```sh
+# 1. Mesclar hooks/hooks.json ao .codex/hooks.json do projeto (trust via /hooks)
+# 2. Gerar núcleo e assets (cópia verbatim do núcleo compartilhado)
+python3 codex/willtech-visual/tools/build-codex.py
+# 3. Subir o servidor local e abrir no navegador
+node codex/willtech-visual/viewer/server.cjs 8741
+```
+
+Testes: `python3 -m unittest tools.test-codex` (determinísticos) e
+`WILLTECH_CODEX_BIN=<binário> python3 -m unittest tools.test-appserver`
+(handshake real, opcional). Feed padrão: `.codex/willtech-events.jsonl`.
+
 ## Windows nativo (PowerShell)
 
 **Requisitos:** Windows 10/11, Python 3 (`python3`, `python` ou `py -3` no
@@ -391,6 +437,10 @@ homologados por este workflow e nenhum modelo foi chamado.
 - OpenCode: remover os arquivos `~/.config/opencode/agent/willtech-*.md`.
 - Claude Code: remover `~/.claude/agents/general/` e `~/.claude/agents/especialistas/`
   (ou apenas os arquivos `willtech-*.md`).
+- Visual: OpenCode — o painel pertence ao plugin (removê-lo desativa o painel);
+  Claude Code — `claude plugin uninstall willtech-visual`; Codex — remover o
+  bloco visual de `.codex/hooks.json` (o visualizador local é encerrado ao
+  parar o servidor).
 - Windows nativo: `tools\willtech-install.ps1 -Uninstall` reverte a automação
   com restauração de backups; agentes copiados manualmente são removidos dos
   diretórios de agentes de cada runtime.

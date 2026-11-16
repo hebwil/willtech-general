@@ -889,4 +889,71 @@ sem reescrita de histórico publicado.
   painel no Desktop, automação com modelo real e tarefa DeepSeek permanecem
   pendentes, classificados como tal no README e neste registro.
 
+## Rodada 2.3 visual — sete mascotes reagindo à atividade real (2026-11-16)
+
+Missão exclusivamente visual sobre a main `fbb2427`. Investigação obrigatória
+contra as documentações oficiais vigentes antes de qualquer código; um PR por
+plataforma; nada do núcleo de inteligência, instaladores, hooks de automação,
+README premium e identidade visual foi tocado.
+
+### OpenCode — causa corrigida, painel existente concluído (PR #10, `36f2666`, merge `fa7c1f4`)
+- **Causa comprovada do painel invisível:** o plugin travava o registro do
+  painel a um pin exato de versão (`ctx.app.version !== "2.2.6"`); o Desktop
+  atual (2.3.0) falhava na comparação e o painel nunca era registrado.
+  Correção mínima: piso `versionAtLeast(…, "2.2.6")`, preservando opt-in
+  (`enabled === true`), trava de plataforma desktop e guardas de runtime.
+- **Validação em laboratório (versão atual 2.3.0):** `tools/test-gui.py` 4/4,
+  `tools/test-gui.js` 44/44, `tools/test-smoke.js` 64/64 + reduced-motion 3/3;
+  SHA-256 dos 8 data URLs do bundle = mascotes originais; captura
+  `tools/smoke-evidence/mission5-gui-v230.png` rotulada como laboratório.
+- **Limitação registrada:** homologação no OpenCode Desktop nativo NÃO
+  realizada (sem instância descartável; instalação pessoal é proibida).
+
+### Claude Code — Mod oficial criado (PR #11, `158b78d`, merge `ffa8ccb`)
+- Mods são realmente suportados (CLI local v2.1.325). Mod `willtech-visual`
+  completo: `plugin.json` + `hooks.json` + ESM `register.js`; sete mascotes em
+  dois locais oficiais de render (`Pane` desktop com SVG+SMIL; terminal com
+  `Image` chavada + `$.ui.blit` a 240 ms); estados por eventos reais
+  (`agent.spawn`, `turn.*`, `tool.check`, `session.*`); observação pura com
+  fail-open (`catch → next(e)`); núcleo `activity.cjs` reutilizado verbatim
+  (teste anti-drift).
+- **Validação:** `claude plugin validate` ✓; kit oficial `claude plugin test`
+  3/3 em runtime real de hooks (zero modelo/rede); `tools/test-claude.py` 4/4;
+  captura `evidence/preview-lab.png` (SMIL e troca de quadros ao vivo no
+  laboratório, rotulada como NÃO pintura nativa).
+- **Limitações comprovadas:** Mods não expõem API de SO para reduced-motion
+  (pausa manual + `options.reducedMotion`); pintura nativa no app real NÃO
+  observada (sem instância descartável autorizada).
+
+### Codex — visualizador complementar independente (PR #12, `2221ddd`+e2e, merge `03939bd`)
+- **Limitação oficial comprovada:** não existe API nativa de painel de 7
+  agentes (Pets = 1 companheiro agregado 1536×1872; extensão de IDE não
+  suporta pets/plugins). Entrega: visualizador local claramente identificado,
+  **sem modificar o aplicativo Codex**.
+- **Eventos oficiais:** hooks de projeto (`SubagentStart/Stop`, `Stop`,
+  `Interrupt`, `PermissionRequest`, `SessionStart/End`, `UserPromptSubmit`)
+  normalizados por `willtech_bridge.py` (async, fail-open, trust via `/hooks`);
+  cliente App Server JSON-RPC (`initialize`/`thread/list` + mapeamento de
+  `turn/*`).
+- **Pipeline real exercitado de ponta a ponta:** stdin dos hooks → feed JSONL
+  → SSE (`/events` com replay `/history`) → EventSource → projeção dos sete
+  (Interrompido/Trabalhando/Concluído), animação CSS viva comprovada por
+  transform computado; captura `evidence/viewer-lab.png`.
+- **Protocolo real:** handshake contra binário oficial `codex-app-server`
+  v0.169.0 em instância descartável, `CODEX_HOME` isolado, offline
+  (`tools/test-appserver.py`, pula sem binário).
+- **Limitação registrada:** eventos `turn/*` de uma sessão real exigem
+  autenticação do proprietário e gasto de modelo — não exercitados; o
+  handshake prova o contrato do cliente, não uma sessão nativa.
+
+### Classificação final da rodada
+- OpenCode: **PARCIAL** (causa corrigida e verificada em laboratório; nativo
+  não testado). Claude Code: **PARCIAL** (validado pelo tooling oficial e kit
+  em runtime real; pintura nativa não observada). Codex: **PARCIAL** (pipeline
+  real completo; sessão nativa não exercitada; painel nativo inexistente na
+  API oficial).
+- Nenhuma simulação, compilação ou decodificação foi anunciada como
+  homologação nativa. README, INSTALL e EVOLUCAO declaram as três integrações
+  como **experimentais**, com estas limitações explícitas.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

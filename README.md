@@ -253,6 +253,20 @@ Contribuição gráfica independente para **OpenCode Desktop 2.2.6**, baseada na
 
 Os três adaptadores da `main` passaram em smoke tests mínimos com **código real publicado**: plugin/hooks carregados, núcleo Python executado e bloqueio anti-loop comprovado — a terceira tentativa idêntica é negada após duas falhas (OpenCode V2 via `throw` no plugin; Codex e Claude Code via JSON `deny` no contrato de hooks). Os testes simulam apenas o ambiente externo e os eventos; **não constituem homologação em sessão real com modelo**, que permanece pendente e documentada em [EVOLUCAO.md](EVOLUCAO.md).
 
+### Interface visual dos sete agentes (experimental)
+
+Os sete mascotes oficiais reagem à atividade real dos agentes em cada plataforma, reutilizando **um único núcleo de interpretação de estado** ([`opencode/plugins/willtech/visual/activity.cjs`](opencode/plugins/willtech/visual/activity.cjs)) — cópia verbatim com teste anti-drift em cada adaptador. Animações locais (APNG, SMIL, CSS), sem nenhuma chamada de IA, com pausa manual e suporte a reduced-motion.
+
+| Plataforma | Mecanismo oficial | Estado | Evidência |
+|---|---|---|---|
+| **OpenCode** | Plugin GUI (painel nativo no Desktop, versões ≥ 2.2.6) | Corrigido e revalidado em laboratório (Desktop 2.3.0); homologação nativa **não** realizada | `tools/smoke-evidence/mission5-gui-v230.png` |
+| **Claude Code** | Mod oficial (validado pelo tooling oficial): `Pane` desktop com SVG+SMIL e terminal com `Image` + `$.ui.blit` | Kit oficial 3/3 em runtime real de hooks; pintura nativa **não** observada | `claude/plugins/willtech-visual/evidence/preview-lab.png` |
+| **Codex** | Visualizador **complementar e independente** (Codex não expõe painel nativo de 7 agentes; Pets é um companheiro agregado e a extensão de IDE não suporta pets/plugins) | Pipeline real hooks→feed→SSE→viewer exercitado; handshake App Server real (binário oficial v0.169.0, offline); sessão real com modelo **não** exercitada | `codex/willtech-visual/evidence/viewer-lab.png` |
+
+> **Rótulo honesto:** tudo o que está nesta seção foi aprovado em **laboratório** (suítes determinísticas, kit oficial do Claude Code, binário descartável do App Server e capturas headless). **Nenhuma dessas integrações foi homologada em uma sessão nativa real** — exige instalação autorizada e, no Codex, autenticação do proprietário. Por isso o estado declarado é **experimental**; simulação, compilação ou decodificação não são apresentadas como homologação nativa. Detalhes e limitações comprovadas em [EVOLUCAO.md](EVOLUCAO.md).
+
+Para usar: o painel OpenCode acompanha o plugin (opt-in `enabled: true` no Desktop ≥ 2.2.6); o Mod Claude Code instala-se via `claude plugin validate`/`install` a partir de `claude/plugins/willtech-visual/` (comando `/willtech-team` abre o painel); o visualizador Codex sobe com `node codex/willtech-visual/viewer/server.cjs` após mesclar `codex/willtech-visual/hooks/hooks.json` ao `.codex/hooks.json` do projeto (trust via `/hooks`).
+
 ---
 
 ## Segurança, automação e limitações
