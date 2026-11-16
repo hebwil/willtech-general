@@ -129,6 +129,8 @@
     };
   }
 
+  window.__under = under;
+  window.__dispose = dispose;
   window.runGuiTests = async () => {
     if (window.guiTestRunning || window.guiTestResults) throw new Error("Rodada já iniciada; sem repetição automática");
     window.guiTestRunning = true;

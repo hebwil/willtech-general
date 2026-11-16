@@ -746,4 +746,48 @@ Fontes oficiais e configuração opt-in estão em INSTALL.md.
 - Homologação no OpenCode Desktop real permanece **NÃO TESTADA**; nenhuma
   instalação pessoal foi acessada e nenhum aplicativo gráfico foi aberto.
 
+## Rodada smoke final (homologação de laboratório)
+
+- Novo harness `tools/test-smoke.cjs` (Node): extrai o literal `ASSETS` do bundle
+  real e confere por SHA-256 as 8 chaves contra os bytes dos arquivos originais
+  (`willtech-general-static.webp`, seis `willtech-<nome>.webp`,
+  `willtech-general-animated.apng`); conta 18 quadros fcTL e asserta ausência de
+  `fetch`/`XMLHttpRequest`/`WebSocket`/`EventSource` no bundle. PASS.
+- Novo harness de navegador `tools/test-smoke.html` + `tools/test-smoke.js`:
+  bundle real + host reativo do `test-gui.js` + eventos determinísticos.
+  **PASS 64/64 em três execuções consecutivas**: sete personagens carregados;
+  associação agente→imagem por hash da data URL; estados aguardando/executando/
+  concluído/erro/interrompido dos sete; General isolado dos eventos dos
+  especialistas e reagindo ao próprio; pausa/retomada com fallback estático;
+  deduplicação provada por MutationObserver (evento válido atualiza, idêntico
+  não duplica, distinto no mesmo ms é aceito); unmount remove listeners, congela
+  animação e ignora eventos posteriores. **PASS 3/3 reduced-motion** (stub de
+  `matchMedia` com `matches=true`: General working usa WebP, motion off, listener
+  de media removido no cleanup).
+- Avanço de quadros do APNG: o navegador automatizado suprime o playback ao vivo
+  de imagens animadas (canvas estático mesmo com rAF ativo e página visível);
+  a prova determinística usa WebCodecs `ImageDecoder` sobre o APNG em uso:
+  18 quadros, quadro 0 ≠ quadro 9 (214 pixels amostrados diferem). O resultado
+  registra `livePaintingAdvanced=false` e a nota de limitação de ambiente —
+  sem aprovação inventada de playback ao vivo.
+- Dois defeitos do próprio harness corrigidos na causa: `ImageDecoder.tracks.
+  selectedTrack` só existe após o primeiro decode; e `MutationObserver.takeRecords()`
+  após `await` devolve sempre 0 porque a entrega ao callback esvazia a fila —
+  a contagem agora ocorre no callback (isto também eliminou uma aprovação
+  trivialmente falsa do check pós-unmount).
+- `tools/test-gui.js` ganhou apenas duas linhas de exposição (`__under`,
+  `__dispose`) para o smoke; bancada reexecutada: **42/42 PASS**.
+- Regressão proporcional reexecutada: `test-gui.py` 4/4, `test-gui-events.cjs`
+  PASS nas duas formas, drift do branch 0 divergências. Regressão consolidada
+  do branch de inteligência (sem alterações novas): dossiê 51/51, auto 39/39,
+  drift 7/7, plan 21/21, trace 10/10, repomap 10/10, supervisor 10/10,
+  compat 22/22, install 16/16.
+- Evidências em `tools/smoke-evidence/`: `full-results.json`,
+  `reduced-results.json`, `node-assets.json`/`.log`, `bench-results.json`,
+  `network-evidence.json` (somente `file://` e `data:`, zero http/https, zero
+  IA) e screenshots `smoke-full-pass.png`, `smoke-states.png` (fixture manual
+  com os sete estados), `smoke-reduced-motion.png`.
+- Continua **laboratório simulado, não homologação nativa**; nenhum aplicativo
+  Desktop aberto, nenhuma instalação pessoal tocada, nenhum push/publicação.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->
