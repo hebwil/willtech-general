@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dossiê de evidências, cache por commit e guardas de orçamento (WillTech 2.0).
+"""Dossiê de evidências, cache por commit e guardas de orçamento (WillTech 2.0/2.1).
 
 Artefato compartilhado entre comandante, General e especialistas. Grava apenas
 metadados e hashes SHA-256 — nunca o conteúdo de arquivos nem segredos. Caminhos
@@ -9,13 +9,19 @@ Subcomandos:
   add <dossie> --agent A --kind K --summary S [--path P] [--line N]
       [--command C] [--output-file F]
   verify <dossie>                  re-confere hashes; exit 1 se algo mudou/sumiu
-  cache-check <repo> <cache.json>  HIT exit 0 | MISS exit 1 | erro exit 2
-  cache-put <repo> <cache.json> --map-file F
+  cache-check <repo> <cache.json> [--paths a,b]  HIT 0 | MISS 1 | erro 2
+  cache-put <repo> <cache.json> --map-file F [--paths a,b]
+  learn <dossie> --key K --resolution R --command C --output-file F [--repo DIR]
+  recall <dossie> --key K [--repo DIR]   lições verificadas; USABLE | REVERIFY
   guard-attempt <dossie> --key K [--max 2]      exit 3 = parada obrigatória
   guard-delegations <dossie> [--max 8]          exit 3 = teto de delegações
 
-Chave do cache = SHA-256(HEAD + status --porcelain): qualquer commit ou mudança
-no working tree invalida o mapa registrado.
+Cache 2.0: chave = SHA-256(HEAD + status --porcelain); qualquer commit ou
+mudança no working tree invalida o mapa. Cache 2.1 (seletivo): com --paths o
+mapa cobre um escopo; mudanças fora do escopo pedido não invalidam (HIT),
+mudanças dentro invalidam (MISS); novo commit sempre invalida. Lições (2.1)
+só entram com evidência verificável (comando + hash da saída); recall re-confere
+hash e HEAD e marca REVERIFY o que mudou, foi superseded ou perdeu evidência.
 """
 import argparse
 import hashlib
@@ -80,15 +86,38 @@ def append(path, entry):
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
-def git_key(repo):
+def git_state(repo):
     head = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"],
                           capture_output=True, text=True)
     dirty = subprocess.run(["git", "-C", repo, "status", "--porcelain"],
                            capture_output=True, text=True)
     if head.returncode != 0 or dirty.returncode != 0:
         return None, None
-    key = hashlib.sha256((head.stdout + dirty.stdout).encode()).hexdigest()
-    return key, head.stdout.strip()
+    return head.stdout.strip(), dirty.stdout
+
+
+def git_key(repo):
+    head, dirty = git_state(repo)
+    if head is None:
+        return None, None
+    key = hashlib.sha256((head + "\n" + dirty).encode()).hexdigest()
+    return key, head
+
+
+def dirty_paths(porcelain):
+    paths = set()
+    for line in porcelain.splitlines():
+        if len(line) < 4:
+            continue
+        p = line[3:].strip()
+        if " -> " in p:
+            p = p.split(" -> ", 1)[1]
+        paths.add(p.strip('"'))
+    return paths
+
+
+def scope_list(raw):
+    return [p.strip().strip("/") for p in (raw or "").split(",") if p.strip()]
 
 
 def cmd_add(a):
@@ -154,11 +183,29 @@ def cmd_cache_check(a):
         print("MISS (sem cache)")
         return 1
     stored = json.load(open(a.cache, encoding="utf-8"))
-    if stored.get("key") == key:
-        print(f"HIT {head[:12]}")
-        return 0
-    print(f"MISS {head[:12]} (cache de {str(stored.get('head'))[:12]})")
-    return 1
+    if "dirty" not in stored:
+        if stored.get("key") == key:
+            print(f"HIT {head[:12]}")
+            return 0
+        print(f"MISS {head[:12]} (cache de {str(stored.get('head'))[:12]})")
+        return 1
+    if stored.get("head") != head:
+        print(f"MISS {head[:12]} (novo commit; cache de {str(stored.get('head'))[:12]})")
+        return 1
+    put_scope = stored.get("paths") or []
+    req = scope_list(a.paths) or put_scope
+    if req and put_scope and not set(req) <= set(put_scope):
+        print(f"MISS {head[:12]} (escopo pedido fora do mapa)")
+        return 1
+    _, porcelain = git_state(a.repo)
+    touched = dirty_paths(porcelain)
+    if req:
+        touched = {p for p in touched if any(p == s or p.startswith(s + "/") for s in req)}
+    if touched:
+        print(f"MISS {head[:12]} (mudança no escopo: {sorted(touched)[0]})")
+        return 1
+    print(f"HIT {head[:12]} (seletivo)" if req else f"HIT {head[:12]}")
+    return 0
 
 
 def cmd_cache_put(a):
@@ -166,10 +213,58 @@ def cmd_cache_put(a):
     if key is None:
         print("erro: não é um repositório git")
         return 2
+    _, porcelain = git_state(a.repo)
     map_text = open(a.map_file, encoding="utf-8").read()[:MAP_CAP]
     with open(a.cache, "w", encoding="utf-8") as fh:
-        json.dump({"key": key, "head": head, "map": map_text}, fh, ensure_ascii=False)
+        json.dump({"key": key, "head": head, "dirty": sorted(dirty_paths(porcelain)),
+                   "paths": scope_list(a.paths), "map": map_text}, fh, ensure_ascii=False)
     print(f"cache gravado {head[:12]}")
+    return 0
+
+
+def cmd_learn(a):
+    if is_credential_path(a.output_file):
+        print(f"recusado: caminho de credencial {a.output_file}")
+        return 2
+    if not os.path.isfile(a.output_file):
+        print("recusado: lição sem evidência (arquivo de saída ausente)")
+        return 2
+    head, _ = git_state(a.repo)
+    entry = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "kind": "lesson",
+        "key": a.key,
+        "summary": a.resolution[:SUMMARY_CAP],
+        "command": a.command[:SUMMARY_CAP],
+        "output_path": a.output_file,
+        "output_sha256": sha256_file(a.output_file),
+        "head": head or "",
+    }
+    append(a.dossie, entry)
+    print(f"lição registrada key={a.key}")
+    return 0
+
+
+def cmd_recall(a):
+    entries = read_entries(a.dossie)
+    if entries is None:
+        print("dossiê ausente")
+        return 2
+    matches = [e for e in entries if e.get("kind") == "lesson" and e.get("key") == a.key]
+    if not matches:
+        print(f"NO_LESSON key={a.key}")
+        return 0
+    head, _ = git_state(a.repo)
+    head = head or ""
+    for i, e in enumerate(matches):
+        op = e.get("output_path")
+        verified = bool(op) and os.path.isfile(op) and sha256_file(op) == e.get("output_sha256")
+        stale = bool(e.get("head")) and bool(head) and e["head"] != head
+        superseded = i < len(matches) - 1
+        status = "USABLE" if verified and not stale and not superseded else "REVERIFY"
+        print(f"{status} key={a.key} verified={'yes' if verified else 'no'} "
+              f"stale={'yes' if stale else 'no'} superseded={'yes' if superseded else 'no'} "
+              f"resolution={e.get('summary', '')} command={e.get('command', '')}")
     return 0
 
 
@@ -217,13 +312,30 @@ def main():
     s = sub.add_parser("cache-check")
     s.add_argument("repo")
     s.add_argument("cache")
+    s.add_argument("--paths")
     s.set_defaults(fn=cmd_cache_check)
 
     s = sub.add_parser("cache-put")
     s.add_argument("repo")
     s.add_argument("cache")
     s.add_argument("--map-file", required=True)
+    s.add_argument("--paths")
     s.set_defaults(fn=cmd_cache_put)
+
+    s = sub.add_parser("learn")
+    s.add_argument("dossie")
+    s.add_argument("--key", required=True)
+    s.add_argument("--resolution", required=True)
+    s.add_argument("--command", required=True)
+    s.add_argument("--output-file", required=True)
+    s.add_argument("--repo", default=".")
+    s.set_defaults(fn=cmd_learn)
+
+    s = sub.add_parser("recall")
+    s.add_argument("dossie")
+    s.add_argument("--key", required=True)
+    s.add_argument("--repo", default=".")
+    s.set_defaults(fn=cmd_recall)
 
     s = sub.add_parser("guard-attempt")
     s.add_argument("dossie")
