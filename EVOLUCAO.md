@@ -720,4 +720,30 @@ que Claude Code não possui API de extensão visual; a animação dos mascotes
 originais não foi homologada e nenhuma GUI Claude Code é distribuída.
 Fontes oficiais e configuração opt-in estão em INSTALL.md.
 
+## Rodada de correção do painel — deduplicação e bancada consolidada (2026-11-16)
+
+- Defeito real corrigido em `gui-source.cjs`: a guarda de eventos usava apenas
+  `at > event.created`, então um evento idêntico (mesmo tipo e mesmo timestamp)
+  produzia uma segunda revisão. A guarda agora também compara o estado quando
+  os timestamps coincidem; eventos distintos no mesmo milissegundo e eventos
+  posteriores mais novos continuam aceitos. Bundle regerado por `build-gui.py`.
+- Novo teste determinístico `tools/test-gui-events.cjs` (Node, SDK simulado):
+  reproduzia a duplicação (2 revisões para 1 evento) e agora passa nas duas
+  formas, `gui-source.cjs` e `gui-experimental.cjs`, cobrindo também evento
+  terminal distinto no mesmo milissegundo, evento antigo, sessão fora da
+  família e limpeza das quatro inscrições no cleanup.
+- Bancada Browser Use (`tools/test-gui.html`, bundle real, host simulado):
+  **PASS consolidado, 42/42 verificações**, incluindo os sete mascotes originais
+  decodificados no navegador, estados dos sete agentes, pausa, ocultação,
+  permissão, erro, interrupção, desconexão/reconexão, troca de sessão, servidor
+  incompatível, unmount e CSS com `prefers-reduced-motion`. O timeout de 15 s
+  da chamada ocorreu de novo, mas o resultado foi lido do estado da página
+  após a conclusão; screenshot real da bancada capturado com os sete cards.
+  Isto continua sendo **laboratório simulado, não homologação nativa**.
+- Regressão proporcional: `tools/test-gui.py` 4/4 (build reprodutível, bytes
+  originais dos assets, pacote GUI-only, núcleo/instaladores intactos vs
+  `57f8bb4`) e `tools/test-drift.sh` 7/7.
+- Homologação no OpenCode Desktop real permanece **NÃO TESTADA**; nenhuma
+  instalação pessoal foi acessada e nenhum aplicativo gráfico foi aberto.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

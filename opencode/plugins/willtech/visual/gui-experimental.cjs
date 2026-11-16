@@ -154,7 +154,8 @@ function renderPanel(props, ctx) {
           onCleanup(data.on(type, (event) => {
             const id = event.data.sessionID;
             if (!data.session.family(props.session.id).includes(id)) return;
-            if ((observations.get(id)?.at ?? -1) > event.created) return;
+            const previous = observations.get(id);
+            if (previous && (previous.at > event.created || (previous.at === event.created && previous.state === state))) return;
             observations.set(id, { state, at: event.created });
             setRevision((value) => value + 1);
           }));
