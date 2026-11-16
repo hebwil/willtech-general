@@ -362,7 +362,33 @@ class InstallerTests(unittest.TestCase):
         protected = ["docs/assets", "LICENSE", "NOTICE.md", "opencode",
                      "codex/agents", "codex/hooks.json", "claude-code/agents",
                      "claude-code/settings", *AUX]
-        self.ok(run(["git", "diff", "--exit-code", "origin/main", "--", *protected]))
+        # Invariante real: o instalador nunca altera documentação/identidade.
+        # (O proxy antigo "git diff origin/main" congelava qualquer evolução
+        # legítima dos contratos em branches futuras; o gate de drift exige
+        # documentar subcomandos novos nesses mesmos arquivos.)
+        repo = self.repo("identity")
+        for rel in protected:
+            src = ROOT / rel
+            dest = repo / rel
+            if src.is_dir():
+                shutil.copytree(src, dest, dirs_exist_ok=True)
+            elif src.is_file():
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dest)
+        before = {}
+        for rel in protected:
+            path = repo / rel
+            if path.is_dir():
+                before.update({str(p.relative_to(repo)): p.read_bytes()
+                               for p in path.rglob("*") if p.is_file()})
+            elif path.is_file():
+                before[rel] = path.read_bytes()
+        self.ok(self.wrapper(repo, "--yes"))
+        self.preserved(repo, before)
+        self.ok(self.wrapper(repo, "--disable"))
+        self.preserved(repo, before)
+        self.ok(self.wrapper(repo, "--uninstall", "--yes"))
+        self.preserved(repo, before)
         original = run(["git", "show", "origin/main:README.md"])
         self.ok(original)
         current = (ROOT / "README.md").read_text(encoding="utf-8")

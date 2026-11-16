@@ -52,6 +52,9 @@ A partir das versões **2.0 → 2.2.1**, a arquitetura deixou de ser apenas hier
 | 🔍 **Detecção de drift** | Gate determinístico entre código, decisões e documentação: README ↔ arquivos, contratos ↔ subcomandos, decisões sem evidência | ✅ Homologada |
 | ⚙️ **Automação nativa por hooks/plugins** | SessionStart, PreToolUse, Stop e afins do Claude Code e Codex; plugin V2 no OpenCode — zero chamadas de modelo, zero comandos manuais | 🧪 Validada em simulação |
 | 🔧 **Instalação reversível** | Idempotente, projeto-local, com consentimento, backup, `--disable` e `--uninstall` que restaura o estado anterior | ✅ Homologada |
+| 🐘 **Elephant/Goldfish determinístico** | `tools/willtech-dossie.py plan` classifica complexidade (DIRECT/PLAN/PLAN+REVIEW); `review-pack` entrega diff + aceite + evidências sem conclusões do executor; `resolve` classifica críticas com evidência; `catalyst` limita a exploração a uma alternativa após impasse | 🧪 Validada em simulação |
+| 🗺️ **RepoMap incremental compartilhado** | `tools/willtech-repomap.py` indexa símbolos/dependências sem copiar conteúdo; reparse só do que mudou; briefings substituem releituras; trechos revalidados por hash; isolamento por projeto e exclusão de credenciais | 🧪 Validada em simulação |
+| ⏱️ **Supervisor de delegações** | `tools/willtech-supervisor.py` rastreia cada delegação com soft/hard timeout, bloqueia recursão/duplicação/escrita concorrente, retry único reconciliado; timed_out nunca afirma interrupção; cancelamento só com confirmação do runtime | 🧪 Validada em simulação |
 
 > **Nota de rigor:** nenhum percentual de economia de tokens é afirmado. A comparação com/sem otimizações (`tools/willtech-compare.py`) mede deltas de tokens, turnos, falhas e loops sobre transcripts reais, sem extrapolar métricas. A homologação da automação em runtime real (com gasto de modelo) permanece pendente e não é anunciada como concluída — classificação completa e evidências em [EVOLUCAO.md](EVOLUCAO.md).
 
