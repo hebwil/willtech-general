@@ -1,3 +1,12 @@
+<!--
+WILLTECH-GENERAL | PROJECT AUTHORSHIP
+Copyright (c) 2026 WILLTECH-BH COMERCIO E SERVICOS LTDA
+Project: WillTech-General
+GitHub: https://github.com/hebwil/willtech-general
+Maintainer: hebwil
+Origin: WILLTECH custom multi-agent implementation
+-->
+
 <h1 align="center">WILLTECH-GENERAL</h1>
 
 <p align="center">

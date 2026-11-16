@@ -3,7 +3,11 @@
 ## Codex (variante nativa ativa)
 
 ```sh
-cp -a ~/.codex/agents ~/.codex/agents.backup-$(date +%Y%m%d-%H%M%S)
+mkdir -p ~/.codex/agents
+# Backup apenas se já existirem agentes (instalação limpa não tem o que copiar)
+if [ -n "$(ls -A ~/.codex/agents 2>/dev/null)" ]; then
+  cp -a ~/.codex/agents ~/.codex/agents.backup-$(date +%Y%m%d-%H%M%S)
+fi
 cp codex/agents/*.toml ~/.codex/agents/
 ```
 
@@ -47,6 +51,21 @@ sh opencode/tests/test-wrappers.sh
 Cada arquivo usa `mode: subagent` no frontmatter — formato nativo do OpenCode.
 `~/.config/opencode/opencode.json` não é alterado: provedores, MCPs e
 `experimental.subagent_depth` permanecem como estão.
+
+**Requisito para a delegação aninhada:** o fluxo comandante → General →
+especialista exige `experimental.subagent_depth: 2`. Numa instalação limpa,
+mescle no `~/.config/opencode/opencode.json` existente (sem sobrescrever o
+restante):
+
+```json
+{
+  "experimental": {
+    "subagent_depth": 2
+  }
+}
+```
+
+Sem essa profundidade, o General pode não conseguir acionar os especialistas.
 
 ### Rollback
 
