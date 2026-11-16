@@ -34,11 +34,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 STDIN_CAP = 1 << 20
 BRIEF_CAP = 1200
-COMPLEX_CHARS = 200
 DRIFT_TIMEOUT = 10
 COMMAND_CAP = 200
-SECURITY_HINTS = ("opencode/bin/", "opencode/agent/", "claude-code/agents/",
-                  "claude-code/settings/", "codex/agents/")
 
 
 def load_module(name, path):
@@ -51,6 +48,8 @@ def load_module(name, path):
 DOSSIE = load_module("willtech_dossie", os.path.join(HERE, "willtech-dossie.py"))
 TRACE_PATH = os.path.join(ROOT, "claude-code", "bin", "willtech_trace.py")
 TRACE = load_module("willtech_trace", TRACE_PATH) if os.path.isfile(TRACE_PATH) else None
+SUP_PATH = os.path.join(HERE, "willtech-supervisor.py")
+SUPERVISOR = load_module("willtech_supervisor", SUP_PATH) if os.path.isfile(SUP_PATH) else None
 
 
 def now():
@@ -143,10 +142,15 @@ def ev_start(ev, base, dossie, repo, st):
         DOSSIE.prune_entries(dossie)
     except Exception:
         pass
-    entries = DOSSIE.read_entries(dossie)
-    if not entries:
-        return {}
-    return {"context": brief_context(dossie, repo, base)}
+    parts = []
+    if DOSSIE.read_entries(dossie):
+        parts.append(brief_context(dossie, repo, base))
+    sup = os.path.join(base, "delegations.json")
+    if SUPERVISOR and os.path.isfile(sup):
+        warnings = SUPERVISOR.tick_file(sup)
+        if warnings:
+            parts.append("SUPERVISOR " + "; ".join(warnings)[:300])
+    return {"context": "\n".join(parts)} if parts else {}
 
 
 def ev_prompt(ev, base, dossie, repo, st):
@@ -154,7 +158,7 @@ def ev_prompt(ev, base, dossie, repo, st):
     pend = st.pop("pending_context", None)
     if pend:
         parts.append(pend)
-    if len(ev.get("prompt") or "") >= COMPLEX_CHARS:
+    if len(ev.get("prompt") or "") >= DOSSIE.COMPLEX_CHARS:
         parts.append(brief_context(dossie, repo, base))
     return {"context": "\n".join(parts)} if parts else {}
 
@@ -249,13 +253,15 @@ def ev_stop(ev, base, dossie, repo, st, platform):
     if not files:
         return {}
     review_needed = len(files) >= 3 or any(
-        h in f for f in files for h in SECURITY_HINTS)
+        h in f for f in files for h in DOSSIE.SECURITY_HINTS)
     if review_needed and not st.get("review_done"):
         st["review_done"] = True
-        reason = ("Revisão goldfish obrigatória antes de concluir: delegue ao "
-                  "willtech-revisor com pack mínimo (diff + critérios de aceite + "
-                  "evidências do dossiê), sem conclusões do implementador. Uma rodada; "
-                  "segunda só após correção bloqueante.")
+        reason = ("Revisão goldfish obrigatória antes de concluir: monte o pack "
+                  "independente (willtech-dossie.py review-pack: diff + critérios de "
+                  "aceite + evidências verificadas, sem conclusões do implementador) "
+                  "e delegue ao willtech-revisor. Classifique cada apontamento com "
+                  "willtech-dossie.py resolve (fix/contest com evidência, escalate ou "
+                  "discard). Uma rodada; segunda só diante de problema novo relevante.")
         if platform == "opencode":
             st["pending_context"] = reason
             return {}

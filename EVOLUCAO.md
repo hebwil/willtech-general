@@ -746,6 +746,64 @@ Fontes oficiais e configuração opt-in estão em INSTALL.md.
 - Homologação no OpenCode Desktop real permanece **NÃO TESTADA**; nenhuma
   instalação pessoal foi acessada e nenhum aplicativo gráfico foi aberto.
 
+## Rodada inteligência 2.3 — Elephant/Goldfish, RepoMap e supervisor (2026-11-16)
+
+Três melhorias incrementais sobre o núcleo existente, em branch própria
+(`qoder/intelligence-orchestration`, base `57f8bb4`), separadas do PR #8.
+Nenhum agente novo, nenhum framework, nenhuma chamada de modelo extra.
+
+### 1. Elephant/Goldfish determinístico (commit 9a6ed7b)
+- `willtech-dossie.py plan`: DIRECT para tarefa simples (sem etapas extras,
+  sem gravação); PLAN compacto (requisitos, causa-raiz, dependências, riscos,
+  testes + zoom-out + readiness) para complexa (≥3 caminhos, ≥200 chars ou
+  palavras-chave); PLAN critical com REVIEW obrigatória para caminhos de
+  segurança. `review-pack`: pack independente (diff + aceite + evidências
+  verificadas, sem conclusões do executor), uma rodada por diff (segunda só
+  com --new-finding, senão exit 3). `resolve`: fix/contest exigem evidência;
+  escalate/discard registrados. `catalyst`: uma alternativa após impasse
+  demonstrado (≥2 falhas); segunda exploração = exit 3.
+- `willtech-auto.py` reusa as constantes compartilhadas e o Stop aponta para
+  o pack independente. Testes: `tools/test-plan.sh` 21/21.
+
+### 2. RepoMap incremental compartilhado (commit 5a86a28)
+- `tools/willtech-repomap.py`: índice de símbolos/assinaturas/dependências
+  (Python ast; JS/TS/sh regex), nunca conteúdo nem credenciais; incremental
+  por hash (reparse só do que mudou), renames reaproveitam símbolos, remoções
+  saem; bug real corrigido: arquivos rastreados mas apagados do worktree
+  quebravam a detecção de rename (filtro de existência em disco).
+- `brief` entrega pacote pequeno em quarentena ao especialista; `query`
+  (--symbol/--path/--refs) devolve trechos lidos da fonte ao vivo e
+  revalidados por hash (STALE recusado). Isolamento por projeto e tetos de
+  arquivos/símbolos/bytes/resposta reusam o dossiê.
+- Medição real (fixture de 10 arquivos): leitura integral 380 bytes (~95
+  tokens estimados) vs brief 256 bytes (~64); parses primeiro=10,
+  incremental=0; tempos equivalentes no fixture pequeno (git domina).
+  Nenhum percentual anunciado sem medição. Testes: `tools/test-repomap.py` 10/10.
+
+### 3. Supervisor de delegações (commit c46442a)
+- `tools/willtech-supervisor.py`: start/finish/tick/cancel/retry/report/
+  capabilities; estados pending/running/completed/failed/timed_out/cancelled;
+  lock OS no sidecar (msvcrt no Windows, flock POSIX) bloqueia escritas
+  concorrentes na mesma tarefa; recursão, duplicação e teto por tarefa
+  bloqueados; retry único com --reconciled preserva registro/trabalho parcial.
+- Honestidade: timed_out = espera esgotada, nunca interrupção confirmada;
+  cancel sem --confirmed = cancel_requested + limitação documentada
+  (CAPABILITIES: nenhum runtime oferece cancelamento real confirmado).
+- Integração fail-open: SessionStart do `willtech-auto.py` reporta SLOW/
+  TIMED_OUT junto ao brief; sem `.willtech/enabled` nada roda. Testes:
+  `tools/test-supervisor.py` 10/10, incluindo concorrência real entre
+  processos e integração com o hook.
+
+### Compatibilidade e preservação
+- Detecção de capacidades limitada ao ponto de benefício comprovado
+  (cancelamento); limitações por runtime documentadas nos contratos 2.3.x
+  das três plataformas. Adaptadores, hooks, instaladores, memória, anti-loop,
+  roster dos sete agentes e painel visual do PR #8 intactos (branch separada).
+- Regressão: test-dossie 51/51, test-auto 39/39, test-drift 7/7, drift 0
+  divergências; suítes Windows/instalação/trace reexecutadas na consolidação.
+- Homologação em runtime real (com gasto de modelo) permanece PENDENTE e não
+  é anunciada como concluída; nada publicado remotamente.
+
 ## Rodada smoke final (homologação de laboratório)
 
 - Novo harness `tools/test-smoke.cjs` (Node): extrai o literal `ASSETS` do bundle
