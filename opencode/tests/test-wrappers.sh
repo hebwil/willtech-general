@@ -1,7 +1,8 @@
 #!/bin/sh
 # Regression tests for the WillTech OpenCode wrappers.
-# No model/provider is called: this validates the sandbox and the
-# permission declarations that the runtime consumes.
+# No model/provider is called: this validates the sandbox, the credential
+# denylist (trap files in a disposable fake HOME) and the exact permission
+# contract of the seven agents, including a negative mutation test.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -109,6 +110,105 @@ else
   fail "general com permissões divergentes"
 fi
 
+# --- Credential denylist: trap files in a disposable fake HOME -------------
+# HOME is canonicalized because sandbox subpath rules do not follow symlinks
+# (/tmp -> /private/tmp). Trap content is dummy text, never real credentials.
+FAKE=$(mktemp -d "${TMPDIR:-/tmp}/willtech-trap-home.XXXXXX")
+FAKE=$(CDPATH= cd -- "$FAKE" && pwd -P)
+mkdir -p "$FAKE/.config/gh" "$FAKE/.aws" "$FAKE/.docker" "$FAKE/.codex" \
+  "$FAKE/.claude" "$FAKE/.kube" "$FAKE/.gnupg" "$FAKE/.config/gcloud" \
+  "$FAKE/.azure" "$FAKE/Library/Keychains" \
+  "$FAKE/Library/Application Support/Google/Chrome/Default" "$FAKE/projeto"
+
+TRAP_PATHS='.config/gh/hosts.yml
+.aws/credentials
+.docker/config.json
+.codex/auth.json
+.claude/.credentials.json
+.kube/config
+.gnupg/secring.gpg
+.config/gcloud/credentials.db
+.azure/accessTokens.json
+.netrc
+.git-credentials
+.npmrc
+.pypirc
+.zsh_history
+.bash_history
+.sh_history
+.zhistory
+.python_history
+.node_repl_history
+.mysql_history
+.psql_history
+Library/Keychains/login.keychain-db
+Library/Application Support/Google/Chrome/Default/Cookies'
+
+# IFS de nova-linha: caminhos com espaço ("Application Support") não quebram.
+OLDIFS=$IFS
+IFS='
+'
+for p in $TRAP_PATHS; do
+  printf 'TRAP-DUMMY-NOT-A-SECRET\n' > "$FAKE/$p"
+done
+IFS=$OLDIFS
+printf 'print("codigo legivel")\n' > "$FAKE/projeto/codigo.py"
+
+trap_blocked=0
+trap_leaked=0
+for wrapper in "$READ" "$TEST"; do
+  wname=$(basename "$wrapper")
+  OLDIFS=$IFS
+  IFS='
+'
+  for p in $TRAP_PATHS; do
+    out=$(HOME="$FAKE" "$wrapper" "cat '$FAKE/$p'" 2>/dev/null) && rc=0 || rc=$?
+    if [ "$rc" -ne 0 ] && ! printf '%s' "$out" | grep -q 'TRAP-DUMMY'; then
+      trap_blocked=$((trap_blocked + 1))
+    else
+      trap_leaked=$((trap_leaked + 1))
+      fail "$wname leu armadilha de credencial: $p"
+    fi
+  done
+  IFS=$OLDIFS
+done
+if [ "$trap_leaked" -eq 0 ]; then
+  pass "denylist de credenciais: $trap_blocked leituras bloqueadas (2 wrappers)"
+fi
+
+if HOME="$FAKE" "$READ" "cat '$FAKE/projeto/codigo.py'" >/dev/null 2>&1; then
+  pass "read-shell preserva leitura legítima de código"
+else
+  fail "read-shell bloqueou leitura legítima de código"
+fi
+rm -rf "$FAKE"
+
+# --- Structural permission contract + negative mutation test ---------------
+CHECK="$ROOT/tests/check-permissions.py"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$CHECK" "$ROOT/agent" >/dev/null 2>&1; then
+    pass "contrato estrutural de permissões dos 7 agentes"
+  else
+    fail "contrato estrutural de permissões divergente"
+    python3 "$CHECK" "$ROOT/agent" 2>&1 | sed 's/^/      /'
+  fi
+
+  MUT="$TMP/mutant-agent"
+  mkdir -p "$MUT"
+  cp "$ROOT/agent/"*.md "$MUT/"
+  sed 's/effect: deny/effect: allow/' "$ROOT/agent/willtech-explorador.md" \
+    > "$MUT/willtech-explorador.md"
+  if python3 "$CHECK" "$MUT" >/dev/null 2>&1; then
+    fail "teste de mutação: edit: allow no explorador NÃO foi detectado"
+  else
+    pass "teste de mutação: inversão de permissão detectada"
+  fi
+else
+  printf 'SKIP  contrato estrutural e mutação (python3 ausente)\n'
+fi
+
 [ "$fail" -eq 0 ] && printf '\nTodos os testes de wrapper passaram.\n'
 [ "$fail" -eq 0 ] || printf '\nFalhas detectadas.\n'
 exit "$fail"
+
+# WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil
