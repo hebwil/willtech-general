@@ -140,13 +140,15 @@ Cada agente possui um contrato operacional, com responsabilidades, limites e cri
 
 ## Compatibilidade e homologação
 
-| Plataforma | Implementação | Delegação | Inteligência 2.2.1 | Isolamento |
-|---|---|---|---|---|
-| **OpenCode V2** (2.2.6) | Subagentes Markdown + wrappers sandbox + plugin V2 | ✅ Homologada | 🧪 Automação validada em simulação | ✅ Por agente, aplicado pelo runtime |
-| **OpenAI Codex** | Agentes nativos em TOML | ✅ Validada | 🧪 Automação validada em simulação | ⚠️ Instrucional (limitação do runtime) |
-| **Claude Code** | Subagentes Markdown + hooks | ❌ Não homologada nesta máquina | 🧪 Contratos verificados na documentação oficial | ⚠️ Depende dos controles do runtime |
+| Plataforma | Agentes | Delegação hierárquica | Hooks / plugins (2.2.1) | Memória, revisão e controle de loops | Isolamento por agente |
+|---|---|---|---|---|---|
+| **OpenCode V2** | Subagentes Markdown + wrappers sandbox + plugin V2 | Homologada em runtime real | Plugin V2 nativo | Contratos ativos; automação validada em simulação | Aplicado pelo runtime (2.2.6) |
+| **OpenAI Codex** | Agentes nativos em TOML | Validada em runtime real | Hooks projeto-local com trust via `/hooks` | Contratos ativos; automação validada em simulação | Instrucional (limitação do runtime) |
+| **Claude Code** | Subagentes Markdown + templates de hooks | Pacote implementado; homologação de runtime pendente | Templates de hooks com `onFailure: block` | Contratos ativos; automação validada em simulação | Depende dos controles do runtime |
 
-A estrutura conceitual é compartilhada; os mecanismos de delegação, execução e controle de permissões variam entre plataformas.
+**Terminologia:** *homologada em runtime real* indica execução comprovada em sessão autenticada com evidência registrada; *validada em simulação* indica comportamento exercitado por suítes determinísticas sobre contratos verificados na documentação oficial, com homologação em runtime ainda pendente; *implementado* indica o componente presente no pacote, pronto para homologação.
+
+A estrutura conceitual é compartilhada; os mecanismos de delegação, execução e controle de permissões variam entre plataformas. A classificação completa, com evidências e limitações técnicas, está em [EVOLUCAO.md](EVOLUCAO.md).
 
 ---
 
@@ -184,12 +186,14 @@ cp codex/agents/*.toml ~/.codex/agents/
 # Reinicie a sessão e confirme os sete nomes willtech-*
 ```
 
-### Claude Code (pacote disponível; delegação não homologada nesta máquina)
+### Claude Code
 
 ```sh
 mkdir -p ~/.claude/agents
 cp -a claude-code/agents/. ~/.claude/agents/
 ```
+
+> A variante Claude Code está implementada e pronta para uso; a homologação de delegação em runtime segue o mesmo protocolo aplicado às demais plataformas. Detalhes em [INSTALL.md](INSTALL.md).
 
 ### Automação nativa 2.2.1 (opcional, projeto-local, com consentimento)
 
@@ -224,11 +228,11 @@ O comando deve ir **inteiro entre aspas duplas**. Sem aspas, o runtime nega a ch
 
 ### Limitações por plataforma
 
-| Plataforma | Isolamento real | Estado |
+| Plataforma | Isolamento real | Classificação |
 |---|---|---|
 | **OpenCode 2.2.6** | Por agente, aplicado pelo runtime + sandbox dos wrappers | Homologado nos testes documentados |
-| **Codex** | Instrucional; o TOML não oferece permissão por agente | Sem garantia equivalente |
-| **Claude Code** | Depende dos controles do runtime e do pacote | Não homologado nesta máquina |
+| **Codex** | Instrucional; o TOML não oferece permissão por agente | Limitação do runtime |
+| **Claude Code** | Delegado aos controles nativos do runtime | Pendente de homologação |
 
 Matriz completa, testes adversariais e limitações honestas (incluindo lacunas de runtime classificadas como tais) em [AUDITORIA.md](AUDITORIA.md) e [opencode/HOMOLOGACAO.md](opencode/HOMOLOGACAO.md).
 
