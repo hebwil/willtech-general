@@ -39,6 +39,7 @@ jobs:
           python tools/willtech-dossie.py add "$env:RUNNER_TEMP\deny.jsonl" --agent t --kind finding --summary s --path 'C:\repo\.env'
           if ($LASTEXITCODE -ne 2) { throw "FALHOU: .env nao recusado (exit $LASTEXITCODE)" }
           Write-Host "ok .env recusado na entrada (exit 2)"
+          exit 0
 
       - name: Ciclo real do instalador PS1 (backup, idempotencia, disable, enable, uninstall)
         shell: powershell
@@ -82,3 +83,4 @@ jobs:
           Assert (-not (Test-Path (Join-Path $lab '.opencode\plugins\willtech\index.js'))) 'uninstall remove plugin'
           Assert (-not (Test-Path (Join-Path $lab '.willtech\enabled'))) 'uninstall remove enabled'
           Write-Host 'CICLO PS1 COMPLETO: PASS'
+          exit 0
