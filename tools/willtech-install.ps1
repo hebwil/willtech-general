@@ -24,6 +24,9 @@ param(
   [switch]$Uninstall
 )
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell 5.1 corrompe aspas embutidas em argumentos de executáveis
+# nativos (-c); o código Python vai por stdin (python - args), sem aspas no argv.
+$OutputEncoding = [System.Text.Encoding]::UTF8
 
 $Src = Split-Path -Parent $PSScriptRoot
 if (-not $Repo) { $Repo = $Src }
@@ -92,7 +95,7 @@ print(("criado " if created else "mesclado ") + target)
 '@
   $pyjson = ConvertTo-Json -Compress -InputObject @($py[0] + $py[1])
   $exe = $py[0]; $pre = $py[1]
-  & $exe @pre -c $code $target $template $pyjson $Repo
+  $code | & $exe @pre - $target $template $pyjson $Repo
   if ($LASTEXITCODE -ne 0) { throw "falha ao mesclar hooks em $target" }
 }
 
@@ -128,7 +131,7 @@ elif os.path.isfile(target):
         print("removido " + target)
 '@
   $exe = $py[0]; $pre = $py[1]
-  & $exe @pre -c $code $target
+  $code | & $exe @pre - $target
   if ($LASTEXITCODE -ne 0) { throw "falha ao reverter hooks em $target" }
 }
 
