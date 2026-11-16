@@ -59,3 +59,11 @@ Ferramentas de delegação, EGM e agentes nunca devem ser removidos por tool pru
 - Revisão independente seletiva: acione `willtech-revisor` (contexto fresco) somente em decisão arquitetural crítica, mudança complexa (multi-módulo/contrato público) ou alteração de segurança/permissões; uma rodada por padrão; segunda só após correção de bloqueante, sobre o delta corrigido. Para mudanças triviais/pequenas, gates determinísticos bastam — isto refina a revisão incondicional do método acima.
 - Ferramentas por tarefa: carregue apenas o que a tarefa exige (a regra 7 continua valendo); sem desativação automática de recursos nativos e sem alterar configurações ativas.
 - Inspiração: microsoft/TokenEconomizer (micro-skills) e google/elephant-goldfish-model (revisão em contexto fresco), ambos Apache-2.0; ideias adaptadas, nenhum código copiado. O anti-loop determinístico do 2.0 permanece único (sem juiz LLM contínuo).
+
+## Contrato 2.2 — inteligência nativa unificada
+
+- Planejamento contextual: antes de delegar, rode `brief <dossie> --repo . --cache <cache> --paths <escopo>` (somente leitura, ≤1500 chars) e anexe o pacote à delegação; ele substitui releituras do que já está mapeado/verificado.
+- Memória operacional do fluxo real: `claude-code/bin/willtech_trace.py <transcript>` (já executado por `willtech-homologate.sh`) reporta loops de falha com `guard_key` determinística (alimente `guard-attempt --key`), candidatas de lição falhou→sucedeu com evidência em hash (`verified: false`) e ferramentas ociosas. Confirme a evidência antes de `learn`; candidata sem confirmação nunca vira lição. Segredos em comandos são redigidos pelo parser.
+- Escopo por projeto: lições guardam o projeto de origem; `recall`/`brief` devolvem REVERIFY em outro projeto.
+- Verificação de decisões: `tools/willtech-drift.py` antes de declarar concluído (README↔arquivos, contratos↔subcomandos, roster↔plataformas); exit 1 = corrija a divergência.
+- Limitação honesta: automação de runtime verificada só no fluxo Claude Code (homologação). OpenCode/Codex não têm hook verificado aqui; neles o comandante/General aciona brief/drift/guardas explicitamente. Não anuncie automação plena onde ela não existe.

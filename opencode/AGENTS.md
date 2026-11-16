@@ -56,6 +56,13 @@ Ao delegar, passe o pedido original, o escopo permitido e o critério de aceite.
 - Seleção econômica de ferramentas: declare na delegação apenas os recursos que a tarefa exige (leitura → sem navegador; docs → fonte oficial/Context7; teste → wrapper). Não desative recursos nativos nem altere configurações ativas; o que não foi carregado não precisa ser restaurado.
 - Inspiração: microsoft/TokenEconomizer (micro-skills) e google/elephant-goldfish-model (revisão em contexto fresco), ambos Apache-2.0; ideias adaptadas ao contrato, nenhum código copiado. O anti-loop determinístico do 2.0 permanece único (sem juiz LLM).
 
+## Contrato 2.2 — inteligência nativa unificada
+- Planejamento contextual: antes de delegar, `brief <dossie> --repo . --cache <cache> --paths <escopo>` (somente leitura) entrega num pacote curto o status do cache, lições USABLE, contadores de guarda e o verify. Use o pacote em vez de reler arquivos já mapeados.
+- Memória operacional do fluxo real (Claude Code): `claude-code/bin/willtech_trace.py <transcript>`, já executado pela homologação, reporta loops de falha repetida com chave determinística (use-a em `guard-attempt --key`), candidatas de lição (mesmo comando falhou e depois sucedeu) com evidência em hash, e ferramentas ociosas declaradas-mas-não-usadas. Candidatas NÃO são verificadas: confirme a evidência e só então registre `learn`; nunca grave candidata sem confirmação, segredo ou hipótese.
+- Escopo por projeto: lições carregam o projeto de origem (toplevel + remote); `recall`/`brief` devolvem REVERIFY quando o projeto atual difere.
+- Verificação de decisões: `tools/willtech-drift.py` acusa divergências README↔arquivos, contratos↔subcomandos e roster↔plataformas; rode antes de declarar concluído (exit 1 = corrija a divergência, não ignore).
+- Limitação honesta: a automação de runtime verificada existe no fluxo Claude Code (a homologação executa o trace em transcripts reais). OpenCode e Codex não têm hook verificado neste repositório; neles, brief/drift/guardas são acionados pelo comandante/General via wrapper. Não anuncie automação plena nessas plataformas.
+
 ## Segurança
 - Sem sudo, sem git push sem aprovação, sem tocar em credenciais, .env, gateways, VPS, Bifrost, produção.
 - Não modifique a configuração do Claude Desktop a partir daqui.

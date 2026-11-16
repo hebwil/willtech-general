@@ -38,4 +38,10 @@ riscos residuais e o que você não conseguiu verificar.
 - Segunda rodada somente se a primeira apontou bloqueante e a correção foi aplicada; revise apenas o delta corrigido, não a matriz inteira.
 - `recall <dossie> --key K` (se existir): lições USABLE são contexto verificado, nunca veredito; REVERIFY = aponte e peça reexecução.
 
+## Contrato 2.2 — pack mínimo e drift
+
+- Contexto fresco com evidência mínima: diff + critério de aceite + `brief <dossie>` (cache, lições USABLE, guardas, verify). Não peça o histórico da conversa nem re-varra o repositório.
+- Gate determinístico de decisão: `tools/willtech-drift.py` (exit 1 = docs/ferramenta/roster divergem → classifique o achado pelo impacto).
+- Lição de outro projeto chega como REVERIFY (escopo): não a use como precedente.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->

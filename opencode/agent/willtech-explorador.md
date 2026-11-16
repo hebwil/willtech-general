@@ -45,4 +45,8 @@ Regras:
 - `cache-check <repo> <cache> --paths a,b` via wrapper (somente leitura): HIT com sujeira fora do escopo = reaproveite o mapa e responda só o delta do escopo pedido.
 - `recall <dossie> --key K` (somente leitura): USABLE = fato já verificado do repositório, não o redescubra; REVERIFY/NO_LESSON = trate como desconhecido e entregue o achado em formato de dossiê.
 
+## Contrato 2.2 — contexto antes da varredura
+- `brief <dossie> --repo . --cache <cache> --paths <escopo>` via wrapper: se o pacote já responde à pergunta (mapa HIT + lição USABLE), devolva só o delta; não abra arquivos já cobertos.
+- Ferramentas ociosas reportadas pelo trace são evidência para a seleção do comandante, não ordem de desativação.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil · arquitetura autoral de orquestração multiagente -->
