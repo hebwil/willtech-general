@@ -84,6 +84,30 @@ SPECIALTIES = ("explorer", "researcher", "visual", "executor", "tester",
                "reviewer", "general")
 QUERY_EXCLUDED = ("dropped", "superseded")
 
+# Aliases pt-BR do roster oficial (opencode/agent/willtech-*.md). O schema v1
+# usa nomes canônicos em inglês; a normalização acontece na ENTRADA, sem ALTER
+# de schema. Aceitar os dois vocabulários evita divergência entre a sala e o
+# roster (achado da FASE 9).
+SPECIALTY_ALIASES = {
+    "explorador": "explorer",
+    "pesquisador": "researcher",
+    "visual": "visual",
+    "executor": "executor",
+    "testador": "tester",
+    "revisor": "reviewer",
+    "general": "general",
+    "comandante": "general",
+}
+
+
+def normalize_specialty(value):
+    """Aceita nome canônico (inglês) ou alias pt-BR do roster."""
+    if value is None:
+        return None
+    key = str(value).strip().lower()
+    return SPECIALTY_ALIASES.get(key, key)
+
+
 # Padrões de segredo: mesma disciplina dos SECRET_PATTERNS do trace (2.2);
 # cópia local porque a sala é autossuficiente (o lab copia room+dossiê).
 SECRET_PATTERNS = (
@@ -311,6 +335,7 @@ def cmd_put(a):
     if a.kind not in KINDS:
         print(f"kind inválido: {a.kind} (use {', '.join(KINDS)})")
         return 2
+    a.specialty = normalize_specialty(a.specialty)
     if a.specialty not in SPECIALTIES:
         print(f"specialty inválida: {a.specialty} (use {', '.join(SPECIALTIES)})")
         return 2
@@ -577,6 +602,7 @@ def query_text(room, repo=".", objective="", specialty=None, kind=None,
         project = DOSSIE.project_id(os.path.abspath(repo))
         if not project:
             return None
+    specialty = normalize_specialty(specialty)
     code, text = build_query(os.path.abspath(room), project,
                              objective=objective, specialty=specialty,
                              kind=kind, path=path,
@@ -780,6 +806,7 @@ def cmd_skill_add(a):
     if not project:
         print("erro: --repo não é um repositório git (isolamento por projeto)")
         return 2
+    a.specialty = normalize_specialty(a.specialty)
     if a.specialty not in SPECIALTIES:
         print(f"specialty inválida: {a.specialty} (use {', '.join(SPECIALTIES)})")
         return 2
@@ -971,6 +998,7 @@ def cmd_skill_import_candidates(a):
     if not project:
         print("erro: --repo não é um repositório git (isolamento por projeto)")
         return 2
+    a.specialty = normalize_specialty(a.specialty)
     if a.specialty not in SPECIALTIES:
         print(f"specialty inválida: {a.specialty} (use {', '.join(SPECIALTIES)})")
         return 2
@@ -1044,7 +1072,8 @@ def cmd_query(a):
     else:
         project = a.project
     code, text = build_query(path, project, objective=a.objective,
-                             specialty=a.specialty, kind=a.kind,
+                             specialty=normalize_specialty(a.specialty),
+                             kind=a.kind,
                              path_ref=a.path, budget=a.budget_chars)
     if code:
         return code

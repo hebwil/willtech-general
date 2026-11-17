@@ -366,6 +366,44 @@ class RoomQueryTests(unittest.TestCase):
         self.assertEqual(rm.BUDGET_CHARS, 1200)
 
 
+class SpecialtyAliasTests(unittest.TestCase):
+    """FASE 9: roster pt-BR e sala em inglês não podem divergir."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+        self.repo = mkrepo(self.d, "alias-repo")
+        self.room = str(Path(self.repo) / ".willtech" / "room.db")
+        code, out = run("init", self.room, "--repo", str(self.repo))
+        self.assertEqual(code, 0, out)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_pt_br_alias_accepted_on_put(self):
+        code, out = run("put", self.room, "--repo", str(self.repo),
+                        "--kind", "finding", "--specialty", "testador",
+                        "--summary", "suite verde no laboratorio")
+        self.assertEqual(code, 0, out)
+        code, rec = run("get", self.room, "--repo", str(self.repo), "--id", "1")
+        self.assertEqual(code, 0, rec)
+        self.assertIn("tester", rec)   # normalizado para o canonico
+
+    def test_pt_br_alias_filtered_on_query(self):
+        run("put", self.room, "--repo", str(self.repo), "--kind", "finding",
+            "--specialty", "explorador", "--summary", "mapa do modulo pronto")
+        code, out = run("query", self.room, "--repo", str(self.repo),
+                        "--specialty", "explorador", "--objective", "mapa")
+        self.assertEqual(code, 0, out)
+        self.assertIn("mapa do modulo", out)
+
+    def test_unknown_specialty_still_refused(self):
+        code, out = run("put", self.room, "--repo", str(self.repo),
+                        "--kind", "finding", "--specialty", "inexistente",
+                        "--summary", "x")
+        self.assertEqual(code, 2, out)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 
