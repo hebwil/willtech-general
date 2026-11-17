@@ -49,7 +49,7 @@ class DistributionTests(unittest.TestCase):
             digest, rel = line.split("  ", 1)
             sums[rel] = digest
         src = extract(self.tarpath, self.base / "src")
-        self.assertEqual(set(sums), {str(p.relative_to(src)) for p in src.rglob("*") if p.is_file()})
+        self.assertEqual(set(sums), {p.relative_to(src).as_posix() for p in src.rglob("*") if p.is_file()})
         tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
         self.assertEqual(set(sums), set(tracked))
         for rel, digest in sums.items():

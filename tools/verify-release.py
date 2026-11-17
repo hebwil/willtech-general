@@ -40,7 +40,7 @@ def main():
         with tarfile.open(tarpath, "r:gz") as tf:
             tf.extractall(src, filter="data")
         src = src / PREFIX
-        extracted = {str(p.relative_to(src)) for p in src.rglob("*") if p.is_file()}
+        extracted = {p.relative_to(src).as_posix() for p in src.rglob("*") if p.is_file()}
         assert extracted == set(sums), "conjunto de arquivos extraídos != SHA256SUMS"
         tracked = set(subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines())
         assert set(sums) == tracked, "SHA256SUMS != git ls-files da tag"
