@@ -1,0 +1,129 @@
+name: Publish verified v3.0.0
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-v3.0.0.yml']
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: willtech-release-v3.0.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: build, verify and publish v3.0.0
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PINNED_SHA: 83de0e07c13e3438e9adab5863b821c2382e0589
+      RELEASE_TAG: v3.0.0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 83de0e07c13e3438e9adab5863b821c2382e0589
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Gate exact published commit and 5/5 CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PINNED_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/44161602314" > "$RUNNER_TEMP/ci.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/44161602314/jobs?per_page=100" > "$RUNNER_TEMP/jobs.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])
+          run=json.loads((root/'ci.json').read_text())
+          jobs=json.loads((root/'jobs.json').read_text())['jobs']
+          assert run['head_sha']==os.environ['PINNED_SHA']
+          assert run['status']=='completed' and run['conclusion']=='success'
+          assert len(jobs)==5, f"expected 5 jobs, got {len(jobs)}"
+          assert all(j['status']=='completed' and j['conclusion']=='success' for j in jobs), [(j['name'],j['conclusion']) for j in jobs]
+          print('CI verified: exact SHA, 5/5 jobs SUCCESS')
+          PY
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release already exists. Refusing to overwrite." >&2
+            exit 1
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Tag already exists. Refusing to retarget." >&2
+            exit 1
+          fi
+      - name: Test distribution built from exact validated commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/test-dist.py
+          python tools/build-dist.py HEAD
+          python tools/verify-release.py dist "$RELEASE_TAG"
+      - name: Prepare accurate release notes
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          ## WillTech-General 3.0 — Shared Intelligence
+          Seven specialized agents and shared project-local SQLite intelligence,
+          validated handoffs, JIT context, portable FTS5 fallback, verified migration,
+          backup/restore, guards against secrets/injection, and reversible installers.
+
+          **Verified**: 5/5 CI jobs on Linux, macOS, Windows and the official OpenCode V2
+          server, including end-to-end intelligence smoke and archive-based distribution
+          install/update/disable/uninstall. Reference CI: #44161602314, commit 83de0e0.
+
+          **Honest limitations**: native Desktop visual rendering is still experimental
+          and was not certified as a physical-app UI test. Real paid model inference
+          benchmark was not performed; no token savings or runtime spending is claimed.
+          Codex viewer is complementary (not a native Codex panel).
+
+          Artifacts: willtech-general-3.0.0.tar.gz, MANIFEST.json (archive SHA-256),
+          SHA256SUMS.txt (SHA-256 of each file inside the archive).
+          NOTES
+      - name: Create draft with immutable commit and assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" \
+            dist/willtech-general-3.0.0.tar.gz dist/MANIFEST.json dist/SHA256SUMS.txt \
+            --target "$PINNED_SHA" --title "WillTech-General v3.0.0" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" --draft
+      - name: Download draft assets and prove installed distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-download"
+          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/release-download"
+          cmp dist/MANIFEST.json "$RUNNER_TEMP/release-download/MANIFEST.json"
+          cmp dist/SHA256SUMS.txt "$RUNNER_TEMP/release-download/SHA256SUMS.txt"
+          cmp dist/willtech-general-3.0.0.tar.gz "$RUNNER_TEMP/release-download/willtech-general-3.0.0.tar.gz"
+          python tools/verify-release.py "$RUNNER_TEMP/release-download" "$RELEASE_TAG"
+          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')
+          test "$TAG_SHA" = "$PINNED_SHA"
+      - name: Publish stable release only after complete draft verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release edit "$RELEASE_TAG" --draft=false
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = false
+          echo "Stable release: https://github.com/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG"
+      - name: Verify public downloadable archive checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --max-time 180 \
+            -o "$RUNNER_TEMP/public-archive.tar.gz" \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/willtech-general-3.0.0.tar.gz"
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          h=hashlib.sha256((Path(os.environ['RUNNER_TEMP'])/'public-archive.tar.gz').read_bytes()).hexdigest()
+          m=json.loads(Path('dist/MANIFEST.json').read_text())
+          assert h==m['archive_sha256'], (h,m['archive_sha256'])
+          print('PUBLIC ASSET SHA-256 VERIFIED:', h)
+          PY
