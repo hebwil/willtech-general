@@ -996,4 +996,61 @@ Desktop/Claude e Windows nativo não homologados (sem aplicações descartáveis
 instalações pessoais não tocadas). Codex não expõe painel nativo de 7 agentes
 (visualizador complementar).
 
+## Rodada final 3.0 — homologação nativa em CI e publicação estável (2026-11-17)
+
+Fechamento da versão 3.0 (Shared Intelligence) sem recomeçar nem duplicar commits.
+Histórico reconciliado com a `main` remota (PR #14, `e311c5e`) por merge `f26e799`
+— os três cherry-picks da linha multiplataforma NÃO reaplicados (já no PR #14).
+Branch de segurança `safety/3.0-pre-publicacao` preservada. PR #15
+(`qoder/shared-intelligence` → `main`) **merged** em
+`c4e593d17394b8070783f04efe4ad7f329201000`.
+
+**CI nativo aprovado — [run 44140677603](https://github.com/hebwil/willtech-general/actions/runs/44140677603), 5/5 jobs SUCCESS:**
+- `nucleo` em **macos-latest, ubuntu-latest e windows-latest**: suítes portáveis do
+  núcleo (room/room-v3/handoff/jit/smoke-e2e/compare/repomap/supervisor/compat/
+  claude/homolog/gui-install/gui), fallback REAL sem FTS5 (`WILLTECH_ROOM_NO_FTS5=1`),
+  protocolo REAL do codex-app-server (binário oficial rust-v0.169.0), suítes
+  shell+instalador no Unix e ciclo PowerShell 5.1 completo no Windows.
+- `opencode-host`: **OpenCode 2.3.0 oficial** — 7 agentes WillTech `subagent`,
+  servidor autenticado (basic), `POST /api/session → 200`, **setup do plugin V2
+  executado** (state-plugin-load.json em .willtech/), custo zero.
+- `intelligence-smoke`: smoke integrado da inteligência 3.0 (17 critérios, subprocess real).
+
+**Defeitos reais corrigidos nesta rodada (portabilidade + host):**
+- `os.fspath` em `willtech-dossie.py` (WindowsPath+str no Windows); `newline="\n"`
+  em `build-claude.py`; `.gitattributes` `* text=auto eol=lf` (+ binários de imagem)
+  para reprodutibilidade byte-a-byte do bundle no checkout Windows.
+- `willtech-install.ps1`: `"${Platform}:"` corrige ParserError real do PowerShell 5.1
+  (`"$Platform:"` é referência de variável inválida). Guard de orquestração com
+  exceção EXATA para esse único arquivo (conferência do arquivo inteiro), sem
+  enfraquecer a proteção dos demais componentes.
+- Wrappers `sandbox-exec` (exclusivos macOS) escopados no `test-wrappers.sh`:
+  exercício integral no job macOS; NOTICE + contrato estrutural de permissões em
+  Linux/Windows (SKIP condicional classificado corretamente, não é falso PASS).
+- **Host OpenCode correto:** o instalador `opencode.ai/install` fornece apenas
+  OpenCode 1 (contrato `default.server()`, chave `plugin` singular); o plugin
+  WillTech é OpenCode 2 (`{id, setup(ctx)}`, chave `plugins`, descoberta automática
+  de `.opencode/plugins/` incl. subdiretórios — confirmado no fonte oficial v2.3.0).
+  O CI passou a usar `opencode.ai/v2/install` (OpenCode 2.3.0), eliminando a falha
+  de carga por incompatibilidade de host. Fixture Windows passou a incluir
+  `tools/willtech-dossie.py` (exigido pelo preflight do instalador).
+- Protocolo real do App Server Codex: SKIP anterior ELIMINADO com binário oficial
+  baixado da release oficial e exercitado nos 3 SOs (`codex-appserver-real.json`).
+
+**Economia:** benchmark real **NÃO MEDIDO** — sem provedor de laboratório
+expressamente autorizado; gasto US$0,00 do orçamento US$2,00; nenhum percentual
+reivindicado (`bench-final-nao-medido.json`). Ferramenta `willtech-compare.py`
+verificada por testes determinísticos (isso é teste da ferramenta, não benchmark).
+
+**Limitações honestas declaradas (não anunciadas como homologadas):** sessão real
+com modelo nas 3 plataformas (exige provedor/autenticação não disponível em
+ambiente isolado; OpenCode tem carga de plugin + SessionStart reais no host oficial);
+render nativo do painel visual no Desktop (experimental, smoke headless de
+laboratório); benchmark. Nenhuma funcionalidade anunciada como homologada depende
+exclusivamente de simulação.
+
+**Publicação:** tag `v3.0.0` no commit validado da `main`, GitHub Release estável
+com artefatos de distribuição + SHA-256, instalação limpa verificada a partir dos
+arquivos publicados. Relatório completo em `docs/HOMOLOGACAO-3.0.md`.
+
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

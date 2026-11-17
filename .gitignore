@@ -10,3 +10,4 @@ willtech_events.log
 .claude/
 .codex/
 codex/willtech-visual/.appserver-home/
+dist/

@@ -15,7 +15,7 @@ Origin: WILLTECH custom multi-agent implementation
 </p>
 
 <p align="center">
-  <sub>Versão atual: <strong>2.3</strong> (inteligência de orquestração) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
+  <sub>Versão atual: <strong>3.0</strong> (Shared Intelligence) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@ O resultado é uma arquitetura projetada para reduzir retrabalho, evitar loops, 
 
 ## Inteligência integrada
 
-A partir das versões **2.0 → 2.3**, a arquitetura deixou de ser apenas hierarquia de delegação e passou a incorporar mecanismos determinísticos de inteligência operacional, acionados pelos hooks e plugins nativos de cada runtime:
+A partir das versões **2.0 → 3.0**, a arquitetura deixou de ser apenas hierarquia de delegação e passou a incorporar mecanismos determinísticos de inteligência operacional, acionados pelos hooks e plugins nativos de cada runtime:
 
 | Capacidade | O que faz | Estado |
 |---|---|---|
@@ -56,7 +56,7 @@ A partir das versões **2.0 → 2.3**, a arquitetura deixou de ser apenas hierar
 | 🗺️ **RepoMap incremental compartilhado** | `tools/willtech-repomap.py` indexa símbolos/dependências sem copiar conteúdo; reparse só do que mudou; briefings substituem releituras; trechos revalidados por hash; isolamento por projeto e exclusão de credenciais | 🧪 Validada em simulação |
 | ⏱️ **Supervisor de delegações** | `tools/willtech-supervisor.py` rastreia cada delegação com soft/hard timeout, bloqueia recursão/duplicação/escrita concorrente, retry único reconciliado; timed_out nunca afirma interrupção; cancelamento só com confirmação do runtime | 🧪 Validada em simulação |
 
-> **Nota de rigor:** nenhum percentual de economia de tokens é afirmado. A comparação com/sem otimizações (`tools/willtech-compare.py`) mede deltas de tokens, turnos, falhas e loops sobre transcripts reais, sem extrapolar métricas. A homologação da automação em runtime real (com gasto de modelo) permanece pendente e não é anunciada como concluída — classificação completa e evidências em [EVOLUCAO.md](EVOLUCAO.md).
+> **Nota de rigor:** nenhum percentual de economia de tokens é afirmado. A comparação com/sem otimizações (`tools/willtech-compare.py`) mede deltas de tokens, turnos, falhas e loops sobre transcripts reais, sem extrapolar métricas; o benchmark final está registrado como **NÃO MEDIDO** (sem provedor de laboratório autorizado, custo zero). A **carga do plugin V2 e o hook SessionStart do OpenCode foram exercitados no host oficial OpenCode 2.3.0** em CI isolado e autenticado (custo zero, evidência: arquivo de estado state-plugin-load.json gerado em .willtech/); a execução dos demais hooks em sessão com modelo (OpenCode, Codex e Claude Code) permanece pendente e não é anunciada como concluída — classificação completa e evidências em [EVOLUCAO.md](EVOLUCAO.md).
 
 ### As três melhorias da rodada 2.3 (integradas na `main` via [PR #9](https://github.com/hebwil/willtech-general/pull/9))
 
@@ -96,7 +96,7 @@ python3 tools/willtech-room.py export .willtech/room.db --repo .   # auditoria J
 
 Ciclo de vida, handoff sem vazamento e micro-skills com gate humano (`skill-promote` exige `--i-approve-human`) em [docs/SHARED-INTELLIGENCE.md](docs/SHARED-INTELLIGENCE.md).
 
-**Custos e dependências:** nenhuma dependência nova — `sqlite3` da stdlib Python; FTS5 tem gate no CI Windows ([.github/workflows/windows-compat.yml](.github/workflows/windows-compat.yml)); o fallback LIKE é documentado mas **ainda não implementado** — sem FTS5 o `init` falha alto. Benchmark real antes/depois ainda não medido (depende de telemetria de runtime); nenhum percentual de economia é reivindicado.
+**Custos e dependências:** nenhuma dependência nova — `sqlite3` da stdlib Python; FTS5 é opcional e o **fallback LIKE está implementado e testado de ponta a ponta** (`WILLTECH_ROOM_NO_FTS5=1` força o fallback; sem FTS5 o `init` NÃO falha — a sala opera com LIKE). O fallback real é exercitado no CI ([.github/workflows/homologacao-3.0.yml](.github/workflows/homologacao-3.0.yml), passo "Fallback REAL sem FTS5") e o gate FTS5 do Windows em [.github/workflows/windows-compat.yml](.github/workflows/windows-compat.yml). Benchmark real antes/depois **NÃO MEDIDO** (sem provedor de laboratório autorizado; custo zero); nenhum percentual de economia é reivindicado.
 
 ---
 
@@ -187,10 +187,10 @@ Cada agente possui um contrato operacional, com responsabilidades, limites e cri
 
 | Sistema | Estado | Condição objetiva |
 |---|---|---|
-| **macOS** | Validado | Suítes determinísticas e smoke tests exercitados em macOS (arm64). Os wrappers de sandbox do OpenCode usam `sandbox-exec`, exclusivo do macOS |
-| **Linux** | Não validado nesta estação | Código Unix (python3 stdlib + shell POSIX + git, com `fcntl` disponível em Linux). Requisitos: python3, git, sh. Sem ambiente Linux disponível para exercício; o sandbox `sandbox-exec` dos wrappers não se aplica |
-| **Windows nativo** | Núcleo homologado; instalador homologado na versão `c70e5e8` | [Workflow nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/43892063828): `msvcrt.locking` 22/22 (8 processos × 25, anti-loop, hooks das 3 plataformas, `.env` recusado) e ciclo PowerShell 5.1 completo: backup, merge preservando configurações, idempotência, disable/enable/uninstall, caminho Unicode e integridade dos arquivos. Wrappers `sandbox-exec` não instalados — shell dos agentes segue restrito pelo runtime. Runtimes de IA em Windows não homologados por este teste |
-| **Windows via WSL** | Não validado | Caminho Linux dentro da distribuição WSL (python3, git, sh; instalador `sh` utilizável). Sem ambiente Windows/WSL disponível para exercício; mesmas condições do Linux |
+| **macOS** | Validado (estação arm64 + CI `macos-latest`) | Suítes determinísticas, smoke tests e wrappers `sandbox-exec` exercitados integralmente em macOS (estação arm64 e [CI nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/44140677603)). Os wrappers de sandbox do OpenCode usam `sandbox-exec`, exclusivo do macOS |
+| **Linux** | Validado em CI nativo (`ubuntu-latest`) | [CI nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/44140677603): todas as suítes portáveis do núcleo, fallback real sem FTS5, protocolo real do App Server Codex (binário oficial), suítes shell + instalador (`test-auto/plan/dossie/drift/trace/wrappers/install`). Requisitos: python3, git, sh. O sandbox `sandbox-exec` dos wrappers não se aplica (exclusivo macOS); o contrato estrutural de permissões é validado em Linux |
+| **Windows nativo** | Núcleo + instalador homologados em CI nativo (`windows-latest`) | [CI nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/44140677603): suítes portáveis do núcleo, fallback real sem FTS5, `msvcrt.locking` com processos concorrentes (test-compat: anti-loop, hooks das 3 plataformas, `.env` recusado) e ciclo PowerShell 5.1 completo: backup, merge preservando configurações do usuário, idempotência, disable/enable/uninstall, caminho Unicode e integridade dos arquivos. Wrappers `sandbox-exec` não instalados — shell dos agentes segue restrito pelo runtime. Runtimes de IA em Windows não homologados por este teste |
+| **Windows via WSL** | Não validado | Caminho Linux dentro da distribuição WSL (python3, git, sh; instalador `sh` utilizável). Sem ambiente WSL disponível para exercício; mesmas condições do Linux |
 
 As três integrações de IA abaixo são independentes do sistema operacional: cada uma usa os mecanismos nativos do seu runtime.
 
@@ -198,8 +198,8 @@ As três integrações de IA abaixo são independentes do sistema operacional: c
 
 | Plataforma | Agentes | Delegação hierárquica | Hooks / plugins (2.2.1) | Memória, revisão e controle de loops | Isolamento por agente |
 |---|---|---|---|---|---|
-| **OpenCode V2** | Subagentes Markdown + wrappers sandbox + plugin V2 | Delegação real comprovada; tarefa DeepSeek não homologada (leitura rejeitada) | Plugin V2 nativo | Contratos ativos; automação validada em simulação | Aplicado pelo runtime (2.2.6) |
-| **OpenAI Codex** | Agentes nativos em TOML | Validada em runtime real | Hooks projeto-local com trust via `/hooks` | Contratos ativos; automação validada em simulação | Instrucional (limitação do runtime) |
+| **OpenCode V2** | Subagentes Markdown + wrappers sandbox + plugin V2 | Delegação real comprovada; tarefa DeepSeek não homologada (leitura rejeitada) | Plugin V2 nativo; **carga + SessionStart reais no host oficial 2.3.0** (CI isolado, custo zero) | Contratos ativos; automação com modelo pendente | Aplicado pelo runtime (≥ 2.2.6; carga comprovada em 2.3.0) |
+| **OpenAI Codex** | Agentes nativos em TOML | Validada em runtime real | Hooks projeto-local com trust via `/hooks`; **protocolo App Server real no CI** (binário oficial v0.169.0) | Contratos ativos; automação com modelo pendente | Instrucional (limitação do runtime) |
 | **Claude Code** | Subagentes Markdown + templates de hooks | Pacote implementado; homologação de runtime pendente | Templates de hooks com `onFailure: block` | Contratos ativos; automação validada em simulação | Depende dos controles do runtime |
 
 **Terminologia:** *homologada em runtime real* indica execução comprovada em sessão autenticada com evidência registrada; *validada em simulação* indica comportamento exercitado por suítes determinísticas sobre contratos verificados na documentação oficial, com homologação em runtime ainda pendente; *implementado* indica o componente presente no pacote, pronto para homologação.
@@ -334,7 +334,7 @@ Matriz completa, testes adversariais e limitações honestas (incluindo lacunas 
 
 | Documento | Conteúdo |
 |---|---|
-| [EVOLUCAO.md](EVOLUCAO.md) | Registro completo das rodadas 2.0 → 2.3 e da publicação final: mecanismos, evidências, o que foi adiado e por quê |
+| [EVOLUCAO.md](EVOLUCAO.md) | Registro completo das rodadas 2.0 → 3.0 e da publicação final: mecanismos, evidências, o que foi adiado e por quê |
 | [AUDITORIA.md](AUDITORIA.md) | Testes de homologação, falhas adversariais e limitações por plataforma |
 | [INSTALL.md](INSTALL.md) | Procedimentos completos de instalação, rollback e automação por plataforma |
 | [HISTORICO.md](HISTORICO.md) | Linhagem das versões desde o executor técnico pré-comercial |
@@ -353,9 +353,9 @@ willtech-general/
 └── history/         versões históricas da arquitetura
 ```
 
-Validação direcionada de ativação/reversão e preservação de terceiros: `python3 tools/test-install.py` (shell real + Python embutido do PS1; não é homologação nativa Windows).
+Validação direcionada de ativação/reversão e preservação de terceiros: `python3 tools/test-install.py` (shell real + Python embutido do PS1). O ciclo nativo do instalador Windows (PowerShell 5.1: backup, merge, idempotência, disable/enable/uninstall, caminho Unicode) é exercitado no CI `windows-latest`.
 
-Suítes de regressão sem custo de modelo (executadas e aprovadas; registros em [EVOLUCAO.md](EVOLUCAO.md)): `sh tools/test-auto.sh` (39) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7 + gate de drift 0 divergências) · `sh tools/test-plan.sh` (21) · `sh tools/test-trace.sh` (10) · `python3 tools/test-repomap.py` (10) · `python3 tools/test-supervisor.py` (10) · `sh opencode/tests/test-wrappers.sh` (41) · `python3 tools/test-compat.py` (22, cross-platform: locks com processos concorrentes, recuperação anti-loop, dossiê antigo, hooks das 3 plataformas, falha fechado) · `python3 tools/test-install.py` (16) · `python3 tools/test-gui.py` (4) + eventos do painel em ambas as formas. Smoke headless do painel em navegador: 64/64 (×3 rodadas) + 3/3 reduced-motion, com evidências em [tools/smoke-evidence/](tools/smoke-evidence/).
+Suítes de regressão sem custo de modelo (executadas e aprovadas; registros em [EVOLUCAO.md](EVOLUCAO.md)): `sh tools/test-auto.sh` (39) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7 + gate de drift 0 divergências) · `sh tools/test-plan.sh` (21) · `sh tools/test-trace.sh` (10) · `python3 tools/test-repomap.py` (10) · `python3 tools/test-supervisor.py` (10) · `sh opencode/tests/test-wrappers.sh` (41) · `python3 tools/test-compat.py` (22, cross-platform: locks com processos concorrentes, recuperação anti-loop, dossiê antigo, hooks das 3 plataformas, falha fechado) · `python3 tools/test-install.py` (16) · `python3 tools/test-gui.py` (4) + eventos do painel em ambas as formas. Smoke headless do painel em navegador: 64/64 (×3 rodadas) + 3/3 reduced-motion, com evidências em [tools/smoke-evidence/](tools/smoke-evidence/). Regressão nativa consolidada no CI — macOS, Linux e Windows + host oficial OpenCode 2.3.0 (7 agentes subagent, plugin setup real) + smoke de inteligência 3.0: [run 44140677603](https://github.com/hebwil/willtech-general/actions/runs/44140677603), **5/5 jobs aprovados**.
 
 ---
 

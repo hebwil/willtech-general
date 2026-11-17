@@ -442,25 +442,25 @@ rodariam). Os hooks gravados usam o comando Python detectado no lugar de
 **Limites de segurança no Windows:** os wrappers `sandbox-exec` (macOS) não
 são instalados; as ferramentas de shell dos agentes permanecem negadas pelas
 permissões do runtime — nenhuma execução irrestrita é liberada para simular
-compatibilidade. A disponibilidade dos runtimes Codex e Claude Code em
-Windows nativo não foi verificada nesta estação; o OpenCode V2 carrega o
-plugin normalmente onde o runtime existir.
+compatibilidade. Os runtimes de IA (Codex, Claude Code) não foram homologados
+em Windows nativo pelo CI; a carga do plugin OpenCode V2 foi comprovada no host
+oficial 2.3.0 em CI Linux (custo zero).
 
+**Evidência nativa atual:** núcleo e instalador homologados em Windows nativo
+real no [CI aprovado 44140677603](https://github.com/hebwil/willtech-general/actions/runs/44140677603)
+(`windows-latest`, Python 3.12, Windows PowerShell 5.1): suítes portáveis do núcleo,
+fallback real sem FTS5, `tools/test-compat.py` (`msvcrt.locking` concorrente, recusa
+real de `.env`) e ciclo PowerShell completo com backup, merge preservando
+configurações do usuário, idempotência, desativação, reativação e restauração
+integral. Caminho com espaços e Unicode (`Ação`) preservado; plugin copiado e
+núcleo do laboratório sem alterações. Linux validado no mesmo CI (`ubuntu-latest`:
+suítes portáveis + shell + instalador). WSL não exercitado.
 **Evidência histórica:** núcleo e instalador da versão `c70e5e8` homologados
-em Windows nativo real (`windows-latest`, Python 3.12.10, Windows PowerShell 5.1):
-[workflow 43892063828 aprovado](https://github.com/hebwil/willtech-general/actions/runs/43892063828).
-Bateria `tools/test-compat.py` 22/22, recusa real de `.env` e ciclo completo
-com backup, merge preservando configurações, idempotência, desativação,
-reativação e restauração integral. Caminho com espaços e Unicode (`Ação`)
-preservado; plugin copiado e núcleo do laboratório sem alterações.
+em Windows nativo real ([workflow 43892063828 aprovado](https://github.com/hebwil/willtech-general/actions/runs/43892063828)).
 A sentinela `@none` preserva o argumento vazio do launcher sem vazar para
 os hooks. Arquivos criados pelo instalador recebem `.willtech-created`,
 removido no uninstall, para não gerar backups indevidos na reinstalação.
-A consolidação posterior corrige a reversão em ambos os instaladores, validando
-o shell e o Python embutido do PS1; o ciclo PowerShell não foi reexecutado
-nativamente nessa rodada. Núcleo e testes de compatibilidade já aprovados foram
-preservados, sem repetição. Linux/WSL não exercitados; runtimes de IA não foram
-homologados por este workflow e nenhum modelo foi chamado.
+Runtimes de IA não foram homologados por estes workflows e nenhum modelo foi chamado.
 
 ## Desinstalação
 

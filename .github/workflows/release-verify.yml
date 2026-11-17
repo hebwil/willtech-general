@@ -1,0 +1,45 @@
+name: release-verify
+
+# Verifica a release publicada em ambiente limpo: baixa os artefatos definitivos,
+# confere SHA-256 por arquivo contra o código publicado no commit da tag e
+# exercita instalação limpa → núcleo → desinstalação a partir dos arquivos
+# distribuídos. Dispara na publicação da release e sob demanda (workflow_dispatch).
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag da release a verificar
+        required: true
+        default: v3.0.0
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1"
+
+jobs:
+  verify:
+    name: verificar release publicada
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Baixar artefatos e verificar hashes + instalação limpa
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/rel"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/rel" \
+            --pattern '*.tar.gz' --pattern 'SHA256SUMS.txt' --pattern 'MANIFEST.json'
+          python3 tools/verify-release.py "$RUNNER_TEMP/rel" "$TAG"
