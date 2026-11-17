@@ -1016,6 +1016,8 @@ Branch de segurança `safety/3.0-pre-publicacao` preservada. PR #15
   executado** (state-plugin-load.json em .willtech/), custo zero.
 - `intelligence-smoke`: smoke integrado da inteligência 3.0 (17 critérios, subprocess real).
 
+**Gate da linha de publicação — [run 44161602314](https://github.com/hebwil/willtech-general/actions/runs/44161602314), 5/5 jobs SUCCESS** sobre o commit `83de0e07c13e3438e9adab5863b821c2382e0589` (docs fiéis + distribuição verificável + correção de portabilidade do `test-dist` no Windows). Mesma matriz: `nucleo` nos 3 SOs (agora incluindo `test-dist`), `opencode-host` oficial 2.3.0 e `intelligence-smoke`. A tag `v3.0.0` aponta para o commit da `main` validado em CI (SHA exato na tag e nas notas da release).
+
 **Defeitos reais corrigidos nesta rodada (portabilidade + host):**
 - `os.fspath` em `willtech-dossie.py` (WindowsPath+str no Windows); `newline="\n"`
   em `build-claude.py`; `.gitattributes` `* text=auto eol=lf` (+ binários de imagem)
@@ -1036,6 +1038,15 @@ Branch de segurança `safety/3.0-pre-publicacao` preservada. PR #15
   `tools/willtech-dossie.py` (exigido pelo preflight do instalador).
 - Protocolo real do App Server Codex: SKIP anterior ELIMINADO com binário oficial
   baixado da release oficial e exercitado nos 3 SOs (`codex-appserver-real.json`).
+- **Distribuição verificável:** `tools/build-dist.py` (archive canônico `git archive`
+  + SHA-256 por arquivo + `MANIFEST.json` do commit publicado), `tools/test-dist.py`
+  (bytes == código publicado + ciclo install/update/disable/enable/uninstall a partir
+  dos arquivos distribuídos, preservando terceiros) e `tools/verify-release.py` +
+  workflow `release-verify.yml` (download → hashes → instalação limpa em ambiente
+  isolado). Correção de portabilidade real: `relative_to(...).as_posix()` no
+  `test-dist`/`verify-release` — `str()` gerava backslashes no Windows, divergindo
+  dos nomes do tar/`git ls-files` (forward slash); asserção de conjunto + hashes
+  mantida integralmente (sem enfraquecer teste).
 
 **Economia:** benchmark real **NÃO MEDIDO** — sem provedor de laboratório
 expressamente autorizado; gasto US$0,00 do orçamento US$2,00; nenhum percentual
@@ -1049,8 +1060,6 @@ render nativo do painel visual no Desktop (experimental, smoke headless de
 laboratório); benchmark. Nenhuma funcionalidade anunciada como homologada depende
 exclusivamente de simulação.
 
-**Publicação:** tag `v3.0.0` no commit validado da `main`, GitHub Release estável
-com artefatos de distribuição + SHA-256, instalação limpa verificada a partir dos
-arquivos publicados. Relatório completo em `docs/HOMOLOGACAO-3.0.md`.
+**Publicação:** tag `v3.0.0` no commit da `main` validado em CI (gate [run 44161602314](https://github.com/hebwil/willtech-general/actions/runs/44161602314), 5/5), GitHub Release estável com artefatos de distribuição (`willtech-general-3.0.0.tar.gz`, `SHA256SUMS.txt`, `MANIFEST.json`) + SHA-256, instalação limpa verificada a partir dos arquivos publicados (`release-verify.yml`). Relatório completo em `docs/HOMOLOGACAO-3.0.md`.
 
 <!-- WillTech-General / WILLTECH-BH © 2026 · autoria: github.com/hebwil -->

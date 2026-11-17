@@ -1,14 +1,15 @@
 # Homologação WillTech 3.0 — Shared Intelligence (relatório final)
 
-Data: 2026-11-17 · Repositório: `hebwil/willtech-general` · `main`: `c4e593d17394b8070783f04efe4ad7f329201000` (PR #15 merged) · CI final: [run 44140677603](https://github.com/hebwil/willtech-general/actions/runs/44140677603) — **5/5 jobs SUCCESS**.
+Data: 2026-11-17 · Repositório: `hebwil/willtech-general` · Homologação do merge PR #15: `c4e593d17394b8070783f04efe4ad7f329201000`, [run 44140677603](https://github.com/hebwil/willtech-general/actions/runs/44140677603) — **5/5 jobs SUCCESS**. Gate da linha de publicação (docs fiéis + distribuição verificável): commit `83de0e07c13e3438e9adab5863b821c2382e0589`, [run 44161602314](https://github.com/hebwil/willtech-general/actions/runs/44161602314) — **5/5 jobs SUCCESS**. A tag `v3.0.0` aponta para o commit da `main` validado em CI (SHA exato na tag e nas notas da release).
 
 Este relatório distingue categorias sem confusão: **teste determinístico** (unittest/subprocess, labs git descartáveis, sem modelo/rede), **smoke de distribuição** (bancadas node/navegador com host simulado — os próprios benches declaram `simulation:true`), **integração real** (núcleo do hook alimentado com eventos nativos dos 3 formatos, em subprocess; e carga de plugin/hook em runtime oficial isolado), **CI nativo por SO** (execução real em runners macOS/Linux/Windows) e **homologação nativa com modelo** (runtime oficial autenticado executando com gasto de modelo). Nenhuma categoria é apresentada como outra.
 
 ## Estado de publicação
 
 - Histórico reconciliado sem perda: a `main` remota (PR #14, `e311c5e`) foi incorporada por merge (`f26e799`); os três cherry-picks da linha multiplataforma NÃO foram reaplicados (já contidos no PR #14). Branch de segurança `safety/3.0-pre-publicacao` preservada.
-- PR #15 (`qoder/shared-intelligence` → `main`) **merged** em `c4e593d`; CI 5/5 aprovado nesse estado.
-- Release `v3.0.0`: publicada a partir do commit validado da `main`, com artefatos de distribuição + SHA-256 e verificação de instalação limpa a partir dos arquivos publicados (ver seção Distribuição).
+- PR #15 (`qoder/shared-intelligence` → `main`) **merged** em `c4e593d`; CI 5/5 aprovado nesse estado ([run 44140677603](https://github.com/hebwil/willtech-general/actions/runs/44140677603)).
+- Linha de publicação: docs fiéis ao estado real + distribuição verificável (`build-dist`/`test-dist`/`verify-release`/`release-verify`) + correção de portabilidade do `test-dist` no Windows (`as_posix()`), validadas em CI 5/5 sobre `83de0e0` ([run 44161602314](https://github.com/hebwil/willtech-general/actions/runs/44161602314)).
+- Release `v3.0.0`: publicada a partir do commit da `main` validado em CI, com artefatos de distribuição (`willtech-general-3.0.0.tar.gz`, `SHA256SUMS.txt`, `MANIFEST.json`) + SHA-256 e verificação de instalação limpa a partir dos arquivos publicados (ver seção Distribuição).
 
 ## Matriz objetiva
 
@@ -70,9 +71,9 @@ SKIPs condicionais entre SOs são classificados corretamente: os wrappers `sandb
 
 ## Distribuição e instalação verificada
 
-- Artefatos definitivos gerados a partir do commit validado da `main`, com SHA-256 por arquivo (ver `SHA256SUMS` da release).
+- Artefatos definitivos gerados por `tools/build-dist.py` a partir do commit da `main` validado em CI: `willtech-general-3.0.0.tar.gz` (archive canônico `git archive`), `SHA256SUMS.txt` (SHA-256 por arquivo, calculado sobre os bytes do próprio archive) e `MANIFEST.json` (version, commit, files, total_bytes, archive_sha256). `tools/test-dist.py` prova que os bytes extraídos correspondem exatamente ao código publicado (conjunto == `git ls-files` + hash por arquivo) e exercita o ciclo de instalação a partir dos arquivos distribuídos.
 - Instalação limpa, atualização idempotente, desativação (`--disable`), desinstalação (`--uninstall`) e restauração de backups exercitados em ambientes descartáveis: `tools/test-install.py` (16, shell real + Python embutido do PS1), ciclo nativo PowerShell 5.1 no CI `windows-latest`, e smoke final integrado (`tools/smoke-evidence/smoke-final-integrado.json`).
-- Instalação a partir dos arquivos publicados verificada em ambiente limpo após a publicação da release (download → conferência de hashes → instalação → smoke).
+- Instalação a partir dos arquivos publicados verificada em ambiente limpo após a publicação da release: `tools/verify-release.py` + workflow `.github/workflows/release-verify.yml` (disparado em `release: published`) fazem download dos artefatos → conferência de SHA-256 por arquivo e do archive → conjunto == `git ls-files` da tag → instalação limpa → sonda do núcleo → desinstalação, em runner isolado.
 
 ## Veredito final
 
