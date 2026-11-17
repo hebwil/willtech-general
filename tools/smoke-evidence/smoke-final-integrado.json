@@ -1,0 +1,27 @@
+{
+  "suite": "smoke final integrado (missão integração/homologação)",
+  "date": "2026-11-17",
+  "lab": "/tmp/willtech-final-smoke-JvjaFZ (clone git descartável da branch consolidada qoder/shared-intelligence @ e8cae91)",
+  "status": "PASS",
+  "simulation": false,
+  "nativeAppHomologation": "NÃO TESTADA (nenhum runtime autenticado; hooks executados via subprocess real, GUI via config real em lab descartável)",
+  "checks": [
+    "instalação limpa: willtech-install.sh --yes cria .claude/settings.json, .codex/hooks.json, .opencode/plugins/willtech/index.js + .willtech/enabled",
+    "sala: init ok user_version=3 integrity=ok",
+    "GUI: willtech-gui.py --install --yes mescla entrada única em opencode.json com plugin de terceiro preexistente",
+    "ciclo sala: put→validate→handoff-record --result→handoff-validate (exit 0)",
+    "recuperação pós-restart: handoff-fetch em processo novo devolve RESULT exato + RESULT_HASH + KNOWLEDGE_VERSION: 3 + VALIDATION state=validated by=tester",
+    "JIT: query com header QUARENTENA, SALA project=0f995658d6f3 hits=1 budget=1200",
+    "segredo sintético AKIAIOSFODNN7EXAMPLE recusado exit 2 sem eco",
+    "isolamento: --repo fora do projeto recusado exit 2",
+    "invalidação por mudança de código: alvo.txt alterado → status=stale e 0 hits na query",
+    "hooks reais (subprocess): PreToolUse 'ls' permitido exit 0; SessionStart sem memória = vazio (contrato); com lição validada + registro validated → LESSON USABLE key=k1 + QUARENTENA + SALA injetados",
+    "disable → hook vira no-op (saída vazia); enable religa",
+    "GUI disable/enable preserva plugin de terceiro",
+    "update: reinstalação idempotente ok",
+    "GUI uninstall sem consentimento em modo não-interativo → EOFError, NADA escrito (fail-safe); com --yes remove só a entrada WillTech e preserva terceiros",
+    "uninstall automação reverte componentes gerenciados; .willtech/room.db PRESERVADA (dado do usuário)"
+  ],
+  "failures": [],
+  "skips": []
+}
