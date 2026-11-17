@@ -80,11 +80,17 @@ def parse_args(argv):
             else:
                 labels = (raw.strip(), labels[1])
                 i += 2
-        elif argv[i] == "--baseline" and i + 1 < len(argv):
-            baseline_files.append(argv[i + 1])
-            i += 2
-        elif argv[i] == "--optimized" and i + 1 < len(argv):
-            optimized_files.append(argv[i + 1])
+        elif argv[i] in ("--baseline", "--optimized") and i + 1 < len(argv):
+            # Cada flag consome UMA execução; repita a flag para N execuções.
+            # Se houver um .jsonl extra logo depois do valor, ele seria
+            # silenciosamente engolido — para uma ferramenta cujo contrato é
+            # "nenhum número sem medição", isso é recusa explícita.
+            target = baseline_files if argv[i] == "--baseline" else optimized_files
+            if i + 2 < len(argv) and argv[i + 2].endswith(".jsonl"):
+                print(f"uso inválido: {argv[i]} consome UM transcript por flag; "
+                      "repita a flag ou expanda o glob no shell")
+                return None, labels, None, None
+            target.append(argv[i + 1])
             i += 2
         elif argv[i].endswith(".jsonl"):
             rest.append(argv[i])
@@ -120,6 +126,9 @@ def main():
         left, right = files[:half], files[half:]
     else:
         print("uso inválido: informe ao menos 2 transcripts .jsonl")
+        return 2
+    if not left or not right:
+        print("uso inválido: é preciso ao menos 1 transcript de cada lado")
         return 2
     for p in left + right:
         if not os.path.isfile(p):

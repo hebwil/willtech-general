@@ -111,7 +111,12 @@ def normalize_specialty(value):
 # Padrões de segredo: mesma disciplina dos SECRET_PATTERNS do trace (2.2);
 # cópia local porque a sala é autossuficiente (o lab copia room+dossiê).
 SECRET_PATTERNS = (
-    re.compile(r"(?i)\b([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_?KEY)[A-Z0-9_]*)\s*=\s*\S+"),
+    # Valor "com cara de segredo": sem espaços e com 8+ chars. Sem isso, prosa
+    # legítima do projeto ("input_tokens = 1200 por brief") seria recusada.
+    # Nome de variável em MAIÚSCULAS com valor atribuído (API_KEY=..., GH_TOKEN = ...).
+    # A checagem de "nome parece credencial" é feita em código (secret_in_text),
+    # para não recusar prosa legítima do projeto ("token = contagem de eventos").
+    re.compile(r"\b([A-Z][A-Z0-9_]{2,})\s*=\s*[^\s]{6,}"),
     re.compile(r"\b(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]+"),
     re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._\-]+"),
     re.compile(r"(?i)(--password[= ])\S+"),
@@ -270,9 +275,24 @@ def backup_room(path):
     return bak
 
 
+SECRET_NAME_HINTS = ("TOKEN", "SECRET", "PASSWORD", "PASSWD", "APIKEY",
+                     "API_KEY", "PRIVATE_KEY", "PRIVATEKEY")
+
+
 def secret_in_text(text):
     t = text or ""
-    return any(p.search(t) for p in SECRET_PATTERNS)
+    for i, p in enumerate(SECRET_PATTERNS):
+        m = p.search(t)
+        if not m:
+            continue
+        if i != 0:
+            return True              # prefixos/formas conhecidas de credencial
+        # Padrão genérico "NOME = valor": só conta se o NOME parece credencial,
+        # para não recusar prosa do projeto ("token = contagem de eventos").
+        name = (m.group(1) or "").upper()
+        if any(h in name for h in SECRET_NAME_HINTS):
+            return True
+    return False
 
 
 def project_guard(con, project):

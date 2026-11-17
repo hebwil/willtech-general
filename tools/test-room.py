@@ -537,6 +537,32 @@ class ReviewFindingTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("rodar suite primeiro", out)
 
+    # IM-1 + falso positivo: prosa legítima do projeto não é segredo
+    def test_im1_legit_prose_not_flagged_as_secret(self):
+        code, out = run("put", self.room, "--repo", str(self.repo),
+                        "--kind", "finding", "--specialty", "explorador",
+                        "--summary", "input_tokens = 1200 por brief medido")
+        self.assertEqual(code, 0, out)
+        code, out = run("put", self.room, "--repo", str(self.repo),
+                        "--kind", "finding", "--specialty", "explorador",
+                        "--summary", "token = contagem de eventos do turno")
+        self.assertEqual(code, 0, out)
+
+    def test_im1_secret_with_spaces_still_refused(self):
+        for value in ("API_KEY = abc123def456", "API_KEY=\nabc123def456"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+            self.assertNotIn("abc123def456", out)
+
+    # RG-1: registrar risco SOBRE caminho de credencial é permitido
+    def test_rg1_risk_about_credential_path_is_allowed(self):
+        code, out = run("put", self.room, "--repo", str(self.repo),
+                        "--kind", "risk", "--specialty", "revisor",
+                        "--summary", "risco: nunca commitar ~/.ssh nem .env")
+        self.assertEqual(code, 0, out)
+
     def test_m4_skill_list_refuses_bad_status(self):
         code, out = run("skill-list", self.room, "--repo", str(self.repo),
                         "--status", "inventado")
