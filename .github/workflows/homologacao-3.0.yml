@@ -170,6 +170,21 @@ jobs:
           mkdir -p "$LAB/.opencode/agent"
           cp "$LAB/opencode/agent/"*.md "$LAB/.opencode/agent/"
           python3 tools/willtech-gui.py --install --yes --config "$LAB/opencode.json"
+          # Registra o plugin de automacao na lista `plugins` do config do lab
+          # (metodo de carga documentado). O host oficial serve carrega por esta
+          # lista; a descoberta automatica de .opencode/plugins/ varia por versao.
+          python3 - "$LAB/opencode.json" <<'PY'
+          import json, sys
+          p = sys.argv[1]
+          d = json.load(open(p, encoding="utf-8"))
+          plugs = d.setdefault("plugins", [])
+          entry = "./.opencode/plugins/willtech"
+          if entry not in plugs:
+              plugs.append(entry)
+          with open(p, "w", encoding="utf-8") as fh:
+              json.dump(d, fh, ensure_ascii=False, indent=2)
+          print("opencode.json plugins:", json.dumps(plugs, ensure_ascii=False))
+          PY
           git -C "$LAB" add -A
           git -C "$LAB" commit -qm base
           echo "OC_LAB=$LAB" >> "$GITHUB_ENV"
@@ -183,7 +198,7 @@ jobs:
           opencode serve --hostname 127.0.0.1 --port 47823 --print-logs > "$RUNNER_TEMP/oc.log" 2>&1 &
           SRV=$!
           python3 - "$OC_LAB" "$RUNNER_TEMP/oc.log" <<'PY'
-          import json, os, sys, time, base64, urllib.request
+          import json, os, sys, time, base64, urllib.request, subprocess
           lab, log = sys.argv[1], sys.argv[2]
           base = "http://127.0.0.1:47823"
           pw = os.environ["OPENCODE_SERVER_PASSWORD"]
@@ -261,6 +276,17 @@ jobs:
               print("=== .willtech ===", os.listdir(os.path.join(lab, ".willtech")))
           except Exception as e:
               print(".willtech indisponivel:", e)
+          try:
+              cfg = json.load(open(os.path.join(lab, "opencode.json"), encoding="utf-8"))
+              print("=== opencode.json plugins ===", json.dumps(cfg.get("plugins"), ensure_ascii=False))
+          except Exception as e:
+              print("opencode.json indisponivel:", e)
+          try:
+              pl = subprocess.run(["opencode", "plugin", "list"], cwd=lab,
+                                  capture_output=True, text=True, timeout=30)
+              print("=== opencode plugin list ==="); print((pl.stdout or pl.stderr)[:1200])
+          except Exception as e:
+              print("plugin list indisponivel:", e)
           assert state, "plugin V2 nao executou setup no host oficial (state-plugin-load.json ausente; ver oc.log)"
           print(f"OK host oficial: 7 agentes WillTech subagent; plugin setup={state}")
           PY
