@@ -275,18 +275,27 @@ def backup_room(path):
     return bak
 
 
-# Nomes que caracterizam credencial. A comparação é feita por PALAVRA do nome
-# (API_KEY -> [API, KEY] -> APIKEY): assim "input_tokens" (métrica do projeto)
-# não é confundido com TOKEN, e "db_password"/"api_key" continuam detectados.
+# Nomes que caracterizam credencial (comparados por PALAVRA ou por n-grama
+# contíguo de palavras: API_KEY -> API+KEY -> APIKEY). Assim "input_tokens"
+# (métrica do projeto) não é confundido com TOKEN, mas OPENAI_API_KEY,
+# X_API_KEY, SSH_PRIVATE_KEY e GHTOKEN continuam detectados.
 SECRET_NAME_HINTS = {"TOKEN", "SECRET", "PASSWORD", "PASSWD", "APIKEY",
-                     "PRIVATEKEY", "PRIVATEKEYFILE", "CREDENTIAL", "CREDENTIALS"}
+                     "PRIVATEKEY", "CREDENTIAL", "CREDENTIALS",
+                     "PASSPHRASE", "PWD"}
+
+# Sufixos neutros: "token_budget" / "password_policy" falam SOBRE credenciais,
+# não são credenciais. Fail-closed mantido para *_TOKEN, *_KEY, *_SECRET.
+NEUTRAL_SUFFIXES = {"PATH", "POLICY", "BUDGET", "LIMIT", "FILE", "DIR", "COUNT",
+                    "SIZE", "LEN", "NAME", "USED", "MAX", "MIN", "CAP", "CHARS",
+                    "BEFORE", "AFTER", "HINT", "HELP"}
+
+# Palavra isolada em minúsculas que é vocabulário do projeto, não credencial.
+PROSE_WORDS = {"TOKEN", "APIKEY"}
 
 
 def _name_words(name):
-    parts = re.split(r"[^A-Za-z0-9]+", name or "")
-    # camelCase: dbPassword -> db, Password
     out = []
-    for part in parts:
+    for part in re.split(r"[^A-Za-z0-9]+", name or ""):
         out.extend(re.findall(r"[A-Z]+(?![a-z])|[A-Z][a-z0-9]*|[a-z0-9]+", part))
     return [w for w in out if w]
 
@@ -295,16 +304,25 @@ def _looks_like_credential_name(name):
     words = _name_words(name)
     if not words:
         return False
-    compact = "".join(words).upper()
-    if compact in SECRET_NAME_HINTS:
-        # Palavra isolada em minúsculas: "password"/"secret" só contam com valor
-        # atribuído (aqui já há), mas "token" é métrica comum do projeto — então
-        # TOKEN isolado exige MAIÚSCULAS. Nomes compostos (db_password) contam
-        # em qualquer caixa.
-        if name.isupper() or len(words) > 1:
-            return True
-        return compact not in ("TOKEN", "APIKEY")
-    return any(w.upper() in SECRET_NAME_HINTS for w in words)
+    up = [w.upper() for w in words]
+    if len(up) > 1 and up[-1] in NEUTRAL_SUFFIXES:
+        return False
+    hit = any(w in SECRET_NAME_HINTS for w in up)
+    if not hit:
+        # n-gramas contíguos: API+KEY, PRIVATE+KEY, OPENAI+API+KEY
+        hit = any("".join(up[i:i + n]) in SECRET_NAME_HINTS
+                  for n in (2, 3) for i in range(len(up) - n + 1))
+    if not hit and len(up) == 1 and name.isupper():
+        # forma colada em caixa alta de variável de ambiente: GHTOKEN, ACCESSTOKEN
+        w = up[0]
+        hit = len(w) > len("TOKEN") and any(
+            w.endswith(h) or w.startswith(h)
+            for h in SECRET_NAME_HINTS if len(h) >= 4)
+    if not hit:
+        return False
+    if len(up) == 1 and not name.isupper() and up[0] in PROSE_WORDS:
+        return False
+    return True
 
 
 def secret_in_text(text):

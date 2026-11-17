@@ -567,6 +567,33 @@ class ReviewFindingTests(unittest.TestCase):
                             "--summary", value)
             self.assertEqual(code, 2, (value, out))
 
+    def test_im1_prefixed_credential_names_refused(self):
+        # Achado da 5a rodada: comparacao por nome inteiro deixava passar
+        # nomes prefixados/sufixados, que e a forma real das credenciais.
+        for value in ("OPENAI_API_KEY=abc123def456",
+                      "STRIPE_API_KEY=abc123def456",
+                      "ANTHROPIC_API_KEY=abc123def456",
+                      "SSH_PRIVATE_KEY=abcd1234efgh",
+                      "API_KEY_V2=abc123def456",
+                      "GHTOKEN=abcd12345678"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+            self.assertNotIn("abc123def456", out)
+
+    def test_im1_neutral_suffixes_are_prose_not_secret(self):
+        # token_budget/token_limit falam SOBRE credencial: nao sao credencial.
+        for value in ("token_budget = 4096 tokens do brief",
+                      "token_limit = 8000",
+                      "password_policy = minimo de doze",
+                      "max_tokens = 4096",
+                      "cache_creation_tokens = 300"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 0, (value, out))
+
     def test_im1_secret_with_spaces_still_refused(self):
         for value in ("API_KEY = abc123def456", "API_KEY=\nabc123def456"):
             code, out = run("put", self.room, "--repo", str(self.repo),
