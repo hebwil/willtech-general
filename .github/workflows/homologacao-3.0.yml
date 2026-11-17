@@ -53,7 +53,8 @@ jobs:
           set -e
           for t in test-room test-room-v3 test-handoff test-jit test-smoke-e2e \
                    test-compare test-repomap test-supervisor test-compat \
-                   test-claude test-homolog test-gui-install test-gui test-dist; do
+                   test-claude test-homolog test-gui-install test-gui test-dist \
+                   test-opencode-trace; do
             echo "=== $t ==="
             python "tools/$t.py"
           done

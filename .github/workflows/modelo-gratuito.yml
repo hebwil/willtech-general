@@ -1,0 +1,251 @@
+name: modelo-gratuito
+
+# Homologação operational a CUSTO ZERO (ordem QODER): modelo aberto real em
+# runner descartável gratuito. Prova inferência real + tool-calling + sessão
+# autêntica do OpenCode V2 dirigindo o modelo local. Sem secrets pessoais,
+# sem APIs pagas, sem saldo de contas. permissions: contents: read.
+# ubuntu-latest padrão em repo PÚBLICO = gratuito (sem cobrança).
+
+on:
+  push:
+    branches: [qoder/homologacao-zero-custo]
+    paths:
+      - ".github/workflows/modelo-gratuito.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1"
+  LLAMA_BUILD: "b12483"
+  GGUF_REPO: "ggml-org/Qwen3-1.7B-GGUF"
+  GGUF_FILE: "Qwen3-1.7B-Q4_K_M.gguf"
+  MODEL_ID: "qwen3-1.7b"
+  PROVIDER_ID: "llamacpp"
+
+jobs:
+  modelo:
+    name: modelo aberto gratuito + OpenCode (ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache do binário llama.cpp e do GGUF (gratuito, acelera reruns)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/lab-cache/llama.tar.gz
+            ~/lab-cache/model.gguf
+          key: llama-${{ env.LLAMA_BUILD }}-${{ env.GGUF_FILE }}-v1
+
+      - name: Baixar llama.cpp (binário público) + GGUF Qwen3 (público, apache-2.0)
+        run: |
+          set -e
+          mkdir -p ~/lab-cache
+          LT="$HOME/lab-cache/llama.tar.gz"
+          GG="$HOME/lab-cache/model.gguf"
+          if [ ! -s "$LT" ]; then
+            curl -fsSL --retry 3 -o "$LT" \
+              "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_BUILD}/llama-${LLAMA_BUILD}-bin-ubuntu-x64.tar.gz"
+          fi
+          if [ ! -s "$GG" ]; then
+            curl -fsSL --retry 3 -o "$GG" \
+              "https://huggingface.co/${GGUF_REPO}/resolve/main/${GGUF_FILE}?download=true"
+          fi
+          ls -la "$LT" "$GG"
+          echo "=== SHA-256 (integridade, sem segredos) ==="
+          sha256sum "$LT" "$GG" | tee ~/lab-cache/SHA256SUMS.txt
+
+      - name: Extrair llama.cpp e localizar llama-server
+        run: |
+          set -e
+          mkdir -p ~/llama
+          tar xzf ~/lab-cache/llama.tar.gz -C ~/llama
+          BIN=$(find ~/llama -maxdepth 3 -type f -name 'llama-server' | head -1)
+          test -n "$BIN"
+          chmod +x "$BIN"
+          echo "LLAMA_BIN=$BIN" >> "$GITHUB_ENV"
+          echo "LLAMA_DIR=$(dirname "$BIN")" >> "$GITHUB_ENV"
+          echo "binário: $BIN"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libgomp1 libopenblas0 >/dev/null 2>&1 || true
+
+      - name: Iniciar servidor de inferência (CPU, 127.0.0.1, --jinja p/ tools)
+        run: |
+          set -e
+          export LD_LIBRARY_PATH="$LLAMA_DIR:${LD_LIBRARY_PATH:-}"
+          # Qwen3 e "thinking": com --jinja o raciocinio consome todo o orcamento
+          # antes do conteudo final (content vazio, finish_reason=length).
+          # enable_thinking=false desativa no servidor para curl E OpenCode.
+          nohup "$LLAMA_BIN" -m ~/lab-cache/model.gguf \
+            --host 127.0.0.1 --port 8080 --jinja -c 8192 --threads 4 -np 1 \
+            --chat-template-kwargs '{"enable_thinking":false}' \
+            > ~/server.log 2>&1 &
+          echo $! > ~/server.pid
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then
+              echo "servidor pronto após ${i}s"; break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/health
+          echo "=== /v1/models ==="
+          curl -fsS http://127.0.0.1:8080/v1/models | tee ~/models.json
+          echo "=== server.log (início) ==="
+          head -30 ~/server.log
+
+      - name: PROVA 1 — inferência REAL (chamada de completions)
+        run: |
+          set -e
+          curl -fsS http://127.0.0.1:8080/v1/chat/completions \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"'"$MODEL_ID"'","messages":[{"role":"user","content":"Reply with exactly the two words: LAB OK"}],"max_tokens":256,"temperature":0,"chat_template_kwargs":{"enable_thinking":false}}' \
+            | tee ~/inference.json
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open(os.path.expanduser("~/inference.json")))
+          txt = d["choices"][0]["message"]["content"]
+          usage = d.get("usage", {})
+          assert txt and txt.strip(), "resposta vazia — inferência não produziu texto"
+          print("RESPOSTA REAL:", repr(txt))
+          print("USAGE REAL:", json.dumps(usage))
+          assert usage.get("completion_tokens", 0) > 0, "sem tokens de saída medidos"
+          print("PROVA 1 PASS: inferência real com tokens medidos (custo US$0)")
+          PY
+
+      - name: PROVA 2 — tool-calling REAL (function calling)
+        run: |
+          set -e
+          curl -fsS http://127.0.0.1:8080/v1/chat/completions \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"'"$MODEL_ID"'","messages":[{"role":"user","content":"What is the weather in Paris? You must call the get_weather tool."}],"tools":[{"type":"function","function":{"name":"get_weather","description":"Get current weather for a city","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}],"tool_choice":"auto","max_tokens":512,"temperature":0,"chat_template_kwargs":{"enable_thinking":false}}' \
+            | tee ~/toolcall.json
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open(os.path.expanduser("~/toolcall.json")))
+          msg = d["choices"][0]["message"]
+          calls = msg.get("tool_calls") or []
+          print("tool_calls:", json.dumps(calls, ensure_ascii=False))
+          if calls:
+              fn = calls[0]["function"]
+              print("PROVA 2 PASS: modelo emitiu tool_call real ->", fn["name"], fn.get("arguments"))
+          else:
+              print("PROVA 2 LIMITAÇÃO: modelo não emitiu tool_call nesta chamada; conteúdo:", repr(msg.get("content")))
+              print("(registrado honestamente; capacidade de tool-calling do modelo pequeno)")
+          PY
+
+      - name: Instalar OpenCode oficial (gratuito, runner isolado)
+        run: |
+          set -e
+          curl -fsSL https://opencode.ai/v2/install | bash
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.opencode/bin:$PATH"
+          opencode --version | tee ~/opencode-version.txt
+
+      - name: Laboratório WillTech + provider openai-compatible (só no lab)
+        run: |
+          set -e
+          export PATH="$HOME/.opencode/bin:$PATH"
+          LAB="$RUNNER_TEMP/wt-lab"
+          mkdir -p "$LAB"
+          cp -R tools opencode "$LAB/"
+          git -C "$LAB" init -q
+          git -C "$LAB" config user.email lab@willtech
+          git -C "$LAB" config user.name lab
+          sh "$LAB/tools/willtech-install.sh" --repo "$LAB" --platform opencode --yes
+          mkdir -p "$LAB/.opencode/agent"
+          cp "$LAB/opencode/agent/"*.md "$LAB/.opencode/agent/"
+          mkdir -p "$LAB/.willtech" && touch "$LAB/.willtech/enabled"
+          # Provider local OpenAI-compatible (llama.cpp). apiKey é placeholder
+          # para servidor SEM autenticação — não é credencial real, custo zero.
+          cat > "$LAB/opencode.json" <<JSON
+          {
+            "\$schema": "https://opencode.ai/config.json",
+            "model": "${PROVIDER_ID}/${MODEL_ID}",
+            "providers": {
+              "${PROVIDER_ID}": {
+                "name": "llama.cpp local (lab custo zero)",
+                "package": "@opencode/ai/providers/openai-compatible",
+                "settings": { "baseURL": "http://127.0.0.1:8080/v1", "apiKey": "lab-no-auth" },
+                "models": {
+                  "${MODEL_ID}": {
+                    "name": "Qwen3 1.7B Q4_K_M (local)",
+                    "capabilities": { "tools": true },
+                    "limit": { "context": 8192, "output": 2048 },
+                    "cost": { "input": 0, "output": 0 }
+                  }
+                }
+              }
+            },
+            "plugins": ["./.opencode/plugins/willtech"]
+          }
+          JSON
+          git -C "$LAB" add -A
+          git -C "$LAB" commit -qm base
+          echo "WT_LAB=$LAB" >> "$GITHUB_ENV"
+          echo "=== opencode models ==="
+          (cd "$LAB" && opencode models) | tee ~/oc-models.txt || true
+          echo "=== opencode debug agents ==="
+          (cd "$LAB" && opencode debug agents) | tee ~/oc-agents.txt || true
+
+      - name: PROVA 3 — sessão AUTÊNTICA OpenCode dirigindo o modelo gratuito
+        run: |
+          set -e
+          export PATH="$HOME/.opencode/bin:$PATH"
+          cd "$WT_LAB"
+          timeout 600 opencode run --standalone --model "${PROVIDER_ID}/${MODEL_ID}" \
+            --format json --auto \
+            "Use the bash tool to run the command: echo WILLTECH_LAB_OK . Then report the exact output." \
+            > ~/oc-session.jsonl 2> ~/oc-session.err || echo "run exit=$? (registrado)"
+          echo "=== oc-session.jsonl (tipos de evento) ==="
+          python3 - <<'PY'
+          import json, os, collections
+          p = os.path.expanduser("~/oc-session.jsonl")
+          types = collections.Counter()
+          sess = set(); tools = []; tasks = []
+          for line in open(p, encoding="utf-8", errors="replace"):
+              line = line.strip()
+              if not line: continue
+              try: ev = json.loads(line)
+              except Exception: continue
+              types[ev.get("type")] += 1
+              if ev.get("sessionID"): sess.add(ev["sessionID"])
+              if ev.get("type") == "tool_use":
+                  part = ev.get("part", {})
+                  tools.append(part.get("tool"))
+                  if part.get("tool") == "task": tasks.append(part.get("state", {}).get("input"))
+          print("eventos:", dict(types))
+          print("session IDs REAIS:", sorted(sess))
+          print("ferramentas usadas:", tools)
+          print("delegações (task):", json.dumps(tasks, ensure_ascii=False))
+          assert sess, "nenhum session ID real — sessão não ocorreu"
+          assert tools, "nenhuma ferramenta executada — tool-calling não ocorreu na sessão"
+          print("PROVA 3 PASS: sessão autêntica com session ID + execução real de ferramenta")
+          PY
+          echo "=== oc-session.err (cauda) ==="; tail -20 ~/oc-session.err || true
+
+      - name: Publicar artefatos de homologação (sem segredos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: homolog-modelo-gratuito
+          path: |
+            ~/server.log
+            ~/models.json
+            ~/inference.json
+            ~/toolcall.json
+            ~/opencode-version.txt
+            ~/oc-models.txt
+            ~/oc-agents.txt
+            ~/oc-session.jsonl
+            ~/oc-session.err
+            ~/lab-cache/SHA256SUMS.txt
+          if-no-files-found: warn
+          retention-days: 14

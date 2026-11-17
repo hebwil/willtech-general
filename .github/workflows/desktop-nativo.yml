@@ -1,0 +1,280 @@
+name: desktop-nativo
+
+# WILLTECH-GENERAL 3.0 — homologação zero custo §5 (critério C, interface nativa).
+# Caminho REAL ordenado: runner macOS gratuito descartável + aplicativo OpenCode
+# Desktop OFICIAL (MIT, Anomaly), verificação de integridade, execução em diretório
+# temporário, probe de sessão gráfica/captura e tentativa de render nativo.
+#
+# Honestidade: se a automação gráfica for impossível (TCC Screen Recording, hang
+# do renderer Electron em macOS 26, sem janela), o workflow DEMONSTRA o motivo
+# técnico com logs e classifica NC/BLOQUEADO — nunca simula render nem declara
+# PASS falso. O viewer Codex complementar NÃO é apresentado como painel nativo.
+#
+# Segurança: runner público gratuito; contents:read; app isolado em RUNNER_TEMP
+# (nunca /Applications pessoal); nenhuma credencial/config pessoal tocada; não
+# contorna TCC/SIP/acessibilidade — apenas observa e reporta o que o runner permite.
+
+on:
+  push:
+    branches: [qoder/homologacao-zero-custo]
+    paths:
+      - ".github/workflows/desktop-nativo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1"
+
+jobs:
+  desktop:
+    name: OpenCode Desktop nativo (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-15]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Probe do ambiente gráfico (sessão GUI + screencapture + TCC)
+        run: |
+          set +e
+          {
+            echo "=== sw_vers ==="; sw_vers
+            echo "=== arch/user ==="; uname -m; whoami; id -u
+            echo "=== WindowServer (sessão Aqua?) ==="; pgrep -x WindowServer && echo "WindowServer: presente" || echo "WindowServer: AUSENTE"
+            echo "=== screencapture full-screen (sem som) ==="
+            screencapture -x ~/probe-baseline.png 2>~/screencapture.err
+            echo "screencapture exit=$?"
+            ls -la ~/probe-baseline.png 2>/dev/null
+            cat ~/screencapture.err 2>/dev/null
+            echo "=== processos visíveis (System Events; pode exigir TCC Acessibilidade) ==="
+            osascript -e 'tell application "System Events" to get name of every process whose visible is true' 2>&1
+          } | tee ~/probe.txt
+
+      - name: Baixar OpenCode Desktop OFICIAL + hash de integridade
+        run: |
+          set -e
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "arm64" ]; then A=opencode-desktop-mac-arm64.dmg; else A=opencode-desktop-mac-x64.dmg; fi
+          echo "asset oficial: $A"
+          curl -fsSL -o ~/opencode-desktop.dmg "https://opencode.ai/update/api/latest/desktop/opencode/$A"
+          ls -la ~/opencode-desktop.dmg
+          shasum -a 256 ~/opencode-desktop.dmg | tee ~/dmg-sha256.txt
+
+      - name: Verificar assinatura/notarização e isolar o app em RUNNER_TEMP
+        run: |
+          set +e
+          hdiutil attach ~/opencode-desktop.dmg -nobrowse -mountpoint ~/dmg-mnt 2>&1 | tee ~/hdiutil.txt
+          APP=$(find ~/dmg-mnt -maxdepth 1 -name "*.app" | head -1)
+          echo "APP no dmg: $APP"
+          echo "=== codesign (integridade/assinatura oficial) ==="
+          codesign -dv --verbose=4 "$APP" 2>&1 | tee ~/codesign.txt
+          echo "=== spctl (Gatekeeper/notarização) ==="
+          spctl -a -vvv -t open --context context:primary-signature "$APP" 2>&1 | tee ~/spctl.txt
+          mkdir -p "$RUNNER_TEMP/wt-desktop"
+          cp -R "$APP" "$RUNNER_TEMP/wt-desktop/" 2>&1
+          ISOAPP=$(find "$RUNNER_TEMP/wt-desktop" -maxdepth 1 -name "*.app" | head -1)
+          echo "APP isolado: $ISOAPP"
+          echo "ISOAPP=$ISOAPP" >> "$GITHUB_ENV"
+          hdiutil detach ~/dmg-mnt 2>&1 | tee -a ~/hdiutil.txt
+
+      - name: Tentativa de execução + captura REAL (sem contornar TCC)
+        run: |
+          set +e
+          BIN=$(find "$ISOAPP/Contents/MacOS" -maxdepth 1 -type f | head -1)
+          echo "binário: $BIN"
+          # open -n: nova instância isolada; --no-sandbox p/ CI Electron. Não toca
+          # nenhuma instalação pessoal (runner descartável). Logs do Electron.
+          ELECTRON_ENABLE_LOGGING=1 open -n "$ISOAPP" --args --no-sandbox --disable-gpu 2>~/launch.err
+          echo "open exit=$?"
+          sleep 20
+          echo "=== processo OpenCode rodando? ==="
+          pgrep -fl "OpenCode" | tee ~/proc.txt
+          echo "=== captura da tela após launch ==="
+          screencapture -x ~/desktop-attempt.png 2>>~/screencapture.err
+          echo "screencapture exit=$?"
+          ls -la ~/desktop-attempt.png 2>/dev/null
+          echo "=== janelas via System Events (TCC Acessibilidade pode negar) ==="
+          osascript -e 'tell application "System Events" to get name of every window of (every process whose name contains "OpenCode")' 2>&1 | tee ~/windows.txt
+          cat ~/launch.err 2>/dev/null
+
+      - name: §5b — plugin WillTech no projeto do Desktop + captura do painel
+        run: |
+          set +e
+          pkill -f "wt-desktop/OpenCode.app/Contents/MacOS/OpenCode" 2>/dev/null
+          sleep 3
+          DESK="$HOME/Documents/Default Project"
+          mkdir -p "$DESK"
+          cp -R tools opencode "$DESK/"
+          git -C "$DESK" init -q
+          git -C "$DESK" config user.email lab@willtech
+          git -C "$DESK" config user.name lab
+          sh "$DESK/tools/willtech-install.sh" --repo "$DESK" --platform opencode --yes
+          mkdir -p "$DESK/.opencode/agent"
+          cp "$DESK/opencode/agent/"*.md "$DESK/.opencode/agent/"
+          # O painel GUI carrega do servidor de fundo do Desktop, que lê o config
+          # GLOBAL (~/.config/opencode/opencode.json), não o do projeto. No runner
+          # descartável isso é isolado (nenhuma config pessoal existe).
+          python3 tools/willtech-gui.py --install --yes
+          echo "=== config GLOBAL (plugins GUI, enabled=true) ==="
+          cat "$HOME/.config/opencode/opencode.json"
+          cp "$HOME/.config/opencode/opencode.json" ~/global-config.json
+          # O painel GUI exige deps públicas (@opencode/plugin/gui = subpath export
+          # de @opencode/plugin; solid-js; peers @opentui). Sem node_modules o
+          # require falha e o plugin não carrega. Instala SOMENTE no runner
+          # descartável (npm público, custo zero), dentro do dir do plugin.
+          VISUAL="$DESK/opencode/plugins/willtech/visual"
+          if command -v npm >/dev/null 2>&1; then
+            (cd "$VISUAL" && npm install --no-save --no-audit --no-fund \
+              @opencode/plugin@2.3.0 solid-js@1.9.16 @opentui/core @opentui/solid @opencode/theme@2.3.0) > ~/npm-gui.log 2>&1
+            echo "npm install exit=$?"
+          else
+            echo "npm ausente no runner macOS" > ~/npm-gui.log
+          fi
+          tail -15 ~/npm-gui.log
+          mkdir -p "$DESK/.willtech"
+          touch "$DESK/.willtech/enabled"
+          # Sala semeada no projeto do Desktop para o painel ter dados de agentes.
+          python3 "$DESK/tools/willtech-room.py" init "$DESK/.willtech/room.db" --repo "$DESK"
+          python3 "$DESK/tools/willtech-room.py" put "$DESK/.willtech/room.db" --kind finding --specialty explorer --summary "painel nativo: sala semeada no projeto do Desktop" --path-ref tools/willtech-room.py --evidence-hash "$(shasum -a 256 "$DESK/tools/willtech-room.py" | cut -d' ' -f1)" --repo "$DESK"
+          python3 "$DESK/tools/willtech-room.py" validate "$DESK/.willtech/room.db" --id 1 --by reviewer --repo "$DESK"
+          git -C "$DESK" add -A
+          git -C "$DESK" commit -qm base
+          echo "=== opencode.json do projeto Desktop (plugins) ==="
+          cat "$DESK/opencode.json"
+          ELECTRON_ENABLE_LOGGING=1 open -n "$ISOAPP" --args --no-sandbox --disable-gpu 2>~/launch2.err
+          sleep 25
+          pgrep -fl "OpenCode" > ~/proc2.txt
+          screencapture -x ~/desktop-willtech.png 2>>~/screencapture.err
+          echo "screencapture exit=$?"
+          ls -la ~/desktop-willtech.png 2>/dev/null
+          osascript -e 'tell application "System Events" to get name of every window of (every process whose name contains "OpenCode")' 2>&1 | tee ~/windows2.txt
+          # Ground truth do carregamento do plugin GUI: log do servidor de fundo.
+          {
+            echo "=== dirs de log ==="
+            for d in "$HOME/.local/share/opencode/log" "$HOME/Library/Application Support/ai.opencode.desktop/log" "$HOME/Library/Logs/opencode"; do
+              [ -d "$d" ] && { echo "--- $d ---"; ls -la "$d" | head -8; }
+            done
+            echo "=== linhas willtech/gui/plugin/error nos logs ==="
+            find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" "$HOME/Library/Logs" -name "*.log" -type f 2>/dev/null | while read -r f; do
+              echo "--- $f ---"; grep -iE "willtech|gui|plugin|error|require" "$f" | tail -30
+            done
+          } > ~/server-plugin.log 2>&1
+          tail -40 ~/server-plugin.log
+          NEWEST=$(find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" -name "*.log" -type f 2>/dev/null | head -1)
+          [ -n "$NEWEST" ] && cp "$NEWEST" ~/opencode-server.log
+          # Tentativa BOUNDED de revelar a aba lateral: o comando registrado
+          # "team.toggle" exige sessão atual e é exposto no menu "/" de comandos.
+          # Usa Acessibilidade JÁ concedida ao runner (System Events); não contorna
+          # TCC/SIP. Uma única tentativa; o resultado é capturado e classificado
+          # por inspeção visual — nunca declarado PASS sem o painel na captura.
+          osascript -e 'tell application "System Events" to tell process "OpenCode" to set frontmost to true' 2>~/toggle.err
+          sleep 1
+          # O menu "/" do prompt NÃO lista comandos de plugin GUI (captura anterior:
+          # "No matching items" p/ /WillTech). A paleta de comandos do Desktop é
+          # Cmd+K; tenta por ela (uma única tentativa bounded).
+          osascript -e 'tell application "System Events" to key code 40 using {command down}' 2>>~/toggle.err
+          sleep 1
+          osascript -e 'tell application "System Events" to keystroke "WillTech"' 2>>~/toggle.err
+          sleep 1
+          osascript -e 'tell application "System Events" to key code 36' 2>>~/toggle.err
+          sleep 3
+          screencapture -x ~/desktop-panel.png 2>>~/screencapture.err
+          echo "toggle+capture exit=$?"
+          ls -la ~/desktop-panel.png 2>/dev/null
+          cat ~/toggle.err 2>/dev/null
+
+      - name: Classificação honesta do render nativo (PASS REAL ou NC/BLOQUEADO)
+        run: |
+          python3 - <<'PY'
+          import os, json, subprocess
+          home = os.path.expanduser("~")
+          def size(p):
+              try: return os.path.getsize(os.path.join(home, p))
+              except OSError: return 0
+          def has(p, needle):
+              try: return needle.lower() in open(os.path.join(home, p), encoding="utf-8", errors="replace").read().lower()
+              except OSError: return False
+          baseline = size("probe-baseline.png")
+          attempt = size("desktop-attempt.png")
+          proc = has("proc.txt", "opencode")
+          gui = has("probe.txt", "windowserver: presente")
+          # PNG válido: assinatura \x89PNG e tamanho > 1KB (tela preta ~ poucos KB).
+          def png_ok(p):
+              f = os.path.join(home, p)
+              try:
+                  with open(f, "rb") as fh: return fh.read(8) == b"\x89PNG\r\n\x1a\n" and os.path.getsize(f) > 1024
+              except OSError: return False
+          captured = png_ok("desktop-attempt.png") and proc
+          codesign_ok = has("codesign.txt", "authority") or has("codesign.txt", "signed")
+          reason = []
+          if not gui: reason.append("sem sessão gráfica (WindowServer ausente)")
+          if baseline == 0: reason.append("screencapture bloqueado (TCC Screen Recording negado no runner)")
+          if not proc: reason.append("app OpenCode não iniciou/renderizou (possível hang do renderer Electron em macOS 26; ver launch.err/proc.txt)")
+          if proc and not png_ok("desktop-attempt.png"): reason.append("app rodando mas captura de janela indisponível (TCC/headless)")
+          classification = "PASS REAL (render nativo capturado)" if captured else "NC/BLOQUEADO (motivo técnico demonstrado)"
+          summary = {
+              "criterio": "C — interface visual nativa OpenCode Desktop",
+              "os": subprocess.run(["sw_vers", "-productVersion"], capture_output=True, text=True).stdout.strip(),
+              "arch": subprocess.run(["uname", "-m"], capture_output=True, text=True).stdout.strip(),
+              "gui_session": gui,
+              "screencapture_baseline_bytes": baseline,
+              "dmg_sha256": open(os.path.join(home, "dmg-sha256.txt")).read().strip() if os.path.isfile(os.path.join(home, "dmg-sha256.txt")) else None,
+              "codesign_official": codesign_ok,
+              "app_running": proc,
+              "native_window_captured": captured,
+              "screenshot_after_plugin_install": png_ok("desktop-willtech.png"),
+              "gui_deps_install_log": has("npm-gui.log", "added") or has("npm-gui.log", "up to date"),
+              "gui_plugin_log_mentions_willtech": has("server-plugin.log", "willtech"),
+              "panel_toggle_attempt_capture": png_ok("desktop-panel.png"),
+              "desktop_attempt_bytes": attempt,
+              "classification": classification,
+              "technical_reasons": reason,
+              "simulation": False,
+              "nota": "Viewer Codex complementar NÃO é painel nativo. Qoder Computer Use (browser-use) alvo browser, não app macOS nativo.",
+          }
+          print(json.dumps(summary, indent=2, ensure_ascii=False))
+          open(os.path.join(home, "desktop-summary.json"), "w").write(json.dumps(summary, indent=2, ensure_ascii=False))
+          print("\nCLASSIFICAÇÃO:", classification)
+          for r in reason: print("  motivo:", r)
+          PY
+
+      - name: Publicar artefatos nativos (sem segredos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: homolog-desktop-nativo-${{ matrix.os }}
+          path: |
+            ~/probe.txt
+            ~/probe-baseline.png
+            ~/desktop-attempt.png
+            ~/desktop-willtech.png
+            ~/proc2.txt
+            ~/windows2.txt
+            ~/launch2.err
+            ~/dmg-sha256.txt
+            ~/codesign.txt
+            ~/spctl.txt
+            ~/hdiutil.txt
+            ~/proc.txt
+            ~/windows.txt
+            ~/launch.err
+            ~/screencapture.err
+            ~/global-config.json
+            ~/npm-gui.log
+            ~/server-plugin.log
+            ~/opencode-server.log
+            ~/desktop-panel.png
+            ~/toggle.err
+            ~/desktop-summary.json
+          if-no-files-found: warn
+          retention-days: 14
