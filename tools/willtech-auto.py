@@ -139,7 +139,7 @@ def brief_context(dossie, repo, base):
                              max_chars=BUDGET_CHARS)
 
 
-def room_brief(base, repo):
+def room_brief(base, repo, objective=""):
     # Fail-open: sem módulo da sala, sem room.db ou erro → nenhum contexto.
     if ROOM is None:
         return None
@@ -147,7 +147,8 @@ def room_brief(base, repo):
     if not os.path.isfile(room_db):
         return None
     try:
-        return ROOM.query_text(room_db, repo=repo, budget=BUDGET_CHARS)
+        return ROOM.query_text(room_db, repo=repo, budget=BUDGET_CHARS,
+                               objective=objective)
     except Exception:
         return None
 
@@ -176,11 +177,14 @@ def ev_prompt(ev, base, dossie, repo, st):
     pend = st.pop("pending_context", None)
     if pend:
         parts.append(pend)
-    if len(ev.get("prompt") or "") >= DOSSIE.COMPLEX_CHARS:
+    prompt = ev.get("prompt") or ""
+    if len(prompt) >= DOSSIE.COMPLEX_CHARS:
         parts.append(brief_context(dossie, repo, base))
-    rb = room_brief(base, repo)
-    if rb:
-        parts.append(rb)
+        # IM-3 (revisão independente): a sala só entra em tarefa não trivial e
+        # com objetivo derivado do prompt — consulta dirigida, não despejo.
+        rb = room_brief(base, repo, objective=prompt[:200])
+        if rb:
+            parts.append(rb)
     return {"context": "\n".join(parts)} if parts else {}
 
 

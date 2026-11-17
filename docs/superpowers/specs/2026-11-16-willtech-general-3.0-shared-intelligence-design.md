@@ -1,6 +1,6 @@
 # Design — WillTech-General 3.0 "Shared Intelligence"
 
-**Data:** 2026-11-16 · **Base:** `main` (`ece7429`) · **Branch:** `qoder/shared-intelligence` (worktree isolado) · **Status:** aguardando aprovação do Comandante
+**Data:** 2026-11-16 · **Base:** `main` (`ece7429`) · **Branch:** `qoder/shared-intelligence` (worktree isolado) · **Status:** implementado (Passos 0.5–6) — pendências declaradas em `docs/SHARED-INTELLIGENCE.md` §Limitações honestas
 
 ## Intent e o porquê
 
@@ -39,14 +39,14 @@ Evoluir o WillTech-General para 7 agentes com UMA inteligência compartilhada lo
 ## O desenho (decisões tomadas)
 
 1. **Base:** `main` (`ece7429`) — custo ~zero (`git cherry` = 1 commit de docs na branch antiga). Worktree isolado criado.
-2. **Módulo novo:** `tools/willtech-room.py` — dono da sala. Subcomandos previstos: `init`, `put`, `query` (JIT, `--budget-chars`), `skill` (add/promote/drop), `handoff` (record/fetch/pack), `migrate` (JSONL→índice derivado, idempotente), `rebuild`, `export`, `check` (integridade).
+2. **Módulo novo:** `tools/willtech-room.py` — dono da sala. Subcomandos implementados: `init`, `put`, `get`, `query` (JIT, `--budget-chars`), `handoff-record/-fetch/-pack`, `skill-add/-promote/-drop/-supersede/-list/-import-candidates`, `export`, `check`. (`migrate`/`rebuild` do índice derivado **não** foram implementados — as lições seguem autoridade do dossiê e a sala é populada por `put`/`skill-add`.)
 3. **Schema versionado** (`PRAGMA user_version`), WAL + `busy_timeout`, **lock sidecar `.lock` (nunca `flock` no `.db`)**, backup + `PRAGMA integrity_check` antes de prune/migração. Migração JSONL→SQLite **não destrutiva**: lições continuam autoridade no dossiê; sala materializa índice derivado com `source_hash` e comando `rebuild`.
 4. **Consulta JIT:** um único orçamento canônico (unifica `BRIEF_CAP=1200` do hook vs default 1500 do dossiê — achado N5), `--budget-chars` aplicado pela ferramenta, FTS5 com fallback documentado caso o gate Windows falhe (LIKE/índice próprio). Fallback FTS5 (Windows): consulta LIKE + índice próprio, mesma interface.
 5. **Injeção segura:** header QUARENTENA + provenance (arquivo+hash) por registro + neutralização de quebras de linha/fences/delimitadores no renderer.
 6. **Micro-skills:** nascem `verified:false` (trace já produz candidatas); promoção a auto-load exige evidência verificada + aprovação humana explícita (achado N2); descarte automático quando contraditas.
 7. **Handoff:** tabela própria (objetivo, IDs de evidência, arquivos/símbolos, resultado, pendências, próximo responsável, estado de validação); pack do revisor montado **pela ferramenta** a partir de IDs — executor não escreve no pack; validação mecânica por teste.
 8. **Delegação:** extensão de `classify_task`/`plan` (main) → `suggested_specialist` advisory; drift estendido para validar especialistas citados contra o roster 7×3.
-9. **Integração:** hooks existentes passam a injetar brief da sala; instaladores ganham passo idempotente (backups preservados).
+9. **Integração:** hooks injetam brief da sala no SessionStart e, no prompt, apenas em tarefa não trivial com objetivo derivado do prompt; a sala é opt-in (init manual) — o instalador não a automatiza.
 10. **Benchmark:** `willtech-compare.py` estendido (N execuções, agregação, tokens/turnos/loops/releituras) — só números medidos.
 
 ## Ordem (alinhada ao QODER + ajuste do revisor) · **Status: 0.5–6 implementados** (delegação advisory via `SPECIALIST_HINTS` no dossiê; compare com N execuções e AMOSTRA INSUFICIENTE) — Fase 9: docs + instalação reversível.

@@ -543,6 +543,45 @@ class ReviewFindingTests(unittest.TestCase):
         self.assertEqual(code, 2, out)
 
 
+class QueryTextInjectionTests(unittest.TestCase):
+    """BL-1 (revisão independente): query_text é a porta de injeção do hook.
+    O teste chama a FUNÇÃO REAL — a suíte anterior só comparava a constante e
+    deixou passar um TypeError que anulava toda a injeção."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+        self.repo = mkrepo(self.d, "inj-repo")
+        self.room = str(self.repo / ".willtech" / "room.db")
+        run("init", self.room, "--repo", str(self.repo))
+        run("put", self.room, "--repo", str(self.repo), "--kind", "finding",
+            "--specialty", "explorador", "--summary",
+            "deploy usa chave ssh do cofre do projeto")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _module(self):
+        spec = importlib.util.spec_from_file_location("room_mod", TOOL)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_query_text_returns_context(self):
+        mod = self._module()
+        text = mod.query_text(self.room, repo=str(self.repo),
+                              objective="deploy ssh", budget=1200)
+        self.assertIsNotNone(text, "query_text devolveu None: injeção morta")
+        self.assertIn("QUARENTENA", text)
+        self.assertIn("deploy usa chave ssh", text)
+
+    def test_query_text_without_objective_does_not_dump_everything(self):
+        mod = self._module()
+        text = mod.query_text(self.room, repo=str(self.repo), budget=1200)
+        # sem objetivo, o comportamento é definido e não explode
+        self.assertTrue(text is None or "QUARENTENA" in text)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 

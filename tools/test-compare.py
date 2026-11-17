@@ -80,6 +80,27 @@ class CompareTests(unittest.TestCase):
         self.assertEqual(code, 2, out)
         self.assertIn("ausente", out)
 
+    def test_06_invalid_repeat_is_usage_error(self):
+        a, b = self.d / "a.jsonl", self.d / "b.jsonl"
+        write_transcript(a, 5, 100, 50)
+        write_transcript(b, 4, 80, 40)
+        code, out = run("--repeat", "abc", str(a), str(b))
+        self.assertEqual(code, 2, out)
+        self.assertNotIn("Traceback", out)
+
+    def test_07_explicit_baseline_optimized_partition(self):
+        files = {}
+        for name, tokens in (("a1", 100), ("a2", 200), ("b1", 50), ("b2", 70)):
+            p = self.d / f"{name}.jsonl"
+            write_transcript(p, 3, tokens, 5)
+            files[name] = str(p)
+        code, out = run("--baseline", files["a1"], "--baseline", files["a2"],
+                        "--optimized", files["b1"], "--optimized", files["b2"])
+        self.assertEqual(code, 0, out)
+        self.assertIn("execuções: baseline=2, otimizado=2", out)
+        self.assertIn("150", out)
+        self.assertIn("60", out)
+
     def test_05_no_percent_claims_without_sample(self):
         a, b = self.d / "a.jsonl", self.d / "b.jsonl"
         write_transcript(a, 5, 100, 50)

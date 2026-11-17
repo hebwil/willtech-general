@@ -60,11 +60,16 @@ def aggregate(paths):
 def parse_args(argv):
     repeat = None
     labels = ("baseline", "otimizado")
-    rest = []
+    rest, baseline_files, optimized_files = [], [], []
     i = 0
     while i < len(argv):
         if argv[i] in ("--repeat",) and i + 1 < len(argv):
-            repeat = int(argv[i + 1])
+            try:
+                repeat = int(argv[i + 1])
+            except ValueError:
+                return None, labels, None, None        # uso inválido → exit 2
+            if repeat < 1:
+                return None, labels, None, None
             i += 2
         elif argv[i] == "--label" and i + 1 < len(argv):
             raw = argv[i + 1]
@@ -75,14 +80,24 @@ def parse_args(argv):
             else:
                 labels = (raw.strip(), labels[1])
                 i += 2
-        elif argv[i] in ("--baseline", "--optimized"):
-            i += 1
+        elif argv[i] == "--baseline" and i + 1 < len(argv):
+            baseline_files.append(argv[i + 1])
+            i += 2
+        elif argv[i] == "--optimized" and i + 1 < len(argv):
+            optimized_files.append(argv[i + 1])
+            i += 2
         elif argv[i].endswith(".jsonl"):
             rest.append(argv[i])
             i += 1
         else:
             i += 1
-    return repeat, labels, rest
+    if baseline_files or optimized_files:
+        # partição explícita: ignora posicionais ambíguos
+        rest = baseline_files + optimized_files
+        explicit = (len(baseline_files), len(optimized_files))
+    else:
+        explicit = None
+    return repeat, labels, rest, explicit
 
 
 def main():
@@ -90,10 +105,16 @@ def main():
     if not argv:
         print(__doc__)
         return 2
-    repeat, labels, files = parse_args(argv)
+    repeat, labels, files, explicit = parse_args(argv)
+    if files is None:
+        print("uso inválido: --repeat exige inteiro >= 1")
+        return 2
     # 1×1 clássico: dois caminhos posicionais.
     if len(files) == 2 and repeat is None:
         left, right = files[:1], files[1:]
+    elif explicit and len(files) >= 2:
+        n_l = explicit[0]
+        left, right = files[:n_l], files[n_l:]
     elif len(files) >= 2:
         half = len(files) // 2
         left, right = files[:half], files[half:]
