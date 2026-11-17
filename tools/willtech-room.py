@@ -116,7 +116,7 @@ SECRET_PATTERNS = (
     # Nome de variável em MAIÚSCULAS com valor atribuído (API_KEY=..., GH_TOKEN = ...).
     # A checagem de "nome parece credencial" é feita em código (secret_in_text),
     # para não recusar prosa legítima do projeto ("token = contagem de eventos").
-    re.compile(r"(?<![A-Za-z0-9_.\-])([A-Za-z][A-Za-z0-9_.\-]{2,})\s*=\s*([^\s]{6,})"),
+    re.compile(r"(?<![A-Za-z0-9_])([A-Za-z][A-Za-z0-9_.\-]{2,})\s*=\s*([^\s]{6,})"),
     re.compile(r"\b(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]+"),
     re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._\-]+"),
     re.compile(r"(?i)(--password[= ])\S+"),
@@ -329,6 +329,29 @@ def _ambiguous_value_is_benign(value):
     return False
 
 
+# Palavras que, sozinhas, NUNCA são identificador de código.
+STRONG_WORDS = {"PASSWORD", "PASSWD", "PASS", "PWD", "SECRET", "TOKEN",
+                "CREDENTIAL", "CREDENTIALS", "PASSPHRASE"}
+
+
+def _is_code_identifier(up):
+    """*_key em minúsculas é identificador (sort_key, finding_key, key_name).
+
+    Env var de credencial aparece em MAIÚSCULAS (MASTER_KEY) ou forma n-grama
+    de credencial (api_key -> APIKEY, pass_key -> PASSKEY); esses seguem
+    detectados. O caso é restrito a KEY para não afrouxar PASSWORD/SECRET/TOKEN.
+    """
+    if "KEY" not in up:
+        return False
+    if any(w in STRONG_WORDS for w in up):
+        return False
+    for n in (2, 3):
+        for i in range(len(up) - n + 1):
+            if "".join(up[i:i + n]) in SECRET_NAME_HINTS:
+                return False
+    return True
+
+
 def _looks_like_credential_name(name, value=""):
     words = _name_words(name)
     if not words:
@@ -337,6 +360,11 @@ def _looks_like_credential_name(name, value=""):
     compact = "".join(up)
 
     if compact in PROSE_DERIVED:
+        return False
+
+    # Identificador de código em minúsculas: sort_key, cache_key, finding_key,
+    # key_name (o repositório usa `finding_key = hashlib.sha256(...)`).
+    if len(up) > 1 and name.islower() and _is_code_identifier(up):
         return False
 
     # Nome composto cujo ÚLTIMO termo é medida → prosa (token_budget).

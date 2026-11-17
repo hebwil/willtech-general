@@ -600,6 +600,37 @@ class ReviewFindingTests(unittest.TestCase):
                             "--summary", value)
             self.assertEqual(code, 2, (value, out))
 
+    def test_im1_flag_prefixed_credential_refused(self):
+        # Regressao da 7a rodada: lookbehind barrava '-'/'.', entao o registro
+        # de um incidente ("rodou --API_KEY=...") passava.
+        for value in ("--API_KEY=abc123def456", "--SECRET=abc123def456",
+                      "-API_KEY=abc123def456", ".API_KEY=abc123def456"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+
+    def test_im1_code_identifiers_allowed(self):
+        # Falso positivo da 7a rodada: *_key minusculo e identificador de
+        # codigo (o proprio dossie usa `finding_key = hashlib.sha256(`).
+        for value in ("sort_key=created_at", "cache_key=project_id_hash",
+                      "primary_key=created_at", "index_key=path_ref",
+                      "finding_key = hashlib.sha256(", "key_name=user_id"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 0, (value, out))
+
+    def test_im1_uppercase_key_env_still_refused(self):
+        # O afrouxamento acima vale SO para minusculas: env var em caixa alta
+        # e nomes n-grama de credencial continuam recusados.
+        for value in ("MASTER_KEY=abc123def456", "OPENAI_KEY=abc123def456",
+                      "OPENAI_API_KEY=abc123def456", "PASSKEY=abc123def456"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+
     def test_im1_project_prose_with_pwd_tokens_allowed(self):
         # I3 (6a rodada): PWD de shell, contagem de TOKENS e derivadas sao
         # vocabulario do projeto, nao credencial.
