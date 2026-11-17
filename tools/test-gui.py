@@ -9,17 +9,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGE = ROOT / "opencode/plugins/willtech/visual"
-# Baseline de orquestração: cf1c8b8, que incorpora a correção REAL e autorizada
-# do instalador Windows (willtech-install.ps1: "${Platform}:" em vez de
-# "$Platform:" — ParserError genuíno do PowerShell 5.1, comprovado no job
-# windows-latest; ordem mestra: "corrija somente falhas reais e comprovadas").
-# O pin anterior (475943a, baseline 3.0 aprovada com as correções do PR #13 e a
-# evolução legítima da 3.0) antecedia essa correção e falhava no HEAD. A
+# Baseline de orquestração: baseline 3.0 aprovada (475943a), que já contém as
+# correções de automação do PR #13 (ece7429) e a evolução legítima da 3.0
+# (JIT da sala, preflight do instalador, contrato AGENTS.md). O pin anterior
+# (fbb2427, 2.3) era anterior a essas mudanças e falhava já no HEAD. A
 # proteção cobre IDENTIDADE e ORQUESTRAÇÃO (assets, licença, créditos, núcleo
 # de automação, agents/hooks de automação, installers). Os subdiretórios
 # VISUAIS (codex/willtech-visual, claude/plugins/willtech-visual) são alvo
 # legítimo de correção da missão multiplataforma e ficam fora deste guard.
-BASE = "cf1c8b8"
+BASE = "475943a"
 
 
 class GuiDistributionTests(unittest.TestCase):
