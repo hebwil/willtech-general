@@ -151,7 +151,7 @@ def _nt_lock(path):
     # proíbe substituir arquivo aberto); a exclusão mútua cobre todo o ciclo
     # ler-modificar-gravar porque append/read/update tomam o mesmo sidecar.
     # msvcrt não tem lock compartilhado: leitura também exclui (mais forte).
-    lp = path + ".lock"
+    lp = os.fspath(path) + ".lock"
     with open(lp, "a+b") as lf:
         lf.seek(0, 2)
         if lf.tell() == 0:
@@ -498,7 +498,7 @@ def update_locked(path, keep_fn):
             kept = keep_fn(entries)
             removed = len(entries) - len(kept)
             if removed:
-                tmp = path + ".tmp"
+                tmp = os.fspath(path) + ".tmp"
                 with open(tmp, "w", encoding="utf-8") as out:
                     for e in kept:
                         out.write(json.dumps(e, ensure_ascii=False) + "\n")
@@ -513,7 +513,7 @@ def update_locked(path, keep_fn):
         kept = keep_fn(entries)
         removed = len(entries) - len(kept)
         if removed:
-            tmp = path + ".tmp"
+            tmp = os.fspath(path) + ".tmp"
             with open(tmp, "w", encoding="utf-8") as out:
                 for e in kept:
                     out.write(json.dumps(e, ensure_ascii=False) + "\n")
