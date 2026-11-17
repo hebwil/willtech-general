@@ -5,7 +5,7 @@
 ## Recuperação mais seletiva (atualização pós-PR #16)
 
 - **Busca dirigida:** mantendo FTS5 (BM25) e fallback LIKE, registros `validated` são ordenados antes dos `candidate`, sem ocultar hipóteses em consultas deliberadas por objetivo. O status permanece explícito para o agente.
-- **Início de sessão:** o hook `SessionStart` chama `query_text(..., validated_only=True)`; somente descobertas confirmadas entram como orientação geral, além das micro-skills já promovidas por aprovação humana.
+- **Início de sessão:** o hook `SessionStart` realiza consulta sem objetivo; a própria sala filtra somente descobertas confirmadas como orientação geral, além das micro-skills já promovidas por aprovação humana.
 - **Durante tarefas complexas:** `UserPromptSubmit` continua consultando pelo objetivo; candidatos relevantes podem aparecer com status `candidate` e cabeçalho `QUARENTENA`, nunca como instruções confiáveis.
 - **Segurança preservada:** `skill-promote` continua exigindo aprovação humana; handoffs pendentes ficam fora da memória automática; `stale` por divergência de hash não é injetado; orçamento de 1200 caracteres, isolamento de projeto e fail-open da leitura continuam ativos.
 - **Verificação:** `tools/test-jit.py` cobre prioridade, filtro validado e fallback sem FTS5. São testes determinísticos de integração, não uma medição de economia de tokens ou prova de melhora de capacidade do modelo.
@@ -38,7 +38,7 @@ O benchmark com Qwen3-1.7B executado em 3×3 cenários reais foi medido em labor
   - `handoff-reject --id N --reason R --by QUEM`: motivo obrigatório (≤200 chars, checado contra segredos), gravado em `validation_evidence`.
   - `handoff-expire --id N [--by QUEM]`: expira o handoff.
   - Mesma transição repetida = idempotente (exit 0); transição a partir de estado terminal = exit 2 (`transição inválida`). `validated_by`/`validated_at` registrados.
-- **Pending nunca é conhecimento confirmado**: handoffs NÃO entram no canal automático da consulta JIT (são transferências, recuperadas via `handoff-fetch`, que renderiza `VALIDATION: state=... by=... at=...`). Findings `candidate` entram somente no JIT dirigido por objetivo e rotulados com o status; no `SessionStart` a recuperação é restrita a `validated`. Skills entram apenas pelo canal `validated`.
+- **Pending nunca é conhecimento confirmado**: handoffs NÃO entram no canal automático da consulta JIT (são transferências, recuperadas via `handoff-fetch`, que renderiza `VALIDATION: state=... by=... at=...`). Findings `candidate` entram somente no JIT dirigido por objetivo e rotulados com o status; no `SessionStart` (consulta sem objetivo) a recuperação é restrita a `validated`. Skills entram apenas pelo canal `validated`.
 - `handoff-fetch --id N` devolve o handoff com header QUARENTENA, provenance por evidência (`source_hash`), resultado persistido e estado de validação.
 - `handoff-pack --handoff-id N [--accept T]` monta o pack do **REVISOR** pela ferramenta: objetivo/aceite + evidências por hash. **JAMAIS inclui o `result` do executor** — a saída declara `RESULT: (omitido por política — executor não escreve no pack)`. A validação é mecânica: `tools/test-handoff.py` (`test_12_pack_excludes_executor_conclusions`) faz asserção de ausência de substring no pack.
 
