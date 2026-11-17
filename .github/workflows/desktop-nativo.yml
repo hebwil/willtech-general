@@ -17,6 +17,8 @@ name: desktop-nativo
 on:
   push:
     branches: [qoder/homologacao-zero-custo]
+    paths:
+      - ".github/workflows/desktop-nativo.yml"
   workflow_dispatch:
 
 permissions:

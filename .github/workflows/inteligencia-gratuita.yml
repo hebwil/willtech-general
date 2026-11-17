@@ -19,6 +19,14 @@ name: inteligencia-gratuita
 on:
   push:
     branches: [qoder/homologacao-zero-custo]
+    paths:
+      - ".github/workflows/inteligencia-gratuita.yml"
+      - "tools/opencode-trace.py"
+      - "tools/willtech-compare.py"
+      - "claude-code/bin/willtech_trace.py"
+      - "tools/willtech-auto.py"
+      - "tools/willtech-room.py"
+      - "opencode/plugins/willtech/**"
   workflow_dispatch:
 
 permissions:
@@ -31,7 +39,9 @@ env:
   GGUF_FILE: Qwen3-1.7B-Q4_K_M.gguf
   MODEL_ID: qwen3-1.7b
   PROVIDER_ID: llamacpp
-  TASK_BENCH: "O que a funcao soma no arquivo src/app.py retorna? Investigue e responda de forma concisa."
+  # Tarefa não trivial (>= COMPLEX_CHARS=200): só assim o núcleo injeta a sala
+  # no UserPromptSubmit (ev_prompt). Mesma tarefa/modelo/temp nos dois cenários.
+  TASK_BENCH: "Preciso entender o comportamento da funcao soma no arquivo src/app.py deste projeto para planejar uma refatoracao segura do modulo de calculo. Investigue o codigo, considere dependencias e efeitos colaterais, e responda de forma concisa o que a funcao soma retorna e como ela trata os operandos."
 
 jobs:
   inteligencia:

@@ -9,6 +9,8 @@ name: modelo-gratuito
 on:
   push:
     branches: [qoder/homologacao-zero-custo]
+    paths:
+      - ".github/workflows/modelo-gratuito.yml"
   workflow_dispatch:
 
 permissions:
