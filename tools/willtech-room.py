@@ -985,7 +985,8 @@ def _fresh_rows(con, rows, repo):
 
 
 def build_query(path, project, objective="", specialty=None, kind=None,
-                path_ref=None, budget=BUDGET_CHARS, repo=None):
+                path_ref=None, budget=BUDGET_CHARS, repo=None,
+                validated_only=False):
     """Consulta JIT: FTS5 (MATCH+bm25) quando disponível; fallback LIKE com
     ranking por termos casados (BL3, mesma interface). Orçamento aplicado aqui.
     Handoffs NÃO entram no canal automático (são transferências, recuperadas
@@ -1035,6 +1036,10 @@ def build_query(path, project, objective="", specialty=None, kind=None,
             sql += "AND r.kind NOT IN ('skill','handoff') "
             sql += "AND r.project_id = ? AND r.status NOT IN ('dropped','superseded') "
             params.append(project)
+            if validated_only:
+                # SessionStart: não promover candidatos a orientação geral.
+                # Candidatos continuam acessíveis no prompt dirigido, rotulados.
+                sql += "AND r.status = 'validated' "
             if specialty:
                 sql += "AND r.specialty = ? "
                 params.append(specialty)
@@ -1046,13 +1051,15 @@ def build_query(path, project, objective="", specialty=None, kind=None,
                 sql += "AND (r.path_ref = ? OR r.path_ref LIKE ? ESCAPE '\\') "
                 params.extend([path_ref, "%/" + esc])
             if use_fts:
-                sql += "ORDER BY bm25(records_fts) LIMIT ?"
+                sql += ("ORDER BY CASE WHEN r.status='validated' THEN 0 ELSE 1 END, "
+                        "bm25(records_fts), r.updated_at DESC, r.id DESC LIMIT ?")
             elif score_sql:
-                sql += ("ORDER BY (" + score_sql + ") DESC, "
-                        "r.updated_at DESC, r.id DESC LIMIT ?")
+                sql += ("ORDER BY CASE WHEN r.status='validated' THEN 0 ELSE 1 END, "
+                        "(" + score_sql + ") DESC, r.updated_at DESC, r.id DESC LIMIT ?")
                 params.extend(score_params)
             else:
-                sql += "ORDER BY r.updated_at DESC, r.id DESC LIMIT ?"
+                sql += ("ORDER BY CASE WHEN r.status='validated' THEN 0 ELSE 1 END, "
+                        "r.updated_at DESC, r.id DESC LIMIT ?")
             params.append(QUERY_LIMIT)
             rows = con.execute(sql, params).fetchall()
             rows = _fresh_rows(con, rows, repo)
@@ -1114,7 +1121,8 @@ def build_query(path, project, objective="", specialty=None, kind=None,
 
 
 def query_text(room, repo=".", objective="", specialty=None, kind=None,
-               path=None, project="auto", budget=None):
+               path=None, project="auto", budget=None,
+               validated_only=False):
     """Texto pronto para injeção pelo hook. Fail-open: sem projeto git,
     sem registros, erro de isolamento ou falha de banco, devolve None
     (nada é injetado; a falha nunca derruba o aplicativo)."""
@@ -1128,7 +1136,8 @@ def query_text(room, repo=".", objective="", specialty=None, kind=None,
                                  objective=objective, specialty=specialty,
                                  kind=kind, path_ref=path,
                                  budget=budget or BUDGET_CHARS,
-                                 repo=os.path.abspath(repo))
+                                 repo=os.path.abspath(repo),
+                                 validated_only=validated_only)
     except Exception:
         return None
     if code != 0:
