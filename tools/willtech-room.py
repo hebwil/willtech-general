@@ -121,6 +121,7 @@ SECRET_PATTERNS = (
     re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._\-]+"),
     re.compile(r"(?i)(--password[= ])\S+"),
     re.compile(r"\b(sk|pk|rk)-[A-Za-z0-9_\-]{8,}"),
+    re.compile(r"\b(AKIA|ASIA)[0-9A-Z]{16}\b"),
 )
 
 # Schema v1 (congelável após o gate FTS5 do CI Windows). Fallback FTS5
@@ -331,7 +332,19 @@ def _ambiguous_value_is_benign(value):
 
 # Palavras que, sozinhas, NUNCA são identificador de código.
 STRONG_WORDS = {"PASSWORD", "PASSWD", "PASS", "PWD", "SECRET", "TOKEN",
-                "CREDENTIAL", "CREDENTIALS", "PASSPHRASE"}
+                "CREDENTIAL", "CREDENTIALS", "PASSPHRASE", "APIKEY",
+                "PRIVATEKEY"}
+
+# Hastes que qualificam KEY como credencial MESMO em minúsculas: é a forma em
+# que as ferramentas gravam credenciais (aws_access_key_id em ~/.aws/credentials,
+# master_key, service_account_key). Sem isso, "tudo que termina em _key é
+# identificador" gravaria segredo real na sala.
+CREDENTIAL_STEMS = {"MASTER", "ACCESS", "SECRET", "PRIVATE", "SIGNING",
+                    "ENCRYPTION", "DEPLOY", "AUTH", "API", "AWS", "AZURE",
+                    "GCP", "STRIPE", "ACCOUNT", "CLIENT", "SESSION", "LIVE",
+                    "PROD", "PRODUCTION", "ROOT", "ADMIN", "SERVICE",
+                    "ENCRYPT", "DECRYPT", "HMAC", "SALT", "TOKEN", "OAUTH",
+                    "JWT", "SSH", "PGP", "SIGN"}
 
 
 def _is_code_identifier(up):
@@ -344,6 +357,8 @@ def _is_code_identifier(up):
     if "KEY" not in up:
         return False
     if any(w in STRONG_WORDS for w in up):
+        return False
+    if any(w in CREDENTIAL_STEMS for w in up):
         return False
     for n in (2, 3):
         for i in range(len(up) - n + 1):

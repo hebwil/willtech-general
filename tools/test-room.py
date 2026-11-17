@@ -621,6 +621,29 @@ class ReviewFindingTests(unittest.TestCase):
                             "--summary", value)
             self.assertEqual(code, 0, (value, out))
 
+    def test_im1_lowercase_credential_stems_refused(self):
+        # Achado da 8a rodada: "*_key minusculo e identificador" isentava a
+        # forma em que as ferramentas GRAVAM credenciais — incluindo
+        # aws_access_key_id, o formato de ~/.aws/credentials.
+        for value in ("master_key=abc123def456", "access_key=abc123def456",
+                      "aws_access_key_id=abc123def456",
+                      "signing_key=abc123def456", "deploy_key=abc123def456",
+                      "auth_key=abc123def456",
+                      "encryption_key=abc123def456",
+                      "service_account_key=abcd1234"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+
+    def test_im1_aws_access_key_id_format_refused(self):
+        # Padrao estrutural, independente do nome da variavel.
+        code, out = run("put", self.room, "--repo", str(self.repo),
+                        "--kind", "finding", "--specialty", "explorador",
+                        "--summary", "chave vista: AKIAIOSFODNN7EXAMPLE")
+        self.assertEqual(code, 2, out)
+        self.assertNotIn("AKIAIOSFODNN7EXAMPLE", out)
+
     def test_im1_uppercase_key_env_still_refused(self):
         # O afrouxamento acima vale SO para minusculas: env var em caixa alta
         # e nomes n-grama de credencial continuam recusados.
