@@ -49,14 +49,9 @@ jobs:
           assert all(j['status']=='completed' and j['conclusion']=='success' for j in jobs), [(j['name'],j['conclusion']) for j in jobs]
           print('CI verified: exact SHA, 5/5 jobs SUCCESS')
           PY
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "Release already exists. Refusing to overwrite." >&2
-            exit 1
-          fi
-          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "Tag already exists. Refusing to retarget." >&2
-            exit 1
-          fi
+          # Resume ONLY the already-created draft for this exact release.
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          test "$(gh release view "$RELEASE_TAG" --json targetCommitish --jq .targetCommitish)" = "$PINNED_SHA"
       - name: Test distribution built from exact validated commit
         shell: bash
         run: |
@@ -64,35 +59,6 @@ jobs:
           python tools/test-dist.py
           python tools/build-dist.py HEAD
           python tools/verify-release.py dist "$RELEASE_TAG"
-      - name: Prepare accurate release notes
-        shell: bash
-        run: |
-          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
-          ## WillTech-General 3.0 — Shared Intelligence
-          Seven specialized agents and shared project-local SQLite intelligence,
-          validated handoffs, JIT context, portable FTS5 fallback, verified migration,
-          backup/restore, guards against secrets/injection, and reversible installers.
-
-          **Verified**: 5/5 CI jobs on Linux, macOS, Windows and the official OpenCode V2
-          server, including end-to-end intelligence smoke and archive-based distribution
-          install/update/disable/uninstall. Reference CI: #44161602314, commit 83de0e0.
-
-          **Honest limitations**: native Desktop visual rendering is still experimental
-          and was not certified as a physical-app UI test. Real paid model inference
-          benchmark was not performed; no token savings or runtime spending is claimed.
-          Codex viewer is complementary (not a native Codex panel).
-
-          Artifacts: willtech-general-3.0.0.tar.gz, MANIFEST.json (archive SHA-256),
-          SHA256SUMS.txt (SHA-256 of each file inside the archive).
-          NOTES
-      - name: Create draft with immutable commit and assets
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh release create "$RELEASE_TAG" \
-            dist/willtech-general-3.0.0.tar.gz dist/MANIFEST.json dist/SHA256SUMS.txt \
-            --target "$PINNED_SHA" --title "WillTech-General v3.0.0" \
-            --notes-file "$RUNNER_TEMP/release-notes.md" --draft
       - name: Download draft assets and prove installed distribution
         shell: bash
         run: |
@@ -103,14 +69,14 @@ jobs:
           cmp dist/SHA256SUMS.txt "$RUNNER_TEMP/release-download/SHA256SUMS.txt"
           cmp dist/willtech-general-3.0.0.tar.gz "$RUNNER_TEMP/release-download/willtech-general-3.0.0.tar.gz"
           python tools/verify-release.py "$RUNNER_TEMP/release-download" "$RELEASE_TAG"
-          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')
-          test "$TAG_SHA" = "$PINNED_SHA"
       - name: Publish stable release only after complete draft verification
         shell: bash
         run: |
           set -euo pipefail
           gh release edit "$RELEASE_TAG" --draft=false
           test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = false
+          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')
+          test "$TAG_SHA" = "$PINNED_SHA"
           echo "Stable release: https://github.com/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG"
       - name: Verify public downloadable archive checksum
         shell: bash
