@@ -117,6 +117,7 @@ jobs:
           $lab = Join-Path $env:RUNNER_TEMP ('wt lab ' + [char]0x00E7 + [char]0x00E3 + 'o')
           New-Item -ItemType Directory -Force -Path (Join-Path $lab 'tools') | Out-Null
           Copy-Item 'tools\willtech-auto.py' (Join-Path $lab 'tools\willtech-auto.py')
+          Copy-Item 'tools\willtech-dossie.py' (Join-Path $lab 'tools\willtech-dossie.py')
           New-Item -ItemType Directory -Force -Path (Join-Path $lab '.claude') | Out-Null
           $pre = '{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo usuario"}]}]},"meu":"dado"}'
           Set-Content -Encoding utf8 (Join-Path $lab '.claude\settings.json') $pre
