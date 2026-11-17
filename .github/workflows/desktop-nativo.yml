@@ -179,7 +179,10 @@ jobs:
           # por inspeção visual — nunca declarado PASS sem o painel na captura.
           osascript -e 'tell application "System Events" to tell process "OpenCode" to set frontmost to true' 2>~/toggle.err
           sleep 1
-          osascript -e 'tell application "System Events" to keystroke "/"' 2>>~/toggle.err
+          # O menu "/" do prompt NÃO lista comandos de plugin GUI (captura anterior:
+          # "No matching items" p/ /WillTech). A paleta de comandos do Desktop é
+          # Cmd+K; tenta por ela (uma única tentativa bounded).
+          osascript -e 'tell application "System Events" to key code 40 using {command down}' 2>>~/toggle.err
           sleep 1
           osascript -e 'tell application "System Events" to keystroke "WillTech"' 2>>~/toggle.err
           sleep 1
