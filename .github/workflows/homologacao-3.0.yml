@@ -117,6 +117,7 @@ jobs:
           $lab = Join-Path $env:RUNNER_TEMP ('wt lab ' + [char]0x00E7 + [char]0x00E3 + 'o')
           New-Item -ItemType Directory -Force -Path (Join-Path $lab 'tools') | Out-Null
           Copy-Item 'tools\willtech-auto.py' (Join-Path $lab 'tools\willtech-auto.py')
+          Copy-Item 'tools\willtech-dossie.py' (Join-Path $lab 'tools\willtech-dossie.py')
           New-Item -ItemType Directory -Force -Path (Join-Path $lab '.claude') | Out-Null
           $pre = '{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo usuario"}]}]},"meu":"dado"}'
           Set-Content -Encoding utf8 (Join-Path $lab '.claude\settings.json') $pre
@@ -153,23 +154,8 @@ jobs:
       - name: Instalar OpenCode 2 oficial (runner isolado)
         run: |
           set -e
-          # O instalador opencode.ai/install fornece APENAS OpenCode 1 (contrato
-          # de plugin default.server(), chave "plugin" no config). O plugin
-          # WillTech e OpenCode 2 ({id, setup(ctx)}, chave "plugins", descoberta
-          # automatica de .opencode/plugins/ incl. subdiretorios — confirmado no
-          # fonte oficial v2.3.0: packages/plugin/src/promise/plugin.ts,
-          # packages/core/src/plugin/source-directory.ts, schema/src/config.ts).
-          # Por isso o host oficial de homologacao e o binario OpenCode 2 da
-          # release oficial anomalyco/opencode, nao o instalador v1.
-          VER=2.3.0
-          mkdir -p "$RUNNER_TEMP/oc2"
-          curl -fsSL -o "$RUNNER_TEMP/oc2/opencode.tar.gz" \
-            "https://github.com/anomalyco/opencode/releases/download/v$VER/opencode-linux-x64.tar.gz"
-          tar xzf "$RUNNER_TEMP/oc2/opencode.tar.gz" -C "$RUNNER_TEMP/oc2"
-          BIN=$(find "$RUNNER_TEMP/oc2" -type f -name opencode | head -1)
-          chmod +x "$BIN"
-          echo "$(dirname "$BIN")" >> "$GITHUB_PATH"
-          "$BIN" --version
+          curl -fsSL https://opencode.ai/v2/install | bash
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
       - name: Projeto lab + instalacao WillTech + 7 agentes
         run: |
           set -e
@@ -261,19 +247,8 @@ jobs:
               print(f"=== POST /api/session -> {sts} ==="); print(sess_raw[:400])
           except Exception as e:
               print("session.create indisponivel:", e)
-          # O setup do plugin roda na carga do local, disparada pelo primeiro
-          # prompt. Sem provedor autenticado o modelo falha (custo zero), mas o
-          # setup executa ANTES da resolucao do modelo (doc oficial: plugins
-          # prontos antes da admissao do prompt).
-          try:
-              run = subprocess.run(["opencode", "run", "willtech homolog probe"],
-                                   cwd=lab, capture_output=True, text=True, timeout=90)
-              print(f"=== opencode run exit={run.returncode} ===")
-              print((run.stdout or "")[-500:]); print((run.stderr or "")[-500:])
-          except subprocess.TimeoutExpired:
-              print("opencode run timeout (setup pode ter executado antes do modelo)")
-          except Exception as e:
-              print("opencode run indisponivel:", e)
+          # O host V2 carrega o plugin no projeto sem prompt ou modelo.
+          # Nao executar opencode run: este teste e estritamente custo zero.
           # O setup do plugin pode assentar de forma assincrona apos o registro
           # dos agentes; espera o estado de carga (SessionStart session_id=plugin-load).
           state_path = os.path.join(lab, ".willtech", "state-plugin-load.json")
