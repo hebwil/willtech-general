@@ -56,7 +56,7 @@ A partir das versões **2.0 → 3.0**, a arquitetura deixou de ser apenas hierar
 | 🗺️ **RepoMap incremental compartilhado** | `tools/willtech-repomap.py` indexa símbolos/dependências sem copiar conteúdo; reparse só do que mudou; briefings substituem releituras; trechos revalidados por hash; isolamento por projeto e exclusão de credenciais | 🧪 Validada em simulação |
 | ⏱️ **Supervisor de delegações** | `tools/willtech-supervisor.py` rastreia cada delegação com soft/hard timeout, bloqueia recursão/duplicação/escrita concorrente, retry único reconciliado; timed_out nunca afirma interrupção; cancelamento só com confirmação do runtime | 🧪 Validada em simulação |
 
-> **Nota de rigor:** nenhum percentual de economia de tokens é afirmado. A comparação com/sem otimizações (`tools/willtech-compare.py`) mede deltas de tokens, turnos, falhas e loops sobre transcripts reais, sem extrapolar métricas; o benchmark final está registrado como **NÃO MEDIDO** (sem provedor de laboratório autorizado, custo zero). A **carga do plugin V2 e o hook SessionStart do OpenCode foram exercitados no host oficial OpenCode 2.3.0** em CI isolado e autenticado (custo zero, evidência: arquivo de estado state-plugin-load.json gerado em .willtech/); a execução dos demais hooks em sessão com modelo (OpenCode, Codex e Claude Code) permanece pendente e não é anunciada como concluída — classificação completa e evidências em [EVOLUCAO.md](EVOLUCAO.md).
+> **Nota de rigor:** nenhum percentual de economia de tokens é afirmado. A comparação com/sem otimizações (`tools/willtech-compare.py`) mede deltas de tokens, turnos, falhas e loops sobre transcripts reais, sem extrapolar métricas; o benchmark gratuito foi **MEDIDO** (3 execuções por cenário, com/sem sala), usando Qwen3-1.7B em GitHub Actions; **não houve economia de tokens demonstrada**. Consulte [homologação zero custo](docs/HOMOLOGACAO-ZERO-CUSTO.md) e as limitações do modelo. A **carga do plugin V2 e o hook SessionStart do OpenCode foram exercitados no host oficial OpenCode 2.3.0** em CI isolado e autenticado (custo zero, evidência: arquivo de estado state-plugin-load.json gerado em .willtech/); a execução dos demais hooks em sessão com modelo (OpenCode, Codex e Claude Code) permanece pendente e não é anunciada como concluída — classificação completa e evidências em [EVOLUCAO.md](EVOLUCAO.md).
 
 ### As três melhorias da rodada 2.3 (integradas na `main` via [PR #9](https://github.com/hebwil/willtech-general/pull/9))
 
@@ -65,6 +65,14 @@ A partir das versões **2.0 → 3.0**, a arquitetura deixou de ser apenas hierar
 3. **Supervisor determinístico de delegações** — `tools/willtech-supervisor.py` registra cada delegação com soft/hard timeout honestos (`timed_out` nunca afirma interrupção sem confirmação), cancelamento somente com confirmação do runtime, anti-loop (recursão, duplicação e escrita concorrente bloqueadas) e retry único reconciliado. Estado e evidências ficam no dossiê (hashes, nunca conteúdo).
 
 As três melhorias reutilizam o núcleo existente (dossiê, trace, guardas) e preservam os 7 agentes, hooks, instaladores e contratos das três plataformas (contratos 2.3 / 2.3.1 / 2.3.2). Validação por suítes determinísticas de laboratório; homologação em runtime real com modelo permanece pendente e não é anunciada como concluída.
+
+---
+
+## Atualização da Sala e dos agentes (pós-homologação gratuita)
+
+A consulta JIT da sala **prioriza registros validados**, tanto com índice FTS5 quanto com fallback LIKE. Na abertura de sessão (`SessionStart`), a consulta sem objetivo seleciona somente descobertas validadas como orientação geral; candidatos permanecem disponíveis **apenas em consultas direcionadas por objetivo**, com status explícito e cabeçalho de quarentena. Handoffs pendentes e skills não promovidas continuam fora da injeção automática. O orçamento, o isolamento entre projetos, a invalidação por hash e a aprovação humana de micro-skills permanecem preservados. Esta atualização é verificada por testes determinísticos; não é alegado ganho de raciocínio nem economia de tokens sem nova medição.
+
+**Estado da evidência:** testes reais com modelo gratuito e benchmark 3×3 comprovados em [docs/HOMOLOGACAO-ZERO-CUSTO.md](docs/HOMOLOGACAO-ZERO-CUSTO.md). App OpenCode Desktop real e carga do plugin GUI comprovados; **painel nativo dos sete mascotes ainda NC**. Não confundir estes resultados com homologação completa de todas as plataformas.
 
 ---
 
@@ -96,7 +104,7 @@ python3 tools/willtech-room.py export .willtech/room.db --repo .   # auditoria J
 
 Ciclo de vida, handoff sem vazamento e micro-skills com gate humano (`skill-promote` exige `--i-approve-human`) em [docs/SHARED-INTELLIGENCE.md](docs/SHARED-INTELLIGENCE.md).
 
-**Custos e dependências:** nenhuma dependência nova — `sqlite3` da stdlib Python; FTS5 é opcional e o **fallback LIKE está implementado e testado de ponta a ponta** (`WILLTECH_ROOM_NO_FTS5=1` força o fallback; sem FTS5 o `init` NÃO falha — a sala opera com LIKE). O fallback real é exercitado no CI ([.github/workflows/homologacao-3.0.yml](.github/workflows/homologacao-3.0.yml), passo "Fallback REAL sem FTS5") e o gate FTS5 do Windows em [.github/workflows/windows-compat.yml](.github/workflows/windows-compat.yml). Benchmark real antes/depois **NÃO MEDIDO** (sem provedor de laboratório autorizado; custo zero); nenhum percentual de economia é reivindicado.
+**Custos e dependências:** nenhuma dependência nova — `sqlite3` da stdlib Python; FTS5 é opcional e o **fallback LIKE está implementado e testado de ponta a ponta** (`WILLTECH_ROOM_NO_FTS5=1` força o fallback; sem FTS5 o `init` NÃO falha — a sala opera com LIKE). O fallback real é exercitado no CI ([.github/workflows/homologacao-3.0.yml](.github/workflows/homologacao-3.0.yml), passo "Fallback REAL sem FTS5") e o gate FTS5 do Windows em [.github/workflows/windows-compat.yml](.github/workflows/windows-compat.yml). Benchmark real com/sem inteligência compartilhada **MEDIDO** em laboratório gratuito (3×3); a injeção aumentou tokens de entrada fresca e reduziu releituras, sem ganho de economia de tokens comprovado. Evidências: [homologação zero custo](docs/HOMOLOGACAO-ZERO-CUSTO.md).
 
 ---
 
@@ -279,7 +287,7 @@ Contribuição gráfica independente para **OpenCode Desktop 2.2.6**, baseada na
 
 **Smoke headless de laboratório aprovado com o bundle real e os mascotes originais:** 64/64 verificações em três rodadas consecutivas + 3/3 em modo reduced-motion — carga das sete imagens, associação agente↔imagem por hash SHA-256, avanço de quadros do APNG provado por decodificação WebCodecs (18 quadros), estados, isolamento de eventos do General, deduplicação de atualizações, limpeza pós-unmount e zero chamadas de rede/modelo (evidência de rede: apenas `file://` e `data:`). Resultados, hashes e capturas de tela em [tools/smoke-evidence/](tools/smoke-evidence/).
 
-**Homologação gráfica nativa no OpenCode Desktop: NÃO EXECUTADA.** O smoke é simulação de laboratório em navegador headless e não é anunciado como suporte nativo validado. Ativação, reversão e limites de Codex/Claude Code em [INSTALL.md](INSTALL.md#painel-visual-experimental-opencode-desktop).
+**Homologação gráfica nativa — estado atualizado:** o aplicativo OpenCode Desktop foi executado e capturado em macOS 15 e 26, e o plugin GUI carregou no servidor real. **O painel dos sete mascotes permanece NÃO COMPROVADO (NC)**; o smoke headless não equivale à sua pintura nativa. Veja [homologação zero custo](docs/HOMOLOGACAO-ZERO-CUSTO.md). Ativação, reversão e limites de Codex/Claude Code em [INSTALL.md](INSTALL.md#painel-visual-experimental-opencode-desktop).
 
 ### Smoke tests dos adaptadores
 
@@ -291,11 +299,11 @@ Os sete mascotes oficiais reagem à atividade real dos agentes em cada plataform
 
 | Plataforma | Mecanismo oficial | Estado | Evidência |
 |---|---|---|---|
-| **OpenCode** | Plugin GUI (painel nativo no Desktop, versões ≥ 2.2.6) | Corrigido e revalidado em laboratório (Desktop 2.3.0); homologação nativa **não** realizada | `tools/smoke-evidence/mission5-gui-v230.png` |
+| **OpenCode** | Plugin GUI (painel nativo no Desktop, versões ≥ 2.2.6) | Aplicativo Desktop renderizado e plugin GUI carregado em macOS real; **painel dos mascotes NC** | `tools/smoke-evidence/mission5-gui-v230.png` |
 | **Claude Code** | Mod oficial (validado pelo tooling oficial): `Pane` desktop com SVG+SMIL e terminal com `Image` + `$.ui.blit` | Kit oficial 3/3 em runtime real de hooks; pintura nativa **não** observada | `claude/plugins/willtech-visual/evidence/preview-lab.png` |
 | **Codex** | Visualizador **complementar e independente** (Codex não expõe painel nativo de 7 agentes; Pets é um companheiro agregado e a extensão de IDE não suporta pets/plugins) | Pipeline real hooks→feed→SSE→viewer exercitado; handshake App Server real (binário oficial v0.169.0, offline); sessão real com modelo **não** exercitada | `codex/willtech-visual/evidence/viewer-lab.png` |
 
-> **Rótulo honesto:** tudo o que está nesta seção foi aprovado em **laboratório** (suítes determinísticas, kit oficial do Claude Code, binário descartável do App Server e capturas headless). **Nenhuma dessas integrações foi homologada em uma sessão nativa real** — exige instalação autorizada e, no Codex, autenticação do proprietário. Por isso o estado declarado é **experimental**; simulação, compilação ou decodificação não são apresentadas como homologação nativa. Detalhes e limitações comprovadas em [EVOLUCAO.md](EVOLUCAO.md).
+> **Rótulo honesto:** tudo o que está nesta seção foi aprovado em **laboratório** (suítes determinísticas, kit oficial do Claude Code, binário descartável do App Server e capturas headless). **O OpenCode Desktop foi executado nativamente e carregou o plugin GUI, mas o painel de mascotes não foi visualmente comprovado.** As integrações visuais Claude Code/Codex seguem com as limitações descritas; sessão com modelo e pintura nativa completa não foram homologadas. Por isso o estado declarado é **experimental**; simulação, compilação ou decodificação não são apresentadas como homologação nativa. Detalhes e limitações comprovadas em [EVOLUCAO.md](EVOLUCAO.md).
 
 Para usar: o painel OpenCode acompanha o plugin (opt-in `enabled: true` no Desktop ≥ 2.2.6); o Mod Claude Code instala-se via `claude plugin validate`/`install` a partir de `claude/plugins/willtech-visual/` (comando `/willtech-team` abre o painel); o visualizador Codex sobe com `node codex/willtech-visual/viewer/server.cjs` após mesclar `codex/willtech-visual/hooks/hooks.json` ao arquivo .codex/hooks.json do projeto (trust via `/hooks`).
 
