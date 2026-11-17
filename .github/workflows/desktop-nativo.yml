@@ -127,6 +127,20 @@ jobs:
           python3 tools/willtech-gui.py --install --yes
           echo "=== config GLOBAL (plugins GUI, enabled=true) ==="
           cat "$HOME/.config/opencode/opencode.json"
+          cp "$HOME/.config/opencode/opencode.json" ~/global-config.json
+          # O painel GUI exige deps públicas (@opencode/plugin/gui = subpath export
+          # de @opencode/plugin; solid-js; peers @opentui). Sem node_modules o
+          # require falha e o plugin não carrega. Instala SOMENTE no runner
+          # descartável (npm público, custo zero), dentro do dir do plugin.
+          VISUAL="$DESK/opencode/plugins/willtech/visual"
+          if command -v npm >/dev/null 2>&1; then
+            (cd "$VISUAL" && npm install --no-save --no-audit --no-fund \
+              @opencode/plugin@2.3.0 solid-js@1.9.9 @opentui/core @opentui/solid @opencode/theme@2.3.0) > ~/npm-gui.log 2>&1
+            echo "npm install exit=$?"
+          else
+            echo "npm ausente no runner macOS" > ~/npm-gui.log
+          fi
+          tail -15 ~/npm-gui.log
           mkdir -p "$DESK/.willtech"
           touch "$DESK/.willtech/enabled"
           git -C "$DESK" add -A
@@ -140,6 +154,20 @@ jobs:
           echo "screencapture exit=$?"
           ls -la ~/desktop-willtech.png 2>/dev/null
           osascript -e 'tell application "System Events" to get name of every window of (every process whose name contains "OpenCode")' 2>&1 | tee ~/windows2.txt
+          # Ground truth do carregamento do plugin GUI: log do servidor de fundo.
+          {
+            echo "=== dirs de log ==="
+            for d in "$HOME/.local/share/opencode/log" "$HOME/Library/Application Support/ai.opencode.desktop/log" "$HOME/Library/Logs/opencode"; do
+              [ -d "$d" ] && { echo "--- $d ---"; ls -la "$d" | head -8; }
+            done
+            echo "=== linhas willtech/gui/plugin/error nos logs ==="
+            find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" "$HOME/Library/Logs" -name "*.log" -type f 2>/dev/null | while read -r f; do
+              echo "--- $f ---"; grep -iE "willtech|gui|plugin|error|require" "$f" | tail -30
+            done
+          } > ~/server-plugin.log 2>&1
+          tail -40 ~/server-plugin.log
+          NEWEST=$(find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" -name "*.log" -type f 2>/dev/null | head -1)
+          [ -n "$NEWEST" ] && tail -60 "$NEWEST" > ~/opencode-server.log
 
       - name: Classificação honesta do render nativo (PASS REAL ou NC/BLOQUEADO)
         run: |
@@ -181,6 +209,8 @@ jobs:
               "app_running": proc,
               "native_window_captured": captured,
               "screenshot_after_plugin_install": png_ok("desktop-willtech.png"),
+              "gui_deps_install_log": has("npm-gui.log", "added") or has("npm-gui.log", "up to date"),
+              "gui_plugin_log_mentions_willtech": has("server-plugin.log", "willtech"),
               "desktop_attempt_bytes": attempt,
               "classification": classification,
               "technical_reasons": reason,
@@ -214,6 +244,10 @@ jobs:
             ~/windows.txt
             ~/launch.err
             ~/screencapture.err
+            ~/global-config.json
+            ~/npm-gui.log
+            ~/server-plugin.log
+            ~/opencode-server.log
             ~/desktop-summary.json
           if-no-files-found: warn
           retention-days: 14
