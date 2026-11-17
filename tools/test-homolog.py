@@ -79,7 +79,7 @@ SYNTH = "SYNTHETIC-NAO-E-SEGREDO-REAL-123456"
 
 class Lab(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix="willtech-homolog-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="willtech-homolog-", ignore_cleanup_errors=True)
         self.base = Path(self.tmp.name)
         self.addCleanup(self.tmp.cleanup)
 

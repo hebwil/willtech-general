@@ -8,15 +8,17 @@ Isto valida o contrato do cliente do App Server; NÃO é homologação de sessã
 """
 import json
 import os
+import shutil
 import subprocess
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NODE = "/Users/will/Library/Application Support/Codex/artifact-sessions/runtime-generations/generation-9FoqEE/runtime/bin/node"
+NODE = os.environ.get("WILLTECH_NODE") or shutil.which("node") or shutil.which("nodejs")
 BIN = os.environ.get("WILLTECH_CODEX_BIN", "")
 
 
-@unittest.skipUnless(BIN and os.path.exists(BIN), "WILLTECH_CODEX_BIN ausente; protocolo real não exercitado")
+@unittest.skipUnless(BIN and os.path.exists(BIN) and NODE,
+                     "WILLTECH_CODEX_BIN/node ausente; protocolo real não exercitado")
 class TestAppServerProtocol(unittest.TestCase):
     def test_initialize_and_thread_list(self):
         home = os.path.join(ROOT, ".appserver-home")

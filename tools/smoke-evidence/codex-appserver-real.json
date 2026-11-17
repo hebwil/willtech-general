@@ -1,0 +1,20 @@
+{
+  "suite": "codex app-server — protocolo REAL oficial",
+  "date": "2026-11-17",
+  "status": "PASS",
+  "skipAnterior": "ELIMINADO — teste real executado, sem simulação substituta",
+  "binario": "codex-app-server-aarch64-apple-darwin (release oficial openai/codex rust-v0.169.0, baixado de GitHub releases para laboratório isolado /tmp; nenhum diretório pessoal acessado)",
+  "teste": "codex/willtech-visual/tools/test-appserver.py :: test_initialize_and_thread_list",
+  "resultado": "Ran 1 test in 2.506s — OK",
+  "protocoloComprovado": [
+    "initialize/initialized handshake JSON-RPC oficial sobre stdio (userAgent real)",
+    "thread/list retorna data array",
+    "CODEX_HOME isolado honored (init.result.codexHome == home do lab)",
+    "probe adicional: thread/create aceito sem autenticação"
+  ],
+  "semAutenticacao": true,
+  "semModelo": true,
+  "semRedeExterna": true,
+  "viewerBridge": "bridge/JSONL/history/SSE/reset-por-sessão/loopback/hooks-portáveis cobertos por codex/willtech-visual/tools/test-codex.py (12, node real)",
+  "nota": "Homologação reproduzida em CI (runner isolado) para independência do Mac do proprietário; execução local usou apenas binário oficial baixado, sem tocar instalações pessoais."
+}

@@ -1,0 +1,21 @@
+{
+  "suite": "benchmark real WillTech 3.0 (missão final §8)",
+  "status": "NAO_MEDIDO",
+  "category": "bloqueio tecnico registrado — nenhuma execucao paga realizada",
+  "reason": "Nenhum runtime nativo autenticado disponivel neste ambiente",
+  "evidence": {
+    "claude_cli": {
+      "version": "2.1.325",
+      "path": "/Users/will/.local/bin/claude",
+      "headless_result": "Not logged in · Please run /login",
+      "is_error": true
+    },
+    "opencode": "binario ausente (PATH, ~/.local/bin, ~/.bun, npm global, homebrew, HOME descartavel de sessao anterior)",
+    "codex": "binario ausente (mesmas buscas)",
+    "tentativa_opencode_descartavel": "instalador oficial baixado e inspecionado (/tmp/oc-install.sh); config do laboratorio anterior contem credenciais de provedor — acesso bloqueado pela politica de seguranca do ambiente; nenhuma credencial lida, copiada ou usada",
+    "login_pessoal": "nao executado (proibido alterar instalacao pessoal/credenciais)"
+  },
+  "consequence": "AMOSTRA INSUFICIENTE (0 execucoes de cada lado); nenhum percentual de economia reivindicado; criterios 7 e 10 do §11 nao atendidos => veredito NAO PUBLICAVEL",
+  "ferramenta_comparacao": "tools/willtech-compare.py verificada por test-compare.py e test-auto.sh (fixtures sinteticas — categoria: teste deterministico, NAO benchmark real)",
+  "telemetria_historica": "AUDITORIA.md registra homologacao nativa OpenCode 2.2.6 em sessao anterior (nao comparavel com 3.0)"
+}

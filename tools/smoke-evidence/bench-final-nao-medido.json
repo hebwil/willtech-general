@@ -1,0 +1,17 @@
+{
+  "status": "NAO_MEDIDO",
+  "mission": "integracao-final",
+  "date": "2026-11-17",
+  "budget_usd": 2.0,
+  "spent_usd": 0.0,
+  "capability_check": {
+    "claude": "2.1.326 presente; headless com --max-budget-usd 0.05 responde 'Not logged in · Please run /login' (is_error=true, total_cost_usd=0). Evidência: /tmp/willtech-bench-final/probe.json",
+    "opencode": "ausente do PATH (command -v vazio)",
+    "codex": "ausente do PATH (command -v vazio)"
+  },
+  "reuse_of_existing_transcripts": "HOMOLOGACAO-MULTIPLATAFORMA.md declara LO: sessão real com modelo NÃO homologada nas três plataformas — sem telemetria de modelo reutilizável. Labs opencode 2.2.6 anteriores são de versão/tarefa distintas e não têm contraparte 3.0 (nenhum runtime autenticado) — par comparável impossível.",
+  "executions_baseline": 0,
+  "executions_3_0": 0,
+  "conclusion": "AMOSTRA INSUFICIENTE — nenhum provedor autorizado disponível; nenhuma chamada paga iniciada; nenhum percentual de economia reivindicado.",
+  "unblock": "Proprietário autentica claude (/login) ou instala opencode/codex em ambiente descartável autorizado; então executar tools/willtech-compare.py com mesma tarefa/modelo/ambiente e teto de gasto."
+}

@@ -1,0 +1,12 @@
+# Checkout com LF em todos os SOs: a reprodutibilidade byte-a-byte dos bundles
+# (test-gui/test-claude) compara bytes exatos; o autocrlf do Windows converteria
+# os fontes/bundles para CRLF e quebraria a identidade sem diferenca real de
+# conteudo. Binarios (PNG/WebP/APNG) sao detectados e preservados.
+* text=auto eol=lf
+*.png binary
+*.webp binary
+*.apng binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

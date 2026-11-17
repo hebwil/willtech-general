@@ -24,7 +24,7 @@ def read(path):
 
 class GuiInstallTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.config = os.path.join(self.tmp.name, "opencode.json")
         self.addCleanup(self.tmp.cleanup)
 

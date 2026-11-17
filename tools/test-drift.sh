@@ -52,6 +52,18 @@ expect "drift: subcomando citado sem implementação" 1 python3 "$DRIFT" "$T"
 cp "$REPO/tools/willtech-dossie.py" "$T/tools/"
 
 expect "raiz inexistente = erro de uso" 2 python3 "$DRIFT" "$TMP/nao-existe"
+
+# WillTech 3.0 PASSO 5: regra de classificação citando especialista fora do roster.
+python3 - "$T" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]) / "tools" / "willtech-dossie.py"
+s = p.read_text()
+s = s.replace('("testador",', '("testador-fantasma",', 1)
+p.write_text(s)
+PY
+expect "drift: regra cita especialista inexistente" 1 python3 "$DRIFT" "$T"
+cp "$REPO/tools/willtech-dossie.py" "$T/tools/"
+
 expect "repositório real sem drift" 0 python3 "$DRIFT" "$REPO"
 
 printf '\n%d PASS, %d FAIL\n' "$pass" "$fail"

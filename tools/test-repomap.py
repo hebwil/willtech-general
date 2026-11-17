@@ -29,7 +29,7 @@ def git(repo, *args):
 class RepoMapTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-repomap-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-repomap-", ignore_cleanup_errors=True)
         cls.repo = Path(cls.tmp.name) / "repo"
         cls.repo.mkdir()
         git(cls.repo, "init", "-q")

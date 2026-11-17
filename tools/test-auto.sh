@@ -182,6 +182,15 @@ printf 'linha-corrompida\n' >> "$D"
 OUT=$(python3 "$DOSSIE" recall "$D" --key k1 --repo "$LAB")
 has "$OUT" '^USABLE'
 check $? "linha corrompida isolada é ignorada (recuperação)"
+# N2: corrupção PARCIAL também é falha fechado no controle obrigatório.
+OUT=$(ev claude "$(J PreToolUse s7b ',"tool_name":"Bash","tool_input":{"command":"ls"}')")
+has "$OUT" 'corrompido'
+check $? "corrupção parcial: PreToolUse falha fechado (N2)"
+# Repara o dossiê: o teste acima verifica tolerância do recall, não pode
+# deixar o lab corrompido para os testes seguintes (guarda de loop inclusive).
+grep -v '^linha-corrompida$' "$D" > "$TMP/d.clean" && mv "$TMP/d.clean" "$D"
+OUT=$(ev claude "$(J PreToolUse s7b ',"tool_name":"Bash","tool_input":{"command":"ls"}')")
+[ -z "$OUT" ]; check $? "dossiê reparado: guarda volta a operar"
 
 # --- (E) drift --dossie: decisão sem evidência ------------------------------
 python3 "$DOSSIE" add "$D" --agent general --kind decision --summary "escolha X" > /dev/null

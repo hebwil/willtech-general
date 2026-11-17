@@ -9,15 +9,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGE = ROOT / "opencode/plugins/willtech/visual"
-# Baseline de orquestração pós-PR #13 (ece7429). O pin anterior (fbb2427) era
-# anterior às correções de automação mergeadas no PR #13, que legitimamente
-# evoluíram installers/willtech-auto.py/AGENTS.md — por isso o guard falhava já
-# no HEAD, independentemente do trabalho visual. A proteção abaixo cobre a
-# IDENTIDADE e a ORQUESTRAÇÃO (assets, licença, créditos, núcleo de automação,
-# agents/hooks de automação, installers). Os subdiretórios VISUAIS
-# (codex/willtech-visual, claude/plugins/willtech-visual) são alvo legítimo de
-# correção da missão multiplataforma e ficam fora deste guard de orquestração.
-BASE = "ece7429"
+# Baseline de orquestração: baseline 3.0 aprovada (475943a), que já contém as
+# correções de automação do PR #13 (ece7429) e a evolução legítima da 3.0
+# (JIT da sala, preflight do instalador, contrato AGENTS.md). O pin anterior
+# (fbb2427, 2.3) era anterior a essas mudanças e falhava já no HEAD. A
+# proteção cobre IDENTIDADE e ORQUESTRAÇÃO (assets, licença, créditos, núcleo
+# de automação, agents/hooks de automação, installers). Os subdiretórios
+# VISUAIS (codex/willtech-visual, claude/plugins/willtech-visual) são alvo
+# legítimo de correção da missão multiplataforma e ficam fora deste guard.
+BASE = "475943a"
 
 
 class GuiDistributionTests(unittest.TestCase):
@@ -53,9 +53,22 @@ class GuiDistributionTests(unittest.TestCase):
     def test_orchestration_identity_and_installers_unchanged(self):
         protected = ["docs/assets", "LICENSE", "NOTICE", "opencode/agent", "opencode/AGENTS.md", "opencode/bin",
                      "opencode/plugins/willtech/index.js", "codex/agents", "codex/hooks.json", "claude-code/settings",
-                     "tools/willtech-auto.py", "tools/willtech-install.sh", "tools/willtech-install.ps1"]
+                     "tools/willtech-auto.py", "tools/willtech-install.sh"]
         changed = subprocess.check_output(["git", "diff", "--name-only", BASE, "--", *protected], cwd=ROOT, text=True)
         self.assertEqual(changed, "")
+        # A única alteração permitida no PS1 desde BASE corrige o parser
+        # PowerShell 5.1: '$Platform:' é interpretado como variável inválida.
+        # Conferimos o ARQUIVO INTEIRO, sem abrir exceção genérica ao guard.
+        baseline_ps1 = subprocess.check_output(
+            ["git", "show", f"{BASE}:tools/willtech-install.ps1"], cwd=ROOT, text=True
+        )
+        parser_bug = "plataforma $Platform: handlers"
+        parser_fix = "plataforma ${Platform}: handlers"
+        self.assertEqual(baseline_ps1.count(parser_bug), 1)
+        self.assertEqual(
+            (ROOT / "tools/willtech-install.ps1").read_text(),
+            baseline_ps1.replace(parser_bug, parser_fix),
+        )
         before = subprocess.check_output(["git", "show", f"{BASE}:README.md"], cwd=ROOT, text=True)
         after = (ROOT / "README.md").read_text()
         self.assertEqual(re.findall(r'<[^>]+>', before), re.findall(r'<[^>]+>', after))

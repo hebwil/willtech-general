@@ -26,6 +26,10 @@ fail() { printf 'FAIL  %s\n' "$1"; fail=1; }
 sh -n "$READ" && pass "read-shell sintaxe" || fail "read-shell sintaxe"
 sh -n "$TEST" && pass "test-shell sintaxe" || fail "test-shell sintaxe"
 
+# Isolamento por sandbox-exec e exclusivo do macOS ( matriz de compatibilidade).
+# Onde existe, exercita-se de verdade; nos demais SOs o contrato estrutural
+# portavel abaixo continua valido e o job macos-latest cobre o sandbox.
+if command -v sandbox-exec >/dev/null 2>&1; then
 printf 'conteudo\n' > "$TMP/fonte.txt"
 if "$READ" "cat '$TMP/fonte.txt'" >/dev/null 2>&1; then
   pass "read-shell lê arquivo comum"
@@ -57,6 +61,9 @@ if "$TEST" "curl -sS --max-time 3 https://example.com" >/dev/null 2>&1; then
   fail "test-shell permitiu rede"
 else
   pass "test-shell bloqueia rede"
+fi
+else
+  printf 'NOTICE: sandbox-exec indisponivel neste SO; isolamento dos wrappers e macOS-only (exercitado integralmente no job macos-latest).\n'
 fi
 
 # Permission declarations consumed by the OpenCode runtime.
@@ -113,6 +120,7 @@ fi
 # --- Credential denylist: trap files in a disposable fake HOME -------------
 # HOME is canonicalized because sandbox subpath rules do not follow symlinks
 # (/tmp -> /private/tmp). Trap content is dummy text, never real credentials.
+if command -v sandbox-exec >/dev/null 2>&1; then
 FAKE=$(mktemp -d "${TMPDIR:-/tmp}/willtech-trap-home.XXXXXX")
 FAKE=$(CDPATH= cd -- "$FAKE" && pwd -P)
 mkdir -p "$FAKE/.config/gh" "$FAKE/.aws" "$FAKE/.docker" "$FAKE/.codex" \
@@ -182,6 +190,9 @@ else
   fail "read-shell bloqueou leitura legítima de código"
 fi
 rm -rf "$FAKE"
+else
+  printf 'NOTICE: denylist de credenciais via sandbox-exec e macOS-only (exercitada integralmente no job macos-latest).\n'
+fi
 
 # --- Structural permission contract + negative mutation test ---------------
 CHECK="$ROOT/tests/check-permissions.py"

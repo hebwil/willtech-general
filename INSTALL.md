@@ -316,6 +316,18 @@ sh tools/willtech-install.sh --enable   # religa
 sh tools/willtech-install.sh --uninstall  # restaura backups pré-instalação
 ```
 
+### Sala dos agentes 3.0 (opt-in, comando manual)
+
+A sala (`tools/willtech-room.py`) é **dado de projeto**, não automação: o instalador de hooks não a cria sozinho — o banco exige um repositório git inicializado e a adoção é decisão do projeto. Para adotar, rode uma vez no projeto alvo:
+
+```sh
+python3 tools/willtech-room.py init .willtech/room.db --repo .
+```
+
+Idempotente: migra `user_version` 1→2→3 sem perda de dados, faz backup verificado `.bak-<timestamp>` (API `sqlite3.backup` + `PRAGMA integrity_check` na cópia) e restaura com `restore --from BACKUP`. Requisito: Python 3 com `sqlite3` da stdlib; FTS5 é opcional (gate no CI Windows; sem ele, a consulta usa fallback LIKE portável, implementado e testado). Lock cross-processo via transação SQLite (`BEGIN IMMEDIATE` em sidecar `.lock`) — sem `fcntl`/`msvcrt`, portável macOS/Linux/Windows. `--disable` e `--uninstall` do instalador **não removem** `.willtech/room.db` (dado do usuário, preservado como dossiê/cache) — eles apenas param a automação; para descartar a sala manualmente, apague `.willtech/room.db`, `.willtech/room.db.lock` e os `.willtech/room.db.bak-*`.
+
+<!-- Decisão: o instalador não roda `room init` automaticamente — test-install.py homologa idempotência/posse/preflight do instalador (risco de regressão multiplataforma), o banco exige repo git (indisponível no momento de instalação em cópias frescas) e falha silenciosa deixaria o usuário acreditando que a sala existe. Comando manual único, idempotente e falha-alta. -->
+
 - **Claude Code**: mescla `claude-code/settings/willtech-hooks.json` no
   `.claude/settings.json` do projeto (backup prévio). O projeto precisa ser
   confiado na tela oficial do Claude Code.
