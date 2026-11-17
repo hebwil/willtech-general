@@ -193,6 +193,57 @@ class JitFunctional(unittest.TestCase):
                                    path="tools/nao-existe.txt", budget=1200)
         self.assertTrue(text is None or "ZZJIT" not in text)
 
+    def test_08_validated_context_rank_and_start(self):
+        # Regressao: evidencia validada precede candidato no JIT dirigido;
+        # SessionStart nao injeta hipotese sem aprovacao (nem na sala FTS5/LIKE).
+        base = Path(self.tmp.name) / "room-priority"
+        repo = mkrepo(self.tmp.name, "room-priority")
+        room = str(repo / ".willtech" / "room.db")
+        code, out = run("init", room, "--repo", str(repo))
+        self.assertEqual(code, 0, out)
+        for summary in ("ZZPRIOR conhecimento candidato",
+                        "ZZPRIOR conhecimento validado"):
+            code, out = run("put", room, "--repo", str(repo),
+                            "--kind", "finding", "--specialty", "explorer",
+                            "--summary", summary,
+                            "--path-ref", "tools/notas.txt")
+            self.assertEqual(code, 0, out)
+        code, out = run("export", room, "--repo", str(repo))
+        self.assertEqual(code, 0, out)
+        rid = next(rec["id"] for rec in
+                   (json.loads(line) for line in out.splitlines()
+                    if line.strip().startswith("{"))
+                   if rec["summary"] == "ZZPRIOR conhecimento validado")
+        code, out = run("validate", room, "--repo", str(repo),
+                        "--id", str(rid), "--by", "reviewer")
+        self.assertEqual(code, 0, out)
+        for fallback in (False, True):
+            old = os.environ.get("WILLTECH_ROOM_NO_FTS5")
+            try:
+                if fallback:
+                    os.environ["WILLTECH_ROOM_NO_FTS5"] = "1"
+                else:
+                    os.environ.pop("WILLTECH_ROOM_NO_FTS5", None)
+                result = self.mod.query_text(
+                    room, repo=str(repo), objective="ZZPRIOR",
+                    budget=1200)
+                self.assertIsNotNone(result)
+                self.assertIn("conhecimento validado", result)
+                self.assertIn("conhecimento candidato", result)
+                self.assertLess(result.index("conhecimento validado"),
+                                result.index("conhecimento candidato"))
+                start = self.mod.query_text(
+                    room, repo=str(repo), budget=1200,
+                    validated_only=True)
+                self.assertIsNotNone(start)
+                self.assertIn("conhecimento validado", start)
+                self.assertNotIn("conhecimento candidato", start)
+            finally:
+                if old is None:
+                    os.environ.pop("WILLTECH_ROOM_NO_FTS5", None)
+                else:
+                    os.environ["WILLTECH_ROOM_NO_FTS5"] = old
+
     def test_09_hook_session_start_injects_room(self):
         # integração real do núcleo do hook (evento nativo claude)
         r = self.hook("claude", "SessionStart")
