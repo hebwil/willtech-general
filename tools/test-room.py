@@ -69,7 +69,7 @@ class RoomCoreTests(unittest.TestCase):
     def test_01_init_idempotent_schema(self):
         code, out = run("init", self.room, "--repo", str(self.repo))
         self.assertEqual(code, 0, out)
-        self.assertIn("user_version=1", out)
+        self.assertIn("user_version=2", out)
         con = sqlite3.connect(self.room)
         try:
             tables = {r[0] for r in con.execute(
@@ -77,7 +77,7 @@ class RoomCoreTests(unittest.TestCase):
             self.assertIn("records", tables)
             self.assertIn("records_fts", tables)
             self.assertIn("schema_migrations", tables)
-            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 1)
+            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 2)
             idx = {r[0] for r in con.execute(
                 "SELECT name FROM sqlite_master WHERE type='index'")}
             for i in ("idx_records_project", "idx_records_kind",
@@ -94,7 +94,7 @@ class RoomCoreTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         con = sqlite3.connect(self.room)
         try:
-            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 1)
+            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 2)
         finally:
             con.close()
 
@@ -188,6 +188,47 @@ class RoomCoreTests(unittest.TestCase):
     def test_08_lock_sidecar_exists(self):
         run("init", self.room, "--repo", str(self.repo))
         self.assertTrue(os.path.isfile(self.room + ".lock"))
+
+    def test_09_migrate_v1_to_v2_preserves_data(self):
+        # Simula banco v1: derruba user_version e tabelas v2, reinsere skill
+        # sem skill_meta; init deve migrar sem perda (não destrutivo).
+        run("init", self.room, "--repo", str(self.repo))
+        con = sqlite3.connect(self.room)
+        try:
+            con.executescript(
+                "DROP TABLE IF EXISTS handoffs; "
+                "DROP TABLE IF EXISTS skill_meta; "
+                "PRAGMA user_version=1;")
+            con.execute(
+                "INSERT INTO records (kind, project_id, specialty, summary, "
+                "path_ref, source_hash, evidence_hash, status, created_at, "
+                "updated_at, attrs) VALUES ('skill', "
+                "(SELECT DISTINCT project_id FROM records), 'tester', "
+                "'skill legada da v1', NULL, NULL, NULL, 'candidate', "
+                "'2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', '{}')")
+            con.commit()
+        finally:
+            con.close()
+        code, out = run("init", self.room, "--repo", str(self.repo))
+        self.assertEqual(code, 0, out)
+        self.assertIn("user_version=2", out)
+        con = sqlite3.connect(self.room)
+        try:
+            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(con.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+            n = con.execute(
+                "SELECT COUNT(*) FROM skill_meta WHERE "
+                "instruction='skill legada da v1'").fetchone()[0]
+            self.assertEqual(n, 1, "skill da v1 migra para skill_meta")
+            lc = con.execute(
+                "SELECT lifecycle FROM skill_meta WHERE "
+                "instruction='skill legada da v1'").fetchone()[0]
+            self.assertEqual(lc, "candidate", "skill v1 nunca é promovida de grupo")
+            old = con.execute(
+                "SELECT COUNT(*) FROM records WHERE kind='finding'").fetchone()[0]
+            self.assertGreaterEqual(old, 1, "dados v1 preservados")
+        finally:
+            con.close()
 
     def test_09_get_refuses_non_git_repo(self):
         run("init", self.room, "--repo", str(self.repo))

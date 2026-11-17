@@ -132,7 +132,11 @@ class HandoffTests(HandoffSkillBase):
         self.assertIn("revisar pack sem vazamento", pack)   # objetivo entra
         self.assertIn("tools/notas.txt", pack)              # evidência entra
         self.assertNotIn("CONCLUSAO-SECRETA-DO-EXECUTOR", pack)  # result NUNCA
-        self.assertNotIn("conclus", pack.lower().split("QUARENTENA")[1].splitlines()[0])
+        body = pack.split("QUARENTENA", 1)[1].lower()
+        self.assertNotIn("integracao aprovada por mim", body)
+        result_lines = [l for l in body.splitlines() if l.startswith("result:")]
+        self.assertTrue(result_lines, "pack deve declarar o status do result")
+        self.assertIn("omitido", result_lines[0])
 
     def test_13_pack_requires_existing_handoff(self):
         code, out = run("handoff-pack", self.room, "--repo", str(self.repo),
