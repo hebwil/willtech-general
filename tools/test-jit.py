@@ -238,6 +238,19 @@ class JitFunctional(unittest.TestCase):
                 self.assertIsNotNone(start)
                 self.assertIn("conhecimento validado", start)
                 self.assertNotIn("conhecimento candidato", start)
+                # Verifica o hook real: a sessao nao recebe o candidato.
+                (repo / ".willtech" / "enabled").touch()
+                event = {"hook_event_name": "SessionStart",
+                         "session_id": "priority-s1", "cwd": str(repo)}
+                response = subprocess.run(
+                    [sys.executable, str(repo / "tools" / "willtech-auto.py"),
+                     "claude"],
+                    input=json.dumps(event), text=True,
+                    capture_output=True, timeout=30)
+                self.assertEqual(response.returncode, 0, response.stderr)
+                ctx = json.loads(response.stdout)["hookSpecificOutput"]["additionalContext"]
+                self.assertIn("conhecimento validado", ctx)
+                self.assertNotIn("conhecimento candidato", ctx)
             finally:
                 if old is None:
                     os.environ.pop("WILLTECH_ROOM_NO_FTS5", None)
