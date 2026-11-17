@@ -110,23 +110,42 @@ Ciclo de vida, handoff sem vazamento e micro-skills com gate humano (`skill-prom
 
 ## Arquitetura e hierarquia
 
-```text
-               COMANDANTE NATIVO
-           Claude Code | Codex | OpenCode
-                       |
-                       v
-                WILLTECH-GENERAL
-      Coordenação, memória, guardas e evidências
-                       |
-        +--------------+--------------+
-        |              |              |
-        v              v              v
-     ANÁLISE       IMPLEMENTAÇÃO    QUALIDADE
-        |              |              |
-   Explorador        Executor       Testador
-   Pesquisador                       Revisor
-   Visual
-```
+**Mapa tecnológico completo:** [Arquitetura técnica WillTech-General 3.0 — 11 diagramas Mermaid](docs/ARQUITETURA-3.0.md) (topologia, controle/delegação, Sala SQLite v3, consultas JIT, handoffs, segurança, automação, RepoMap, supervisor, interfaces e rastreabilidade).
+
+~~~mermaid
+flowchart TB
+    Native["COMANDANTE NATIVO<br/>OpenCode · Codex · Claude Code"]
+    General["WILLTECH-GENERAL<br/>coordenador — agente 1/7"]
+    subgraph Specialists["SEIS ESPECIALISTAS — agentes 2–7"]
+        Explorer["Explorador"]
+        Researcher["Pesquisador"]
+        Visual["Visual"]
+        Executor["Executor"]
+        Tester["Testador"]
+        Reviewer["Revisor"]
+    end
+    Room[("SALA DOS AGENTES<br/>SQLite v3 · JIT · handoffs · evidências")]
+    Native -->|"autoriza / delega"| General
+    General -->|"seleciona"| Explorer
+    General -->|"seleciona"| Researcher
+    General -->|"seleciona"| Visual
+    General -->|"autoriza"| Executor
+    General -->|"verifica"| Tester
+    General -->|"revisão independente"| Reviewer
+    General -.->|"consulta / registra"| Room
+    Explorer -.-> Room
+    Researcher -.-> Room
+    Visual -.-> Room
+    Executor -.-> Room
+    Tester -.-> Room
+    Reviewer -.-> Room
+    classDef coordinator fill:#d9e8fd,stroke:#2c5e9e,color:#182b42;
+    classDef memory fill:#e0f3ea,stroke:#28765a,color:#163b2c;
+    class General coordinator;
+    class Room memory;
+~~~
+
+**Leitura do mapa:** setas contínuas representam autoridade/delegação; tracejadas representam consulta/registro de conhecimento. O **comandante nativo não é um agente WILLTECH**. O **General é o primeiro dos sete**; a **Sala é um serviço de memória compartilhada, não um oitavo agente** e não coordena tarefas. A equipe é acionada seletivamente, conforme a tarefa.
 
 **Nível 1 — Comandante.** O agente principal da plataforma permanece responsável pelas decisões, autorizações, escopo e entrega final.
 
