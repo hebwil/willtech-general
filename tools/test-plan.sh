@@ -90,6 +90,17 @@ python3 "$TOOL" guard-attempt "$D" --key k1 >/dev/null
 expect "catalyst com impasse demonstrado" 0 python3 "$TOOL" catalyst "$D" --key k1
 expect "segunda exploração da mesma chave bloqueada" 3 python3 "$TOOL" catalyst "$D" --key k1
 
+# 6. WillTech 3.0 PASSO 5: especialista sugerido (advisory, nunca bloqueia).
+suggest() { python3 "$TOOL" plan "$D" --task "$1" 2>/dev/null | grep -o 'ESPECIALISTA SUGERIDO.*: [a-z]*' | sed 's/.*: //'; }
+[ "$(suggest 'rodar testes e cobertura do módulo')" = "testador" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: sugestao tester"; }
+[ "$(suggest 'ajustar css e acessibilidade do layout')" = "visual" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: sugestao visual"; }
+[ "$(suggest 'verificar documentação de versão upstream')" = "pesquisador" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: sugestao researcher"; }
+[ "$(suggest 'revisar auditoria de qualidade')" = "revisor" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: sugestao reviewer"; }
+[ "$(suggest 'mapear estrutura e símbolos do módulo')" = "explorador" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: sugestao explorer"; }
+[ "$(suggest 'implementar refatoração do módulo')" = "executor" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: sugestao executor"; }
+[ "$(suggest 'xyzzy plugh')" = "general" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: fallback general"; }
+expect "plan continua exit 0 com sugestão (advisory, não gate)" 0 python3 "$TOOL" plan "$D" --task "corrigir bug de teste"
+
 printf '\n%d PASS, %d FAIL\n' "$pass" "$fail"
 [ "$fail" -eq 0 ] || exit 1
 

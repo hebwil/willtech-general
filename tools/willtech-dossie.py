@@ -619,12 +619,54 @@ def classify_task(task, paths):
     return "simple", []
 
 
+# WillTech 3.0 (Contrato QODER, PASSO 5): regras sintáticas tarefa->especialista.
+# DADOS versionados, não código: editar aqui e rodar test-plan.sh/test-drift.sh.
+# A saída é ADVISORY (sugestão sobrescrevível) — nunca gate bloqueante.
+# Especialistas devem existir no roster 7 (drift check_roster valida).
+SPECIALIST_HINTS = [
+    ("testador", ("test", "teste", "testes", "spec", "cobertura", "fixture",
+                  "coverage", "regress", "assert")),
+    ("visual", ("ui", "ux", "css", "layout", "acessib", "acessibil", "design",
+                "responsiv", "contraste", "astro", "component")),
+    ("pesquisador", ("doc", "docs", "documenta", "licen", "licenç", "versão",
+                     "versao", "release note", "api oficial", "rfc", "upstream")),
+    ("revisor", ("revis", "review", "auditoria", "audit", "regressão",
+                 "regressao", "crítica", "critica", "qualidade")),
+    ("explorador", ("estrutura", "símbolo", "simbolo", "mapa", "explor",
+                    "dependênc", "dependenc", "onde está", "onde esta",
+                    "ponto de entrada")),
+    ("executor", ("refator", "implement", "migr", "corrig", "fix", "criar",
+                  "adicionar", "remover", "alterar")),
+]
+
+
+def suggest_specialist(task, paths):
+    """Sugere especialista por regra sintática (advisory). Sem match -> general.
+
+    Falsos negativos são aceitáveis (cai em 'general', comportamento atual);
+    falsos positivos são aceitáveis porque o campo é sugestão sobrescrevível.
+    """
+    text = (task or "").lower()
+    scores = {}
+    for spec, words in SPECIALIST_HINTS:
+        hits = sum(1 for w in words if w in text)
+        if hits:
+            scores[spec] = hits
+    if len(paths) >= 2 and "executor" not in scores:
+        scores["executor"] = 0.5      # sinal fraco: multi-arquivo tende a executor
+    if not scores:
+        return "general"
+    return max(sorted(scores.items()), key=lambda kv: kv[1])[0]
+
+
 def cmd_plan(a):
     paths = scope_list(a.paths)
     level, secs = classify_task(a.task, paths)
+    spec = suggest_specialist(a.task, paths)
     if level == "simple":
         print("DIRECT: tarefa simples; execução direta, sem planejamento adicional "
               "nem revisão extra.")
+        print(f"ESPECIALISTA SUGERIDO (advisory): {spec}")
         return 0
     safe_paths = [p for p in paths if not is_credential_path(p)]
     append(a.dossie, {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -635,6 +677,7 @@ def cmd_plan(a):
         signals += f"; segurança: {len(secs)} referência(s) sensível(is)"
     lines = [
         f"PLAN {level} ({signals})",
+        f"ESPECIALISTA SUGERIDO (advisory, sobrescrevível): {spec}",
         "ZOOM-OUT: causa-raiz ou sintoma? recursos existentes (recall/brief/repomap)? "
         "evitar duplicação; alternativas só se necessário; compatibilidade/custo/riscos.",
         "READINESS: arquivos relevantes, contratos de API, restrições e evidências "

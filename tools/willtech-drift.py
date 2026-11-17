@@ -102,6 +102,30 @@ def check_roster(root, problems):
             problems.append(f"{platform} com agentes a mais: {', '.join(sorted(extra))}")
 
 
+def check_specialist_rules(root, problems):
+    """WillTech 3.0 (PASSO 5): todo especialista citado nas regras de
+    classificação sintática do dossiê deve existir no roster real."""
+    tool = os.path.join(root, "tools", "willtech-dossie.py")
+    if not os.path.isfile(tool):
+        problems.append("tools/willtech-dossie.py ausente (checagem de regras)")
+        return
+    spec = importlib.util.spec_from_file_location("willtech_dossie_rules", tool)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    roster = {os.path.splitext(os.path.basename(p))[0]
+              for p in glob.glob(os.path.join(root, "opencode/agent/*.md"))}
+    roster = {r[len("willtech-"):] if r.startswith("willtech-") else r
+              for r in roster}
+    # 'general' e 'comandante' são papéis da hierarquia, não arquivos do roster.
+    roster |= {"general", "comandante"}
+    if not roster:
+        problems.append("roster vazio para validar regras de especialista")
+        return
+    cited = {s for s, _ in getattr(mod, "SPECIALIST_HINTS", [])}
+    for bad in sorted(cited - roster):
+        problems.append(f"regra de classificação cita especialista inexistente: {bad}")
+
+
 def check_dossie(root, dossie, problems):
     if not os.path.isfile(dossie):
         problems.append(f"dossiê ausente: {dossie}")
@@ -141,6 +165,7 @@ def main():
     check_readme(root, problems)
     check_subcommands(root, problems)
     check_roster(root, problems)
+    check_specialist_rules(root, problems)
     if dossie:
         check_dossie(root, dossie, problems)
     for p in problems:
