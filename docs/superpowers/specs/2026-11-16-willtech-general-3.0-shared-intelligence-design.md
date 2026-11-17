@@ -49,7 +49,7 @@ Evoluir o WillTech-General para 7 agentes com UMA inteligência compartilhada lo
 9. **Integração:** hooks existentes passam a injetar brief da sala; instaladores ganham passo idempotente (backups preservados).
 10. **Benchmark:** `willtech-compare.py` estendido (N execuções, agregação, tokens/turnos/loops/releituras) — só números medidos.
 
-## Ordem (alinhada ao QODER + ajuste do revisor)
+## Ordem (alinhada ao QODER + ajuste do revisor) · **Status: 0.5–6 implementados** (delegação advisory via `SPECIALIST_HINTS` no dossiê; compare com N execuções e AMOSTRA INSUFICIENTE) — Fase 9: docs + instalação reversível.
 
 0. base `main` ✅ · 0.5 **gate CI Windows FTS5** (bloqueia congelar schema) · 1. núcleo sala (RED primeiro) · 2. consulta JIT · 3. handoff (paralelizável com 4/5) · 4. micro-skills · 5. delegação determinística · 6. integração + benchmark · 7-10. testes, docs, regressão, revisão independente do delta.
 
