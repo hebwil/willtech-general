@@ -119,6 +119,20 @@ def make_icon():
     dest.write_bytes(png_write(side, side, bytes(out)))
 
 
+def build_core():
+    # Copia ESM do nucleo canonico: portavel (sem sips), verificavel em qualquer SO.
+    hooks = MOD / "hooks"
+    hooks.mkdir(parents=True, exist_ok=True)
+    core = CANON.read_text(encoding="utf-8")
+    marker = "module.exports = { AGENTS, EVENTS, projectAgents };"
+    assert core.rstrip().endswith(marker), "canonical core export changed"
+    body = core.rstrip()[: -len(marker)]
+    esm = ("// Copia verificavel do nucleo canonico (opencode/.../activity.cjs); sem drift.\n"
+           + body + "export { AGENTS, EVENTS, projectAgents };\n")
+    (hooks / "activity.js").write_text(esm, encoding="utf-8")
+    return esm
+
+
 def main():
     hooks = MOD / "hooks"
     hooks.mkdir(parents=True, exist_ok=True)
@@ -138,13 +152,7 @@ def main():
               + f"export const PNG = {json.dumps(png_b64, separators=(',', ':'))};\n"
               + f"export const FRAMES = {json.dumps(frames_b64, separators=(',', ':'))};\n")
     (hooks / "assets.js").write_text(assets, encoding="utf-8")
-    core = CANON.read_text(encoding="utf-8")
-    marker = "module.exports = { AGENTS, EVENTS, projectAgents };"
-    assert core.rstrip().endswith(marker), "canonical core export changed"
-    body = core.rstrip()[: -len(marker)]
-    esm = ("// Copia verificavel do nucleo canonico (opencode/.../activity.cjs); sem drift.\n"
-           + body + "export { AGENTS, EVENTS, projectAgents };\n")
-    (hooks / "activity.js").write_text(esm, encoding="utf-8")
+    esm = build_core()
     make_icon()
     for key, value in png_b64.items():
         svg_len = len(value) + 400

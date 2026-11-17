@@ -4,6 +4,7 @@ import base64
 import importlib.util
 import json
 import re
+import sys
 import unittest
 from pathlib import Path
 
@@ -22,6 +23,19 @@ class ClaudeModTests(unittest.TestCase):
         self.assertIn(body, esm)
         self.assertTrue(esm.rstrip().endswith("export { AGENTS, EVENTS, projectAgents };"))
 
+    def test_reproducible_core(self):
+        # Reprodutibilidade do nucleo ESM (copia do activity.cjs canonico):
+        # portavel, sem sips — verificada em macOS, Linux e Windows.
+        spec = importlib.util.spec_from_file_location("build_claude", ROOT / "tools/build-claude.py")
+        build = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(build)
+        before = (MOD / "hooks" / "activity.js").read_bytes()
+        build.build_core()
+        self.assertEqual(before, (MOD / "hooks" / "activity.js").read_bytes())
+
+    @unittest.skipUnless(sys.platform == "darwin",
+                         "rebuild de imagens usa sips (ferramenta macOS); "
+                         "reprodutibilidade integral validada no job macos-latest")
     def test_reproducible_build(self):
         spec = importlib.util.spec_from_file_location("build_claude", ROOT / "tools/build-claude.py")
         build = importlib.util.module_from_spec(spec)
