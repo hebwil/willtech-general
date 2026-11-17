@@ -1,0 +1,95 @@
+{
+  "suite": "smoke inteligencia 3.0",
+  "total": 17,
+  "pass": 17,
+  "fail": 0,
+  "simulation": false,
+  "modelo": "nenhum (subprocess real)",
+  "results": [
+    {
+      "criterio": "1 comandante recebe tarefa (hooks reais)",
+      "status": "PASS",
+      "detalhe": "SessionStart rc=0 UserPromptSubmit rc=0"
+    },
+    {
+      "criterio": "2 general planeja quando necessario",
+      "status": "PASS",
+      "detalhe": "tarefa complexa -> PLAN compacto"
+    },
+    {
+      "criterio": "14 nenhum especialista desnecessario",
+      "status": "PASS",
+      "detalhe": "tarefa simples -> DIRECT (sem etapas extras)"
+    },
+    {
+      "criterio": "3 especialista registra descoberta",
+      "status": "PASS",
+      "detalhe": "registered id=1"
+    },
+    {
+      "criterio": "4 sala persiste a descoberta",
+      "status": "PASS",
+      "detalhe": "get id=1 em banco SQLite real"
+    },
+    {
+      "criterio": "5 segundo especialista recupera contexto",
+      "status": "PASS",
+      "detalhe": "query JIT devolve a descoberta em quarentena"
+    },
+    {
+      "criterio": "6 conhecimento reutilizado sem reinvestigar",
+      "status": "PASS",
+      "detalhe": "mesma descoberta injetada para o tester"
+    },
+    {
+      "criterio": "7 handoff registra resultado e evidencia",
+      "status": "PASS",
+      "detalhe": "handoff id=2 validated"
+    },
+    {
+      "criterio": "8 resultado disponivel em processo posterior",
+      "status": "PASS",
+      "detalhe": "handoff-fetch em processo novo"
+    },
+    {
+      "criterio": "8 general consolida sem duplicar investigacao",
+      "status": "PASS",
+      "detalhe": "descoberta aparece uma unica vez (sem duplicata)"
+    },
+    {
+      "criterio": "9 pending nao e tratado como validado",
+      "status": "PASS",
+      "detalhe": "registro candidate rotulado/excluido do canal validado"
+    },
+    {
+      "criterio": "10 segredo sintetico recusado sem eco",
+      "status": "PASS",
+      "detalhe": "exit=2, valor nao ecoado"
+    },
+    {
+      "criterio": "10 segredo ausente do export",
+      "status": "PASS",
+      "detalhe": "export limpo"
+    },
+    {
+      "criterio": "11 isolamento por projeto",
+      "status": "PASS",
+      "detalhe": "outro projeto recusado exit=2"
+    },
+    {
+      "criterio": "12 reinicio preserva conhecimento valido",
+      "status": "PASS",
+      "detalhe": "registro validated sobrevive em processo novo"
+    },
+    {
+      "criterio": "13 mudanca de codigo invalida obsoleto",
+      "status": "PASS",
+      "detalhe": "source_hash divergente -> stale, sai da injecao"
+    },
+    {
+      "criterio": "10 hierarquia dos sete agentes preservada",
+      "status": "PASS",
+      "detalhe": "7 agentes: ['willtech-executor', 'willtech-explorador', 'willtech-general', 'willtech-pesquisador', 'willtech-revisor', 'willtech-testador', 'willtech-visual']"
+    }
+  ]
+}
