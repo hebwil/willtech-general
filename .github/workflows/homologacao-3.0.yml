@@ -150,11 +150,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Instalar OpenCode oficial (runner isolado)
+      - name: Instalar OpenCode 2 oficial (runner isolado)
         run: |
           set -e
-          curl -fsSL https://opencode.ai/install | bash
-          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+          # O instalador opencode.ai/install fornece APENAS OpenCode 1 (contrato
+          # de plugin default.server(), chave "plugin" no config). O plugin
+          # WillTech e OpenCode 2 ({id, setup(ctx)}, chave "plugins", descoberta
+          # automatica de .opencode/plugins/ incl. subdiretorios — confirmado no
+          # fonte oficial v2.3.0: packages/plugin/src/promise/plugin.ts,
+          # packages/core/src/plugin/source-directory.ts, schema/src/config.ts).
+          # Por isso o host oficial de homologacao e o binario OpenCode 2 da
+          # release oficial anomalyco/opencode, nao o instalador v1.
+          VER=2.3.0
+          mkdir -p "$RUNNER_TEMP/oc2"
+          curl -fsSL -o "$RUNNER_TEMP/oc2/opencode.tar.gz" \
+            "https://github.com/anomalyco/opencode/releases/download/v$VER/opencode-linux-x64.tar.gz"
+          tar xzf "$RUNNER_TEMP/oc2/opencode.tar.gz" -C "$RUNNER_TEMP/oc2"
+          BIN=$(find "$RUNNER_TEMP/oc2" -type f -name opencode | head -1)
+          chmod +x "$BIN"
+          echo "$(dirname "$BIN")" >> "$GITHUB_PATH"
+          "$BIN" --version
       - name: Projeto lab + instalacao WillTech + 7 agentes
         run: |
           set -e
@@ -170,21 +185,11 @@ jobs:
           mkdir -p "$LAB/.opencode/agent"
           cp "$LAB/opencode/agent/"*.md "$LAB/.opencode/agent/"
           python3 tools/willtech-gui.py --install --yes --config "$LAB/opencode.json"
-          # Registra o plugin de automacao na lista `plugins` do config do lab
-          # (metodo de carga documentado). O host oficial serve carrega por esta
-          # lista; a descoberta automatica de .opencode/plugins/ varia por versao.
-          python3 - "$LAB/opencode.json" <<'PY'
-          import json, sys
-          p = sys.argv[1]
-          d = json.load(open(p, encoding="utf-8"))
-          plugs = d.setdefault("plugins", [])
-          entry = "./.opencode/plugins/willtech"
-          if entry not in plugs:
-              plugs.append(entry)
-          with open(p, "w", encoding="utf-8") as fh:
-              json.dump(d, fh, ensure_ascii=False, indent=2)
-          print("opencode.json plugins:", json.dumps(plugs, ensure_ascii=False))
-          PY
+          # OpenCode 2 descobre .opencode/plugins/willtech/ automaticamente
+          # (source-directory.ts varre {plugin,plugins}/ incl. subdiretorios).
+          # NAO registrar o plugin tambem na lista `plugins` do config: a mesma
+          # origem dupla produziria "Duplicate plugin ID" no host. O contrato
+          # anunciado pelo instalador e exatamente a descoberta automatica.
           git -C "$LAB" add -A
           git -C "$LAB" commit -qm base
           echo "OC_LAB=$LAB" >> "$GITHUB_ENV"
