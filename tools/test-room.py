@@ -548,6 +548,25 @@ class ReviewFindingTests(unittest.TestCase):
                         "--summary", "token = contagem de eventos do turno")
         self.assertEqual(code, 0, out)
 
+    def test_im1_secret_bypass_by_second_assignment(self):
+        # Achado da 4a rodada: p.search via só a primeira ocorrência.
+        for value in ("ENV=production PASSWORD=abc123def456",
+                      "MODO=production PASSWORD=abc123def456",
+                      "VERSAO=abcdefgh API_KEY=abc123def456"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+            self.assertNotIn("abc123def456", out)
+
+    def test_im1_lowercase_credential_names_refused(self):
+        for value in ("password=hunter2xyz", "db_password=hunter2xyz",
+                      "api_key = abc123def"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+
     def test_im1_secret_with_spaces_still_refused(self):
         for value in ("API_KEY = abc123def456", "API_KEY=\nabc123def456"):
             code, out = run("put", self.room, "--repo", str(self.repo),

@@ -113,7 +113,8 @@ def main():
         return 2
     repeat, labels, files, explicit = parse_args(argv)
     if files is None:
-        print("uso inválido: --repeat exige inteiro >= 1")
+        # parse_args já explicou o motivo específico (--repeat ou partição);
+        # não sobrescreve com mensagem genérica errada.
         return 2
     # 1×1 clássico: dois caminhos posicionais.
     if len(files) == 2 and repeat is None:

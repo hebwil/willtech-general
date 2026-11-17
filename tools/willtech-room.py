@@ -116,7 +116,7 @@ SECRET_PATTERNS = (
     # Nome de variável em MAIÚSCULAS com valor atribuído (API_KEY=..., GH_TOKEN = ...).
     # A checagem de "nome parece credencial" é feita em código (secret_in_text),
     # para não recusar prosa legítima do projeto ("token = contagem de eventos").
-    re.compile(r"\b([A-Z][A-Z0-9_]{2,})\s*=\s*[^\s]{6,}"),
+    re.compile(r"\b([A-Za-z][A-Za-z0-9_]{2,})\s*=\s*[^\s]{6,}"),
     re.compile(r"\b(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]+"),
     re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._\-]+"),
     re.compile(r"(?i)(--password[= ])\S+"),
@@ -275,23 +275,50 @@ def backup_room(path):
     return bak
 
 
-SECRET_NAME_HINTS = ("TOKEN", "SECRET", "PASSWORD", "PASSWD", "APIKEY",
-                     "API_KEY", "PRIVATE_KEY", "PRIVATEKEY")
+# Nomes que caracterizam credencial. A comparação é feita por PALAVRA do nome
+# (API_KEY -> [API, KEY] -> APIKEY): assim "input_tokens" (métrica do projeto)
+# não é confundido com TOKEN, e "db_password"/"api_key" continuam detectados.
+SECRET_NAME_HINTS = {"TOKEN", "SECRET", "PASSWORD", "PASSWD", "APIKEY",
+                     "PRIVATEKEY", "PRIVATEKEYFILE", "CREDENTIAL", "CREDENTIALS"}
+
+
+def _name_words(name):
+    parts = re.split(r"[^A-Za-z0-9]+", name or "")
+    # camelCase: dbPassword -> db, Password
+    out = []
+    for part in parts:
+        out.extend(re.findall(r"[A-Z]+(?![a-z])|[A-Z][a-z0-9]*|[a-z0-9]+", part))
+    return [w for w in out if w]
+
+
+def _looks_like_credential_name(name):
+    words = _name_words(name)
+    if not words:
+        return False
+    compact = "".join(words).upper()
+    if compact in SECRET_NAME_HINTS:
+        # Palavra isolada em minúsculas: "password"/"secret" só contam com valor
+        # atribuído (aqui já há), mas "token" é métrica comum do projeto — então
+        # TOKEN isolado exige MAIÚSCULAS. Nomes compostos (db_password) contam
+        # em qualquer caixa.
+        if name.isupper() or len(words) > 1:
+            return True
+        return compact not in ("TOKEN", "APIKEY")
+    return any(w.upper() in SECRET_NAME_HINTS for w in words)
 
 
 def secret_in_text(text):
     t = text or ""
     for i, p in enumerate(SECRET_PATTERNS):
-        m = p.search(t)
-        if not m:
-            continue
         if i != 0:
-            return True              # prefixos/formas conhecidas de credencial
-        # Padrão genérico "NOME = valor": só conta se o NOME parece credencial,
-        # para não recusar prosa do projeto ("token = contagem de eventos").
-        name = (m.group(1) or "").upper()
-        if any(h in name for h in SECRET_NAME_HINTS):
-            return True
+            if p.search(t):
+                return True          # prefixos/formas conhecidas de credencial
+            continue
+        # Padrão genérico "NOME = valor": inspeciona TODAS as ocorrências (uma
+        # linha pode ter `ENV=production PASSWORD=...`).
+        for m in p.finditer(t):
+            if _looks_like_credential_name(m.group(1) or ""):
+                return True
     return False
 
 
