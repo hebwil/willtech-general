@@ -9,7 +9,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGE = ROOT / "opencode/plugins/willtech/visual"
-BASE = "fbb2427"
+# Pin repinado na baseline 3.0 aprovada (475943a): o pin anterior (fbb2427,
+# 2.3) foi anterior à evolução legítima da orquestração nos commits 3.0
+# aprovados (JIT da sala, preflight do instalador, contrato AGENTS.md).
+# O invariante segue o mesmo: distribuição GUI não altera orquestração.
+BASE = "475943a"
 
 
 class GuiDistributionTests(unittest.TestCase):
