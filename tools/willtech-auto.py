@@ -139,7 +139,7 @@ def brief_context(dossie, repo, base):
                              max_chars=BUDGET_CHARS)
 
 
-def room_brief(base, repo, objective=""):
+def room_brief(base, repo, objective="", validated_only=False):
     # Fail-open: sem módulo da sala, sem room.db ou erro → nenhum contexto.
     if ROOM is None:
         return None
@@ -148,7 +148,7 @@ def room_brief(base, repo, objective=""):
         return None
     try:
         return ROOM.query_text(room_db, repo=repo, budget=BUDGET_CHARS,
-                               objective=objective)
+                               objective=objective, validated_only=validated_only)
     except Exception:
         return None
 
@@ -161,7 +161,7 @@ def ev_start(ev, base, dossie, repo, st):
     parts = []
     if DOSSIE.read_entries(dossie):
         parts.append(brief_context(dossie, repo, base))
-    rb = room_brief(base, repo)
+    rb = room_brief(base, repo, validated_only=True)
     if rb:
         parts.append(rb)
     sup = os.path.join(base, "delegations.json")
