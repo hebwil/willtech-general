@@ -600,6 +600,23 @@ class ReviewFindingTests(unittest.TestCase):
                             "--summary", value)
             self.assertEqual(code, 2, (value, out))
 
+    def test_query_with_only_validated_skill_reports_no_empty_line(self):
+        # Smoke da entrega: com apenas skill validated, a saida nao pode
+        # declarar "nenhum resultado" depois de listar o resultado.
+        run("skill-add", self.room, "--repo", str(self.repo),
+            "--specialty", "testador", "--instruction", "conferir integridade",
+            "--evidence-hash", "abc123def456")
+        code, out = run("skill-list", self.room, "--repo", str(self.repo))
+        self.assertEqual(code, 0, out)
+        sid = out.split("[")[1].split("]")[0]
+        run("skill-promote", self.room, "--repo", str(self.repo),
+            "--id", sid, "--i-approve-human")
+        code, out = run("query", self.room, "--repo", str(self.repo),
+                        "--objective", "conferir integridade")
+        self.assertEqual(code, 0, out)
+        self.assertIn("skill/tester validated", out)
+        self.assertNotIn("nenhum resultado", out)
+
     def test_im1_flag_prefixed_credential_refused(self):
         # Regressao da 7a rodada: lookbehind barrava '-'/'.', entao o registro
         # de um incidente ("rodou --API_KEY=...") passava.

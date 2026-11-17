@@ -857,7 +857,7 @@ def build_query(path, project, objective="", specialty=None, kind=None,
             f"[S{rid}] {kind_}/{spc} validated {neutralize(pr) or '-'} "
             f"source_hash={neutralize((src or '-')[:12])} "
             f"evidence={neutralize((ev or '-')[:12])} | {neutralize(summary)}")
-    if not rows:
+    if not rows and not skill_rows:
         lines.append("nenhum resultado")
     text = "\n".join(lines)
     cap = max(0, budget - 1)
