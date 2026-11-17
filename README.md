@@ -114,8 +114,8 @@ Ciclo de vida, handoff sem vazamento e micro-skills com gate humano (`skill-prom
 
 ~~~mermaid
 flowchart TB
-    Native["COMANDANTE NATIVO<br/>OpenCode · Codex · Claude Code"]
-    General["WILLTECH-GENERAL<br/>coordenador — agente 1/7"]
+    Native["COMANDANTE NATIVO\nOpenCode · Codex · Claude Code"]
+    General["WILLTECH-GENERAL\ncoordenador — agente 1/7"]
     subgraph Specialists["SEIS ESPECIALISTAS — agentes 2–7"]
         Explorer["Explorador"]
         Researcher["Pesquisador"]
@@ -124,7 +124,7 @@ flowchart TB
         Tester["Testador"]
         Reviewer["Revisor"]
     end
-    Room[("SALA DOS AGENTES<br/>SQLite v3 · JIT · handoffs · evidências")]
+    Room[("SALA DOS AGENTES\nSQLite v3 · JIT · handoffs · evidências")]
     Native -->|"autoriza / delega"| General
     General -->|"seleciona"| Explorer
     General -->|"seleciona"| Researcher
