@@ -567,6 +567,53 @@ class ReviewFindingTests(unittest.TestCase):
                             "--summary", value)
             self.assertEqual(code, 2, (value, out))
 
+    def test_im1_pointer_to_credential_refused(self):
+        # I1 (6a rodada): sufixo ponteiro (*_FILE/_PATH/_NAME/_HINT) para
+        # credencial e fail-closed — antes ele desligava o detector.
+        for value in ("SECRET_FILE=/run/secrets/db", "PASSWORD_FILE=.pgpass",
+                      "AUTH_TOKEN_FILE=/var/run/t.token",
+                      "CREDENTIALS_PATH=/etc/cred.json",
+                      "SECRET_KEY_FILE=/run/k", "PASSWORD_HINT=hunter2xyz"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+            self.assertNotIn("hunter2xyz", out)
+
+    def test_im1_plain_key_family_refused(self):
+        # I2 (6a rodada): a familia *_KEY sem API/PRIVATE tambem e credencial.
+        for value in ("MASTER_KEY=abc123def456", "OPENAI_KEY=abc123def456",
+                      "ENCRYPTION_KEY=abc123def456", "SIGNING_KEY=abc123def456",
+                      "AUTH_KEY=abc123def456", "DB_PASS=abc123def456",
+                      "PASSKEY=abc123def456"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+
+    def test_im1_dash_and_dot_separators_refused(self):
+        # M1 (6a rodada): nome com '-' ou '.' tambem e nome de variavel.
+        for value in ("X-API-KEY=abc123def456", "api-key=abc123def456",
+                      "azure-openai-api-key=abc123def456", "API.KEY=abc123def456"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 2, (value, out))
+
+    def test_im1_project_prose_with_pwd_tokens_allowed(self):
+        # I3 (6a rodada): PWD de shell, contagem de TOKENS e derivadas sao
+        # vocabulario do projeto, nao credencial.
+        for value in ("PWD=/Users/will/willtech-general-30 ao testar",
+                      "PWD = diretorio atual do repo",
+                      "test_result: PWD=/Users/will/proj, 43 OK",
+                      "TOKENS=120000 por turno medido",
+                      "TOKENIZER=cl100k_base define a contagem do brief",
+                      "PASSWORDLESS=disabled", "key = chave do indice de simbolos"):
+            code, out = run("put", self.room, "--repo", str(self.repo),
+                            "--kind", "finding", "--specialty", "explorador",
+                            "--summary", value)
+            self.assertEqual(code, 0, (value, out))
+
     def test_im1_prefixed_credential_names_refused(self):
         # Achado da 5a rodada: comparacao por nome inteiro deixava passar
         # nomes prefixados/sufixados, que e a forma real das credenciais.

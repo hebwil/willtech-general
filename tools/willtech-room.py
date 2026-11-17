@@ -116,7 +116,7 @@ SECRET_PATTERNS = (
     # Nome de variável em MAIÚSCULAS com valor atribuído (API_KEY=..., GH_TOKEN = ...).
     # A checagem de "nome parece credencial" é feita em código (secret_in_text),
     # para não recusar prosa legítima do projeto ("token = contagem de eventos").
-    re.compile(r"\b([A-Za-z][A-Za-z0-9_]{2,})\s*=\s*[^\s]{6,}"),
+    re.compile(r"(?<![A-Za-z0-9_.\-])([A-Za-z][A-Za-z0-9_.\-]{2,})\s*=\s*([^\s]{6,})"),
     re.compile(r"\b(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]+"),
     re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._\-]+"),
     re.compile(r"(?i)(--password[= ])\S+"),
@@ -275,22 +275,38 @@ def backup_room(path):
     return bak
 
 
-# Nomes que caracterizam credencial (comparados por PALAVRA ou por n-grama
-# contíguo de palavras: API_KEY -> API+KEY -> APIKEY). Assim "input_tokens"
-# (métrica do projeto) não é confundido com TOKEN, mas OPENAI_API_KEY,
-# X_API_KEY, SSH_PRIVATE_KEY e GHTOKEN continuam detectados.
-SECRET_NAME_HINTS = {"TOKEN", "SECRET", "PASSWORD", "PASSWD", "APIKEY",
-                     "PRIVATEKEY", "CREDENTIAL", "CREDENTIALS",
-                     "PASSPHRASE", "PWD"}
+# Nomes que caracterizam credencial. A comparação é por PALAVRA do nome
+# (API_KEY -> [API, KEY]) ou por nome colado em caixa alta (GHTOKEN). Assim
+# "input_tokens" (métrica do projeto) não é confundido com TOKEN, mas
+# OPENAI_API_KEY, MASTER_KEY, SSH_PRIVATE_KEY e GHTOKEN são detectados.
+SECRET_NAME_HINTS = {"TOKEN", "SECRET", "PASSWORD", "PASSWD", "PASS", "PWD",
+                     "CREDENTIAL", "CREDENTIALS", "PASSPHRASE", "APIKEY",
+                     "PRIVATEKEY", "KEY"}
 
-# Sufixos neutros: "token_budget" / "password_policy" falam SOBRE credenciais,
-# não são credenciais. Fail-closed mantido para *_TOKEN, *_KEY, *_SECRET.
-NEUTRAL_SUFFIXES = {"PATH", "POLICY", "BUDGET", "LIMIT", "FILE", "DIR", "COUNT",
-                    "SIZE", "LEN", "NAME", "USED", "MAX", "MIN", "CAP", "CHARS",
-                    "BEFORE", "AFTER", "HINT", "HELP"}
+# Ambíguos por natureza: só contam em nome COMPOSTO (DB_PWD, DB_PASS), nunca
+# isolados — "PWD=/Users/..." e "pass = segunda etapa" são uso legítimo.
+AMBIGUOUS_NAMES = {"PWD", "PASS"}
 
-# Palavra isolada em minúsculas que é vocabulário do projeto, não credencial.
-PROSE_WORDS = {"TOKEN", "APIKEY"}
+# Sufixos que indicam MEDIDA/Política — falam SOBRE credencial, não são uma:
+# token_budget, token_limit, password_policy, max_tokens, cache_creation_tokens.
+NEUTRAL_SUFFIXES = {"POLICY", "BUDGET", "LIMIT", "COUNT", "SIZE", "LEN", "USED",
+                    "MAX", "MIN", "CAP", "CHARS", "BEFORE", "AFTER", "RATE",
+                    "TOTAL", "LENGTH"}
+
+# Sufixos que PONTEIRAM para uma credencial (arquivo/caminho/nome/dica). Um
+# ponteiro para segredo é recusado por fail-closed: *_FILE, *_PATH, *_NAME,
+# *_HINT. (Exceção: quando a última palavra também é medida, prevalece a medida.)
+POINTER_SUFFIXES = {"FILE", "PATH", "DIR", "NAME", "HINT", "HELP"}
+
+# Palavra isolada em minúsculas é vocabulário do projeto, não credencial:
+# "token = contagem de eventos", "key = chave do índice".
+PROSE_WORDS = {"TOKEN", "KEY", "APIKEY"}
+
+# Palavras derivadas de termos de credencial que são vocabulário do projeto.
+# Mantidas explícitas (determinístico, revisável) em vez de afrouxar o casamento.
+PROSE_DERIVED = {"TOKENS", "TOKENIZER", "TOKENIZE", "TOKENIZATION", "KEYBOARD",
+                 "KEYWORDS", "KEYWORD", "KEYMAP", "KEYSTORE_HINT", "MONKEY",
+                 "PASSWORDLESS", "PASSWORDS_MANAGER"}
 
 
 def _name_words(name):
@@ -300,29 +316,64 @@ def _name_words(name):
     return [w for w in out if w]
 
 
-def _looks_like_credential_name(name):
+def _ambiguous_value_is_benign(value):
+    """Para nomes ambíguos (PWD, PASS): caminho de shell ou palavra em prosa
+    são uso legítimo; valor opaco com dígito/símbolo é credencial."""
+    v = (value or "").strip("\"'")
+    if not v:
+        return True
+    if v.startswith(("/", "~", "./", "../")) or v in (".", "..") or "/" in v:
+        return True                                  # PWD=/Users/...
+    if re.fullmatch(r"[A-Za-zÀ-ÿ]{3,}", v) and v.islower():
+        return True                                  # PWD=diretorio, pass=segunda
+    return False
+
+
+def _looks_like_credential_name(name, value=""):
     words = _name_words(name)
     if not words:
         return False
     up = [w.upper() for w in words]
+    compact = "".join(up)
+
+    if compact in PROSE_DERIVED:
+        return False
+
+    # Nome composto cujo ÚLTIMO termo é medida → prosa (token_budget).
     if len(up) > 1 and up[-1] in NEUTRAL_SUFFIXES:
         return False
-    hit = any(w in SECRET_NAME_HINTS for w in up)
-    if not hit:
-        # n-gramas contíguos: API+KEY, PRIVATE+KEY, OPENAI+API+KEY
-        hit = any("".join(up[i:i + n]) in SECRET_NAME_HINTS
-                  for n in (2, 3) for i in range(len(up) - n + 1))
-    if not hit and len(up) == 1 and name.isupper():
-        # forma colada em caixa alta de variável de ambiente: GHTOKEN, ACCESSTOKEN
+
+    # Ponteiro para credencial (*_FILE, *_PATH, *_NAME, *_HINT): fail-closed,
+    # ainda que a cabeça não esteja na lista de hints (PASSWORD_FILE, SECRET_DIR).
+    if len(up) > 1 and up[-1] in POINTER_SUFFIXES:
+        strong = {"PASSWORD", "PASSWD", "SECRET", "CREDENTIAL", "CREDENTIALS",
+                  "PASSPHRASE", "PRIVATEKEY", "APIKEY", "TOKEN", "KEY"}
+        if any(w in strong for w in up[:-1]):
+            return True
+
+    if any(w in SECRET_NAME_HINTS for w in up):
+        if len(up) == 1 and up[0] in AMBIGUOUS_NAMES:
+            # PWD=/Users/... (shell) ou PWD=diretorio (prosa) vs PWD=hunter2xyz
+            return not _ambiguous_value_is_benign(value)
+        if len(up) == 1 and not name.isupper() and up[0] in PROSE_WORDS:
+            return False        # "token = ...", "key = ..." em prosa
+        return True
+
+    # Nome colado (sem separador) que termina/começa com um termo de credencial:
+    # GHTOKEN, ACCESSTOKEN, MASTERKEY, PASSKEY (caixa indiferente).
+    if len(up) == 1:
         w = up[0]
-        hit = len(w) > len("TOKEN") and any(
-            w.endswith(h) or w.startswith(h)
-            for h in SECRET_NAME_HINTS if len(h) >= 4)
-    if not hit:
-        return False
-    if len(up) == 1 and not name.isupper() and up[0] in PROSE_WORDS:
-        return False
-    return True
+        for hint in sorted(SECRET_NAME_HINTS, key=len, reverse=True):
+            if len(w) <= len(hint):
+                continue
+            for rest in (w[:-len(hint)] if w.endswith(hint) else "",
+                         w[len(hint):] if w.startswith(hint) else ""):
+                # resto com 2+ chars: o termo está EMBUTIDO, não é a palavra
+                # inteira (GH+TOKEN, ACCESS+TOKEN, PASS+KEY, MASTER+KEY).
+                # Restos de 1 char são plurais (TOKENS) e ficam como prosa.
+                if len(rest) >= 2:
+                    return True
+    return False
 
 
 def secret_in_text(text):
@@ -335,7 +386,7 @@ def secret_in_text(text):
         # Padrão genérico "NOME = valor": inspeciona TODAS as ocorrências (uma
         # linha pode ter `ENV=production PASSWORD=...`).
         for m in p.finditer(t):
-            if _looks_like_credential_name(m.group(1) or ""):
+            if _looks_like_credential_name(m.group(1) or "", m.group(2) or ""):
                 return True
     return False
 
