@@ -17,7 +17,7 @@ Regras:
 - Auxiliares (brief/prune/drift) falham aberto: nunca interrompem tarefa comum.
 - Controle obrigatório (guarda de loop no PreToolUse) falha fechado: dossiê
   corrompido ou falha interna bloqueiam o comando afetado.
-- Limites: stdin 1 MiB, brief 1200 chars, drift 10 s, estado por sessão.
+- Limites: stdin 1 MiB, brief/sala BUDGET_CHARS (1200), drift 10 s, estado por sessão.
 - Lições/brief são DADOS em quarentena, nunca instruções superiores.
 - Candidatas de lição nascem verified=false; só o comandante confirma via learn.
 """
@@ -33,7 +33,6 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 STDIN_CAP = 1 << 20
-BRIEF_CAP = 1200
 DRIFT_TIMEOUT = 10
 COMMAND_CAP = 200
 
@@ -50,6 +49,15 @@ TRACE_PATH = os.path.join(ROOT, "claude-code", "bin", "willtech_trace.py")
 TRACE = load_module("willtech_trace", TRACE_PATH) if os.path.isfile(TRACE_PATH) else None
 SUP_PATH = os.path.join(HERE, "willtech-supervisor.py")
 SUPERVISOR = load_module("willtech_supervisor", SUP_PATH) if os.path.isfile(SUP_PATH) else None
+ROOM_PATH = os.path.join(HERE, "willtech-room.py")
+ROOM = load_module("willtech_room", ROOM_PATH) if os.path.isfile(ROOM_PATH) else None
+# Orçamento canônico único (3.0, achado N5): o valor canônico vive na sala
+# (willtech-room.BUDGET_CHARS); BRIEF_CAP vira alias de compatibilidade
+# para quem já o lia. Fail-open: sem sala, 1200.
+BUDGET_CHARS = 1200
+if ROOM is not None:
+    BUDGET_CHARS = ROOM.BUDGET_CHARS
+BRIEF_CAP = BUDGET_CHARS
 
 
 def now():
@@ -125,7 +133,20 @@ def brief_context(dossie, repo, base):
     cache = os.path.join(base, "cache.json")
     return DOSSIE.brief_text(dossie, repo,
                              cache=cache if os.path.isfile(cache) else None,
-                             max_chars=BRIEF_CAP)
+                             max_chars=BUDGET_CHARS)
+
+
+def room_brief(base, repo):
+    # Fail-open: sem módulo da sala, sem room.db ou erro → nenhum contexto.
+    if ROOM is None:
+        return None
+    room_db = os.path.join(base, "room.db")
+    if not os.path.isfile(room_db):
+        return None
+    try:
+        return ROOM.query_text(room_db, repo=repo, budget=BUDGET_CHARS)
+    except Exception:
+        return None
 
 
 def ev_start(ev, base, dossie, repo, st):
@@ -136,6 +157,9 @@ def ev_start(ev, base, dossie, repo, st):
     parts = []
     if DOSSIE.read_entries(dossie):
         parts.append(brief_context(dossie, repo, base))
+    rb = room_brief(base, repo)
+    if rb:
+        parts.append(rb)
     sup = os.path.join(base, "delegations.json")
     if SUPERVISOR and os.path.isfile(sup):
         warnings = SUPERVISOR.tick_file(sup)
@@ -151,6 +175,9 @@ def ev_prompt(ev, base, dossie, repo, st):
         parts.append(pend)
     if len(ev.get("prompt") or "") >= DOSSIE.COMPLEX_CHARS:
         parts.append(brief_context(dossie, repo, base))
+    rb = room_brief(base, repo)
+    if rb:
+        parts.append(rb)
     return {"context": "\n".join(parts)} if parts else {}
 
 
