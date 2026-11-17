@@ -1036,9 +1036,9 @@ def build_query(path, project, objective="", specialty=None, kind=None,
             sql += "AND r.kind NOT IN ('skill','handoff') "
             sql += "AND r.project_id = ? AND r.status NOT IN ('dropped','superseded') "
             params.append(project)
-            if validated_only:
-                # SessionStart: não promover candidatos a orientação geral.
-                # Candidatos continuam acessíveis no prompt dirigido, rotulados.
+            if validated_only or not (objective or '').strip():
+                # Sem objetivo (SessionStart), só evidência validada.
+                # Com objetivo, candidatos seguem visíveis e rotulados.
                 sql += "AND r.status = 'validated' "
             if specialty:
                 sql += "AND r.specialty = ? "
