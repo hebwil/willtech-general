@@ -252,7 +252,7 @@ def cmd_put(a):
         print(f"specialty inválida: {a.specialty} (use {', '.join(SPECIALTIES)})")
         return 2
     if a.path_ref and DOSSIE.is_credential_path(a.path_ref):
-        print(f"recusado: caminho de credencial {a.path_ref}")
+        print("recusado: caminho de credencial (valor não ecoado)")
         return 2
     if secret_in_text(a.summary) or secret_in_text(a.path_ref):
         print("recusado: possível segredo no conteúdo (valor não ecoado)")
@@ -292,7 +292,7 @@ def cmd_put(a):
                 # Idempotência: mesmo kind+projeto+path_ref+summary-hash
                 # atualiza updated_at; nunca duplica.
                 con.execute(
-                    "UPDATE records SET updated_at=?, status='candidate', "
+                    "UPDATE records SET updated_at=?, "
                     "source_hash=COALESCE(?, source_hash), "
                     "evidence_hash=COALESCE(?, evidence_hash) WHERE id=?",
                     (ts, source_hash, evidence, dup))
@@ -329,7 +329,10 @@ def cmd_get(a):
             if row is None:
                 print(f"registro ausente id={a.id}")
                 return 2
-            if project and row[2] != project:
+            if not project:
+                print("erro: --repo não é um repositório git (isolamento por projeto)")
+                return 2
+            if row[2] != project:
                 print("recusado: room de outro projeto (isolamento por projeto)")
                 return 2
         finally:

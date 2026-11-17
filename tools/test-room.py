@@ -189,6 +189,45 @@ class RoomCoreTests(unittest.TestCase):
         run("init", self.room, "--repo", str(self.repo))
         self.assertTrue(os.path.isfile(self.room + ".lock"))
 
+    def test_09_get_refuses_non_git_repo(self):
+        run("init", self.room, "--repo", str(self.repo))
+        nogit = Path(self.tmp.name) / "nogit"
+        nogit.mkdir(exist_ok=True)
+        code, out = run("get", self.room, "--repo", str(nogit), "--id", "1")
+        self.assertEqual(code, 2)
+        self.assertIn("reposit", out.lower())
+
+    def test_10_refusal_does_not_echo_path(self):
+        run("init", self.room, "--repo", str(self.repo))
+        code, out = run("put", self.room, "--repo", str(self.repo),
+                        "--kind", "ref", "--specialty", "explorer",
+                        "--summary", "nota", "--path-ref", "keys/id_rsa")
+        self.assertEqual(code, 2)
+        self.assertIn("recusado", out.lower())
+        self.assertNotIn("id_rsa", out)
+
+    def test_11_reput_preserves_validated_status(self):
+        run("init", self.room, "--repo", str(self.repo))
+        args = ("put", self.room, "--repo", str(self.repo), "--kind", "decision",
+                "--specialty", "general", "--summary", "status preservado no re-put",
+                "--path-ref", "tools/willtech-room.py")
+        run(*args)
+        con = sqlite3.connect(self.room)
+        try:
+            con.execute("UPDATE records SET status='validated' WHERE kind='decision'")
+            con.commit()
+        finally:
+            con.close()
+        code, out = run(*args)
+        self.assertEqual(code, 0, out)
+        self.assertIn("updated", out)
+        con = sqlite3.connect(self.room)
+        try:
+            st = con.execute("SELECT status FROM records WHERE kind='decision'").fetchone()[0]
+            self.assertEqual(st, "validated", "re-put idempotente nao rebaixa status")
+        finally:
+            con.close()
+
 
 class RoomQueryTests(unittest.TestCase):
     """PASSO 2: consulta JIT com orcamento canonico."""
