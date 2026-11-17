@@ -79,8 +79,12 @@ jobs:
         run: |
           set -e
           export LD_LIBRARY_PATH="$LLAMA_DIR:${LD_LIBRARY_PATH:-}"
+          # Qwen3 e "thinking": com --jinja o raciocinio consome todo o orcamento
+          # antes do conteudo final (content vazio, finish_reason=length).
+          # enable_thinking=false desativa no servidor para curl E OpenCode.
           nohup "$LLAMA_BIN" -m ~/lab-cache/model.gguf \
             --host 127.0.0.1 --port 8080 --jinja -c 8192 --threads 4 -np 1 \
+            --chat-template-kwargs '{"enable_thinking":false}' \
             > ~/server.log 2>&1 &
           echo $! > ~/server.pid
           for i in $(seq 1 90); do
@@ -100,7 +104,7 @@ jobs:
           set -e
           curl -fsS http://127.0.0.1:8080/v1/chat/completions \
             -H 'Content-Type: application/json' \
-            -d '{"model":"'"$MODEL_ID"'","messages":[{"role":"user","content":"Reply with exactly the two words: LAB OK"}],"max_tokens":32,"temperature":0}' \
+            -d '{"model":"'"$MODEL_ID"'","messages":[{"role":"user","content":"Reply with exactly the two words: LAB OK"}],"max_tokens":256,"temperature":0,"chat_template_kwargs":{"enable_thinking":false}}' \
             | tee ~/inference.json
           python3 - <<'PY'
           import json, os
@@ -119,7 +123,7 @@ jobs:
           set -e
           curl -fsS http://127.0.0.1:8080/v1/chat/completions \
             -H 'Content-Type: application/json' \
-            -d '{"model":"'"$MODEL_ID"'","messages":[{"role":"user","content":"What is the weather in Paris? You must call the get_weather tool."}],"tools":[{"type":"function","function":{"name":"get_weather","description":"Get current weather for a city","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}],"tool_choice":"auto","max_tokens":256,"temperature":0}' \
+            -d '{"model":"'"$MODEL_ID"'","messages":[{"role":"user","content":"What is the weather in Paris? You must call the get_weather tool."}],"tools":[{"type":"function","function":{"name":"get_weather","description":"Get current weather for a city","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}],"tool_choice":"auto","max_tokens":512,"temperature":0,"chat_template_kwargs":{"enable_thinking":false}}' \
             | tee ~/toolcall.json
           python3 - <<'PY'
           import json, os
