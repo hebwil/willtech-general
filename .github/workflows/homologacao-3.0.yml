@@ -153,7 +153,7 @@ jobs:
       - name: Instalar OpenCode oficial (runner isolado)
         run: |
           set -e
-          curl -fsSL https://opencode.ai/install | bash
+          curl -fsSL https://opencode.ai/v2/install | bash
           echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
       - name: Projeto lab + instalacao WillTech + 7 agentes
         run: |
@@ -256,19 +256,8 @@ jobs:
               print(f"=== POST /api/session -> {sts} ==="); print(sess_raw[:400])
           except Exception as e:
               print("session.create indisponivel:", e)
-          # O setup do plugin roda na carga do local, disparada pelo primeiro
-          # prompt. Sem provedor autenticado o modelo falha (custo zero), mas o
-          # setup executa ANTES da resolucao do modelo (doc oficial: plugins
-          # prontos antes da admissao do prompt).
-          try:
-              run = subprocess.run(["opencode", "run", "willtech homolog probe"],
-                                   cwd=lab, capture_output=True, text=True, timeout=90)
-              print(f"=== opencode run exit={run.returncode} ===")
-              print((run.stdout or "")[-500:]); print((run.stderr or "")[-500:])
-          except subprocess.TimeoutExpired:
-              print("opencode run timeout (setup pode ter executado antes do modelo)")
-          except Exception as e:
-              print("opencode run indisponivel:", e)
+          # O host V2 carrega o plugin no projeto sem prompt ou modelo.
+          # Nao executar opencode run: este teste e estritamente custo zero.
           # O setup do plugin pode assentar de forma assincrona apos o registro
           # dos agentes; espera o estado de carga (SessionStart session_id=plugin-load).
           state_path = os.path.join(lab, ".willtech", "state-plugin-load.json")
