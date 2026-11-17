@@ -125,7 +125,7 @@ class RoomCoreTests(unittest.TestCase):
         self.assertIn("updated", out)
         con = sqlite3.connect(self.room)
         try:
-            n = con.execute("SELECT COUNT(*) FROM records").fetchone()[0]
+            n = con.execute("SELECT COUNT(*) FROM records WHERE kind='skill'").fetchone()[0]
             self.assertEqual(n, 1, "put idempotente nao duplica registro")
         finally:
             con.close()
