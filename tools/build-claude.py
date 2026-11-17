@@ -129,7 +129,7 @@ def build_core():
     body = core.rstrip()[: -len(marker)]
     esm = ("// Copia verificavel do nucleo canonico (opencode/.../activity.cjs); sem drift.\n"
            + body + "export { AGENTS, EVENTS, projectAgents };\n")
-    (hooks / "activity.js").write_text(esm, encoding="utf-8")
+    (hooks / "activity.js").write_text(esm, encoding="utf-8", newline="\n")
     return esm
 
 
@@ -151,7 +151,7 @@ def main():
               + f"export const SIZE = {json.dumps(size)};\n"
               + f"export const PNG = {json.dumps(png_b64, separators=(',', ':'))};\n"
               + f"export const FRAMES = {json.dumps(frames_b64, separators=(',', ':'))};\n")
-    (hooks / "assets.js").write_text(assets, encoding="utf-8")
+    (hooks / "assets.js").write_text(assets, encoding="utf-8", newline="\n")
     esm = build_core()
     make_icon()
     for key, value in png_b64.items():
