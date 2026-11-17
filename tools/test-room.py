@@ -69,7 +69,7 @@ class RoomCoreTests(unittest.TestCase):
     def test_01_init_idempotent_schema(self):
         code, out = run("init", self.room, "--repo", str(self.repo))
         self.assertEqual(code, 0, out)
-        self.assertIn("user_version=2", out)
+        self.assertIn("user_version=3", out)
         con = sqlite3.connect(self.room)
         try:
             tables = {r[0] for r in con.execute(
@@ -77,7 +77,7 @@ class RoomCoreTests(unittest.TestCase):
             self.assertIn("records", tables)
             self.assertIn("records_fts", tables)
             self.assertIn("schema_migrations", tables)
-            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 3)
             idx = {r[0] for r in con.execute(
                 "SELECT name FROM sqlite_master WHERE type='index'")}
             for i in ("idx_records_project", "idx_records_kind",
@@ -94,7 +94,7 @@ class RoomCoreTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         con = sqlite3.connect(self.room)
         try:
-            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 3)
         finally:
             con.close()
 
@@ -212,10 +212,10 @@ class RoomCoreTests(unittest.TestCase):
             con.close()
         code, out = run("init", self.room, "--repo", str(self.repo))
         self.assertEqual(code, 0, out)
-        self.assertIn("user_version=2", out)
+        self.assertIn("user_version=3", out)
         con = sqlite3.connect(self.room)
         try:
-            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 2)
+            self.assertEqual(con.execute("PRAGMA user_version").fetchone()[0], 3)
             self.assertEqual(con.execute("PRAGMA integrity_check").fetchone()[0], "ok")
             n = con.execute(
                 "SELECT COUNT(*) FROM skill_meta WHERE "
