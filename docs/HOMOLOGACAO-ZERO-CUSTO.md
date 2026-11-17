@@ -121,6 +121,8 @@ Nenhum teste enfraquecido, nenhuma função desativada para obter PASS, nenhuma 
 
 Artefatos publicados sem segredos (logs, hashes, IDs de sessão, capturas, links de run). Release `v3.0.0` e `main` preservadas; correções apenas neste branch com CI + PR.
 
+**Gate de CI do PR [#16](https://github.com/hebwil/willtech-general/pull/16):** [run 44192464779](https://github.com/hebwil/willtech-general/actions/runs/44192464779) — **5/5 jobs SUCCESS** (nucleo macOS/Linux/Windows com a suíte portável incluindo `test-opencode-trace`, host oficial OpenCode, smoke de inteligência). Merge/publicação permanecem sujeitos a revisão humana; esta homologação não altera a release estável.
+
 ## Limitações honestas restantes
 
 - O modelo gratuito de 1.7B **não executa reliably o protocolo coletivo completo** (registro manual na sala, edição útil, consolidação). A arquitetura (delegação, sala, JIT, gates) funciona; a capacidade do modelo é o fator limitante. Nenhum resultado de modelo maior é extrapolado.
