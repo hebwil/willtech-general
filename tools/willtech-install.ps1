@@ -258,7 +258,7 @@ if problems:
 }
 
 if ($Uninstall) {
-  if (-not (Confirm "Serão revertidos somente os componentes registrados da plataforma $Platform: handlers WillTech e plugin .opencode/plugins/willtech/index.js, com backups. Serão removidos .willtech/enabled e .willtech/installed.json. Diretórios, arquivos de terceiros, componentes modificados e dossiê/cache são preservados.")) {
+  if (-not (Confirm "Serão revertidos somente os componentes registrados da plataforma ${Platform}: handlers WillTech e plugin .opencode/plugins/willtech/index.js, com backups. Serão removidos .willtech/enabled e .willtech/installed.json. Diretórios, arquivos de terceiros, componentes modificados e dossiê/cache são preservados.")) {
     Write-Host 'cancelado'; exit 0
   }
   if (Want 'claude') { Invoke-UpdateComponent 'uninstall' (Join-Path $Repo '.claude\settings.json') '-' $py }
