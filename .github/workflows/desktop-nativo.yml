@@ -135,7 +135,7 @@ jobs:
           VISUAL="$DESK/opencode/plugins/willtech/visual"
           if command -v npm >/dev/null 2>&1; then
             (cd "$VISUAL" && npm install --no-save --no-audit --no-fund \
-              @opencode/plugin@2.3.0 solid-js@1.9.9 @opentui/core @opentui/solid @opencode/theme@2.3.0) > ~/npm-gui.log 2>&1
+              @opencode/plugin@2.3.0 solid-js@1.9.16 @opentui/core @opentui/solid @opencode/theme@2.3.0) > ~/npm-gui.log 2>&1
             echo "npm install exit=$?"
           else
             echo "npm ausente no runner macOS" > ~/npm-gui.log
@@ -167,7 +167,7 @@ jobs:
           } > ~/server-plugin.log 2>&1
           tail -40 ~/server-plugin.log
           NEWEST=$(find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" -name "*.log" -type f 2>/dev/null | head -1)
-          [ -n "$NEWEST" ] && tail -60 "$NEWEST" > ~/opencode-server.log
+          [ -n "$NEWEST" ] && cp "$NEWEST" ~/opencode-server.log
 
       - name: Classificação honesta do render nativo (PASS REAL ou NC/BLOQUEADO)
         run: |
