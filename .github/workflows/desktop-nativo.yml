@@ -121,7 +121,12 @@ jobs:
           sh "$DESK/tools/willtech-install.sh" --repo "$DESK" --platform opencode --yes
           mkdir -p "$DESK/.opencode/agent"
           cp "$DESK/opencode/agent/"*.md "$DESK/.opencode/agent/"
-          python3 tools/willtech-gui.py --install --yes --config "$DESK/opencode.json"
+          # O painel GUI carrega do servidor de fundo do Desktop, que lê o config
+          # GLOBAL (~/.config/opencode/opencode.json), não o do projeto. No runner
+          # descartável isso é isolado (nenhuma config pessoal existe).
+          python3 tools/willtech-gui.py --install --yes
+          echo "=== config GLOBAL (plugins GUI, enabled=true) ==="
+          cat "$HOME/.config/opencode/opencode.json"
           mkdir -p "$DESK/.willtech"
           touch "$DESK/.willtech/enabled"
           git -C "$DESK" add -A
@@ -175,7 +180,7 @@ jobs:
               "codesign_official": codesign_ok,
               "app_running": proc,
               "native_window_captured": captured,
-              "willtech_panel_captured": png_ok("desktop-willtech.png"),
+              "screenshot_after_plugin_install": png_ok("desktop-willtech.png"),
               "desktop_attempt_bytes": attempt,
               "classification": classification,
               "technical_reasons": reason,
