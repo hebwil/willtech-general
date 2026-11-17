@@ -143,6 +143,10 @@ jobs:
           tail -15 ~/npm-gui.log
           mkdir -p "$DESK/.willtech"
           touch "$DESK/.willtech/enabled"
+          # Sala semeada no projeto do Desktop para o painel ter dados de agentes.
+          python3 "$DESK/tools/willtech-room.py" init "$DESK/.willtech/room.db" --repo "$DESK"
+          python3 "$DESK/tools/willtech-room.py" put "$DESK/.willtech/room.db" --kind finding --specialty explorer --summary "painel nativo: sala semeada no projeto do Desktop" --path-ref tools/willtech-room.py --evidence-hash "$(shasum -a 256 "$DESK/tools/willtech-room.py" | cut -d' ' -f1)" --repo "$DESK"
+          python3 "$DESK/tools/willtech-room.py" validate "$DESK/.willtech/room.db" --id 1 --by reviewer --repo "$DESK"
           git -C "$DESK" add -A
           git -C "$DESK" commit -qm base
           echo "=== opencode.json do projeto Desktop (plugins) ==="
@@ -168,6 +172,23 @@ jobs:
           tail -40 ~/server-plugin.log
           NEWEST=$(find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" -name "*.log" -type f 2>/dev/null | head -1)
           [ -n "$NEWEST" ] && cp "$NEWEST" ~/opencode-server.log
+          # Tentativa BOUNDED de revelar a aba lateral: o comando registrado
+          # "team.toggle" exige sessão atual e é exposto no menu "/" de comandos.
+          # Usa Acessibilidade JÁ concedida ao runner (System Events); não contorna
+          # TCC/SIP. Uma única tentativa; o resultado é capturado e classificado
+          # por inspeção visual — nunca declarado PASS sem o painel na captura.
+          osascript -e 'tell application "System Events" to tell process "OpenCode" to set frontmost to true' 2>~/toggle.err
+          sleep 1
+          osascript -e 'tell application "System Events" to keystroke "/"' 2>>~/toggle.err
+          sleep 1
+          osascript -e 'tell application "System Events" to keystroke "WillTech"' 2>>~/toggle.err
+          sleep 1
+          osascript -e 'tell application "System Events" to key code 36' 2>>~/toggle.err
+          sleep 3
+          screencapture -x ~/desktop-panel.png 2>>~/screencapture.err
+          echo "toggle+capture exit=$?"
+          ls -la ~/desktop-panel.png 2>/dev/null
+          cat ~/toggle.err 2>/dev/null
 
       - name: Classificação honesta do render nativo (PASS REAL ou NC/BLOQUEADO)
         run: |
@@ -211,6 +232,7 @@ jobs:
               "screenshot_after_plugin_install": png_ok("desktop-willtech.png"),
               "gui_deps_install_log": has("npm-gui.log", "added") or has("npm-gui.log", "up to date"),
               "gui_plugin_log_mentions_willtech": has("server-plugin.log", "willtech"),
+              "panel_toggle_attempt_capture": png_ok("desktop-panel.png"),
               "desktop_attempt_bytes": attempt,
               "classification": classification,
               "technical_reasons": reason,
@@ -248,6 +270,8 @@ jobs:
             ~/npm-gui.log
             ~/server-plugin.log
             ~/opencode-server.log
+            ~/desktop-panel.png
+            ~/toggle.err
             ~/desktop-summary.json
           if-no-files-found: warn
           retention-days: 14
