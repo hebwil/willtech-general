@@ -54,7 +54,7 @@ def load_mod(path):
 class RoomCoreTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-room-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-room-", ignore_cleanup_errors=True)
         cls.repo = mkrepo(cls.tmp.name, "repo")
         for f in ("willtech-room.py", "willtech-dossie.py"):
             (cls.repo / "tools" / f).write_text((ROOT / "tools" / f).read_text())
@@ -276,7 +276,7 @@ class RoomQueryTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-room-q-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-room-q-", ignore_cleanup_errors=True)
         cls.repo = mkrepo(cls.tmp.name, "repoq")
         for f in ("willtech-room.py", "willtech-dossie.py"):
             (cls.repo / "tools" / f).write_text((ROOT / "tools" / f).read_text())
@@ -371,7 +371,7 @@ class SpecialtyAliasTests(unittest.TestCase):
     """FASE 9: roster pt-BR e sala em inglês não podem divergir."""
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.d = Path(self.tmp.name)
         self.repo = mkrepo(self.d, "alias-repo")
         self.room = str(Path(self.repo) / ".willtech" / "room.db")
@@ -410,7 +410,7 @@ class ReviewFindingTests(unittest.TestCase):
     contrato que o produto precisa cumprir, não uma suposição."""
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.d = Path(self.tmp.name)
         self.repo = mkrepo(self.d, "rev-repo")
         self.room = str(self.repo / ".willtech" / "room.db")
@@ -739,7 +739,7 @@ class QueryTextInjectionTests(unittest.TestCase):
     deixou passar um TypeError que anulava toda a injeção."""
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.d = Path(self.tmp.name)
         self.repo = mkrepo(self.d, "inj-repo")
         self.room = str(self.repo / ".willtech" / "room.db")

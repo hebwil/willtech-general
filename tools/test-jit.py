@@ -68,7 +68,7 @@ def mkrepo(base, name):
 class JitFunctional(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-jit-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-jit-", ignore_cleanup_errors=True)
         cls.repo = mkrepo(cls.tmp.name, "repo")
         cls.room = str(cls.repo / ".willtech" / "room.db")
         # (1) sala inicializada de verdade

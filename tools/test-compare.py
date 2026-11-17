@@ -33,7 +33,7 @@ def run(*args):
 
 class CompareTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.d = Path(self.tmp.name)
 
     def tearDown(self):

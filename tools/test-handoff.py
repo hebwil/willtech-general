@@ -44,7 +44,7 @@ class HandoffSkillBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-handoff-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-handoff-", ignore_cleanup_errors=True)
         cls.repo = Path(cls.tmp.name) / "repo"
         (cls.repo / "tools").mkdir(parents=True)
         git(cls.repo, "init", "-q")

@@ -54,7 +54,7 @@ def load_mod(path):
 class V3Base(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-v3-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-v3-", ignore_cleanup_errors=True)
         cls.repo = Path(cls.tmp.name) / "repo"
         (cls.repo / "tools").mkdir(parents=True)
         git(cls.repo, "init", "-q")
@@ -407,8 +407,10 @@ class BL3Portability(V3Base):
         run("put", room, "--repo", str(repo), "--kind", "finding",
             "--specialty", "explorer", "--summary", "registro antes do backfill",
             env=env)
-        # runtime capaz: init faz backfill do índice FTS5
-        code, out = run("init", room, "--repo", str(repo))
+        # runtime capaz: init faz backfill do índice FTS5. Força NO_FTS5=0
+        # para nao herdar um eventual WILLTECH_ROOM_NO_FTS5=1 global do CI.
+        capable = {"WILLTECH_ROOM_NO_FTS5": "0"}
+        code, out = run("init", room, "--repo", str(repo), env=capable)
         self.assertEqual(code, 0, out)
         con = sqlite3.connect(room)
         try:
@@ -417,7 +419,7 @@ class BL3Portability(V3Base):
         finally:
             con.close()
         code, q = run("query", room, "--repo", str(repo),
-                      "--objective", "backfill")
+                      "--objective", "backfill", env=capable)
         self.assertIn("registro antes do backfill", q)
 
     def test_two_processes_same_db_no_corruption(self):

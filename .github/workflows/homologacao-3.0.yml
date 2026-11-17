@@ -161,10 +161,17 @@ jobs:
           LAB="$RUNNER_TEMP/oc-repo"
           mkdir -p "$LAB"
           cp -R tools opencode "$LAB/"
+          # OpenCode resolve o projeto pela raiz git; sem .git o host cai no
+          # projeto "global" (directory "/") e nao descobre .opencode/ do lab.
+          git -C "$LAB" init -q
+          git -C "$LAB" config user.email lab@willtech
+          git -C "$LAB" config user.name lab
           sh "$LAB/tools/willtech-install.sh" --repo "$LAB" --platform opencode --yes
           mkdir -p "$LAB/.opencode/agent"
           cp "$LAB/opencode/agent/"*.md "$LAB/.opencode/agent/"
           python3 tools/willtech-gui.py --install --yes --config "$LAB/opencode.json"
+          git -C "$LAB" add -A
+          git -C "$LAB" commit -qm base
           echo "OC_LAB=$LAB" >> "$GITHUB_ENV"
       - name: Host oficial carrega plugin V2 + 7 agentes + hierarquia
         run: |
@@ -206,13 +213,19 @@ jobs:
           assert ready, "servidor oficial nao respondeu em /api/info (ver oc.log)"
           name, hdr = ready
           print(f"auth funcional: {name}")
-          st, agents_raw = get("/api/agent", hdr)
+          # a localidade do projeto pode assentar de forma assincrona; espera
+          # os 7 agentes WillTech registrarem antes de afirmar.
+          wt, agents_raw = [], ""
+          for i in range(40):
+              st, agents_raw = get("/api/agent", hdr)
+              data = json.loads(agents_raw)
+              if isinstance(data, dict):
+                  data = data.get("data") or data.get("agents") or data.get("items") or []
+              wt = [a for a in data if str(a.get("id", "")).startswith("willtech")]
+              if len(wt) >= 7: break
+              time.sleep(1)
           open(os.path.join(os.environ["RUNNER_TEMP"], "agents.json"), "w").write(agents_raw)
           print("=== /api/agent (bruto, truncado) ==="); print(agents_raw[:1500])
-          data = json.loads(agents_raw)
-          if isinstance(data, dict):
-              data = data.get("data") or data.get("agents") or data.get("items") or []
-          wt = [a for a in data if str(a.get("id", "")).startswith("willtech")]
           assert len(wt) == 7, f"esperava 7 agentes WillTech, obtive {len(wt)}: {[a.get('id') for a in wt]}"
           assert all(a.get("mode") == "subagent" for a in wt), "hierarquia: especialistas devem ser subagent"
           plugin_ok = False

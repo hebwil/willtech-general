@@ -39,7 +39,7 @@ def report(state, ident):
 
 class SupervisorTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix="willtech-sup-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="willtech-sup-", ignore_cleanup_errors=True)
         self.state = str(Path(self.tmp.name) / "delegations.json")
 
     def tearDown(self):

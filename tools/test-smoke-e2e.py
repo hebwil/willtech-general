@@ -53,7 +53,7 @@ class SmokeE2E(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-smoke-e2e-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="willtech-smoke-e2e-", ignore_cleanup_errors=True)
         cls.repo = Path(cls.tmp.name) / "lab"
         (cls.repo / "tools").mkdir(parents=True)
         (cls.repo / "claude-code" / "bin").mkdir(parents=True)
