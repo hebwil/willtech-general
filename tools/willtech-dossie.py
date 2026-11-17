@@ -649,7 +649,10 @@ def suggest_specialist(task, paths):
     text = (task or "").lower()
     scores = {}
     for spec, words in SPECIALIST_HINTS:
-        hits = sum(1 for w in words if w in text)
+        # Fronteira de palavra evita falso positivo por substring
+        # ("ui" dentro de "requisitos"/"cuidado").
+        hits = sum(1 for w in words
+                   if re.search(r"(?<![a-z0-9])" + re.escape(w), text))
         if hits:
             scores[spec] = hits
     if len(paths) >= 2 and "executor" not in scores:

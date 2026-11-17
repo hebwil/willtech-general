@@ -7,7 +7,7 @@
 - **Kinds**: `finding`, `decision`, `skill`, `handoff`, `ref`, `risk`, `test_result`, `task`.
 - **Status**: `candidate` → `validated` → (`stale` | `superseded` | `dropped`). Consultas excluem `dropped` e `superseded` do resultado principal.
 - **Escrita idempotente (`put`)**: mesmo `kind` + projeto + `path_ref` + hash do `summary` não cria duplicata — atualiza `updated_at` (e `source_hash`/`evidence_hash` via COALESCE) e preserva o status. Saída: `updated id=N`; registro novo: `registered id=N`.
-- **Quem escreve**: cada especialista registra no escopo dele (explorer → findings e mapa estrutural; executor → decisions; tester → test_result e skills; revisor → risks e handoffs; pesquisador → refs; general consulta por objetivo). A ferramenta valida a especialidade contra nomes canônicos em inglês: `explorer`, `researcher`, `visual`, `executor`, `tester`, `reviewer`, `general` — nomes em português (`explorador`, `testador`) são recusados com exit 2.
+- **Quem escreve**: cada especialista registra no escopo dele (explorer → findings e mapa estrutural; executor → decisions; tester → test_result e skills; revisor → risks e handoffs; pesquisador → refs; general consulta por objetivo). A ferramenta aceita tanto os nomes canônicos (`explorer`, `researcher`, `visual`, `executor`, `tester`, `reviewer`, `general`) quanto os aliases pt-BR do roster (`explorador`, `pesquisador`, `testador`, `revisor`, `comandante`) — o alias é normalizado na entrada. Vocabulário fora das duas listas é recusado com exit 2.
 
 ## Ciclo de vida das micro-skills
 
@@ -25,7 +25,7 @@
 
 ## Orçamento de contexto
 
-- `BUDGET_CHARS = 1200` é o orçamento canônico único; `tools/willtech-auto.py` importa essa constante (o antigo `BRIEF_CAP` virou alias de compatibilidade).
+- `BUDGET_CHARS = 1200` é o orçamento de UMA consulta à sala; `tools/willtech-auto.py` importa essa constante (o antigo `BRIEF_CAP` virou alias). O brief do dossiê mantém teto próprio de 1200 chars, e o SessionStart pode concatenar brief + sala + aviso do supervisor — o total por injeção não é 1200.
 - `query --budget-chars N` ajusta por chamada (default 1200).
 - O corte é aplicado **pela ferramenta** (trunca no limite e prefere quebra de linha quando o ponto de corte está além da metade) — nunca confiado ao modelo.
 
@@ -75,5 +75,5 @@ Convenção de exit codes: **exit 2** = recusa de uso/segredo/isolamento (valor 
 ## Limitações honestas
 
 - Benchmark real antes/depois ainda não medido — depende de telemetria de runtime; nenhum percentual de economia é reivindicado.
-- FTS5 tem gate no CI Windows (`.github/workflows/windows-compat.yml`); se o gate falhar, o fallback documentado é consulta LIKE + índice próprio, mesma interface, sem ALTER do schema.
+- FTS5 tem gate no CI Windows (`.github/workflows/windows-compat.yml`). O fallback (consulta LIKE + índice próprio, mesma interface) é **documentado, ainda não implementado**: sem FTS5 no runtime, `init` falha alto em vez de degradar silenciosamente.
 - Homologação da automação em runtime real (com gasto de modelo) segue pendente.

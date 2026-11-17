@@ -50,7 +50,10 @@ TRACE = load_module("willtech_trace", TRACE_PATH) if os.path.isfile(TRACE_PATH) 
 SUP_PATH = os.path.join(HERE, "willtech-supervisor.py")
 SUPERVISOR = load_module("willtech_supervisor", SUP_PATH) if os.path.isfile(SUP_PATH) else None
 ROOM_PATH = os.path.join(HERE, "willtech-room.py")
-ROOM = load_module("willtech_room", ROOM_PATH) if os.path.isfile(ROOM_PATH) else None
+try:
+    ROOM = load_module("willtech_room", ROOM_PATH) if os.path.isfile(ROOM_PATH) else None
+except Exception:            # M8: carga parcial/versão antiga não pode matar o
+    ROOM = None              # hook (PreToolUse é fail-closed por contrato)
 # Orçamento canônico único (3.0, achado N5): o valor canônico vive na sala
 # (willtech-room.BUDGET_CHARS); BRIEF_CAP vira alias de compatibilidade
 # para quem já o lia. Fail-open: sem sala, 1200.

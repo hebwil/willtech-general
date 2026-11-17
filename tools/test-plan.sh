@@ -99,6 +99,8 @@ suggest() { python3 "$TOOL" plan "$D" --task "$1" 2>/dev/null | grep -o 'ESPECIA
 [ "$(suggest 'mapear estrutura e símbolos do módulo')" = "explorador" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: sugestao explorer"; }
 [ "$(suggest 'implementar refatoração do módulo')" = "executor" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: sugestao executor"; }
 [ "$(suggest 'xyzzy plugh')" = "general" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: fallback general"; }
+[ "$(suggest 'ajustar o fluxo de requisitos')" = "general" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: substring 'ui' em requisitos"; }
+[ "$(suggest 'cuidado com o build')" = "general" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: substring 'ui' em cuidado"; }
 expect "plan continua exit 0 com sugestão (advisory, não gate)" 0 python3 "$TOOL" plan "$D" --task "corrigir bug de teste"
 
 printf '\n%d PASS, %d FAIL\n' "$pass" "$fail"
