@@ -107,6 +107,35 @@ jobs:
           osascript -e 'tell application "System Events" to get name of every window of (every process whose name contains "OpenCode")' 2>&1 | tee ~/windows.txt
           cat ~/launch.err 2>/dev/null
 
+      - name: §5b — plugin WillTech no projeto do Desktop + captura do painel
+        run: |
+          set +e
+          pkill -f "wt-desktop/OpenCode.app/Contents/MacOS/OpenCode" 2>/dev/null
+          sleep 3
+          DESK="$HOME/Documents/Default Project"
+          mkdir -p "$DESK"
+          cp -R tools opencode "$DESK/"
+          git -C "$DESK" init -q
+          git -C "$DESK" config user.email lab@willtech
+          git -C "$DESK" config user.name lab
+          sh "$DESK/tools/willtech-install.sh" --repo "$DESK" --platform opencode --yes
+          mkdir -p "$DESK/.opencode/agent"
+          cp "$DESK/opencode/agent/"*.md "$DESK/.opencode/agent/"
+          python3 tools/willtech-gui.py --install --yes --config "$DESK/opencode.json"
+          mkdir -p "$DESK/.willtech"
+          touch "$DESK/.willtech/enabled"
+          git -C "$DESK" add -A
+          git -C "$DESK" commit -qm base
+          echo "=== opencode.json do projeto Desktop (plugins) ==="
+          cat "$DESK/opencode.json"
+          ELECTRON_ENABLE_LOGGING=1 open -n "$ISOAPP" --args --no-sandbox --disable-gpu 2>~/launch2.err
+          sleep 25
+          pgrep -fl "OpenCode" > ~/proc2.txt
+          screencapture -x ~/desktop-willtech.png 2>>~/screencapture.err
+          echo "screencapture exit=$?"
+          ls -la ~/desktop-willtech.png 2>/dev/null
+          osascript -e 'tell application "System Events" to get name of every window of (every process whose name contains "OpenCode")' 2>&1 | tee ~/windows2.txt
+
       - name: Classificação honesta do render nativo (PASS REAL ou NC/BLOQUEADO)
         run: |
           python3 - <<'PY'
@@ -146,6 +175,7 @@ jobs:
               "codesign_official": codesign_ok,
               "app_running": proc,
               "native_window_captured": captured,
+              "willtech_panel_captured": png_ok("desktop-willtech.png"),
               "desktop_attempt_bytes": attempt,
               "classification": classification,
               "technical_reasons": reason,
@@ -167,6 +197,10 @@ jobs:
             ~/probe.txt
             ~/probe-baseline.png
             ~/desktop-attempt.png
+            ~/desktop-willtech.png
+            ~/proc2.txt
+            ~/windows2.txt
+            ~/launch2.err
             ~/dmg-sha256.txt
             ~/codesign.txt
             ~/spctl.txt
