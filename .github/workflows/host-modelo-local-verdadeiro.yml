@@ -25,7 +25,7 @@ env:
 
 jobs:
   validar-host:
-    name: ${{ matrix.host } — sessao com modelo local, hooks e ferramentas reais
+    name: ${{ matrix.host }} — sessao com modelo local, hooks e ferramentas reais
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -33,7 +33,7 @@ jobs:
       matrix:
         host: [codex, claude]
     env:
-      HOST_KIND: ${{ matrix.host }
+      HOST_KIND: ${{ matrix.host }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,7 +67,7 @@ jobs:
           BIN=$(find "$HOME/llama" -maxdepth 4 -name llama-server -type f | head -1)
           test -n "$BIN"
           chmod +x "$BIN"
-          export LD_LIBRARY_PATH="$(dirname "$BIN"):$LD_LIBRARY_PATH"
+          export LD_LIBRARY_PATH="$(dirname "$BIN")"
           nohup "$BIN" -m "$HOME/lab-cache/model.gguf" \
             --host 127.0.0.1 --port 8080 --jinja -c 8192 --threads 4 -np 1 \
             --chat-template-kwargs '{"enable_thinking":false}' > "$HOME/local-model.log" 2>&1 &
@@ -199,7 +199,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-host-local-${{ matrix.host }
+          name: native-host-local-${{ matrix.host }}
           path: |
             ~/host-version.txt
             ~/local-models.json
