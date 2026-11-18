@@ -125,7 +125,7 @@ Artefatos publicados sem segredos (logs, hashes, IDs de sessão, capturas, links
 
 ## §9 — Evolução 3.0: Benchmark Multi-Braço A/B/C (Inteligência Adaptativa e Economia Real)
 
-Data: 2026-11-18 · Workflow: `inteligencia-gratuita` ([run 44300443490](https://github.com/hebwil/willtech-general/actions/runs/44300443490), **SUCCESS**) · **Orçamento consumido: US$ 0,00**.
+Data: 2026-11-18 · Workflow: `inteligencia-gratuita` ([run 44347897832](https://github.com/hebwil/willtech-general/actions/runs/44347897832), **SUCCESS**) · **Orçamento consumido: US$ 0,00**.
 Ambiente: runner `ubuntu-latest` gratuito, OpenCode V2.3.0 oficial, llama.cpp b12483, Qwen3-1.7B-Q4_K_M (`simulation: false`).
 
 Total de 27 execuções reais de inferência (3 tarefas × 3 repetições × 3 braços de inteligência):
@@ -136,25 +136,29 @@ Total de 27 execuções reais de inferência (3 tarefas × 3 repetições × 3 b
 ### Resultados medidos por tarefa (médias reais e dispersão):
 
 1. **Tarefa T1 (Simples — sem necessidade de sala):**
-   - Braço A: 59.7 ± 0.9 input tokens | 17,990 ms | 0.0 releituras | 0/3 funcional
-   - Braço B: 56.0 ± 0.0 input tokens (**−6.08%**) | 18,367 ms | 0.0 releituras | 0/3 funcional
-   - Braço C: 56.3 ± 0.5 input tokens (−5.86%) | 17,570 ms (−2.34%) | 0.0 releituras | 0/3 funcional
+   - Braço A: 139.7 ± 1.1 input tokens | 7,236 ± 1,189 ms | 0.0 releituras | 0/3 funcional
+   - Braço B: 139.7 ± 1.1 input tokens (+0.00%) | 6,676 ± 1,116 ms (−7.74%) | 0.0 releituras | 0/3 funcional
+   - Braço C: 139.0 ± 0.0 input tokens (−0.48%) | 6,902 ± 1,550 ms (−4.62%) | 0.0 releituras | 0/3 funcional
 
 2. **Tarefa T2 (Média — conhecimento prévio existente na sala):**
-   - Braço A: 1,772.3 ± 1,223.1 input tokens | 54,057 ms | 1.0 releituras | 0/3 funcional
-   - Braço B: 709.0 ± 898.1 input tokens (**−59.99%**) | 37,605 ms (**−30.43%**) | 1.0 releituras | 0/3 funcional
-   - Braço C: 3,970.7 ± 415.7 input tokens (+124.04%) | 364,570 ms (+574.42%) | 1.0 releituras | 0/3 funcional
+   - Braço A: 1,859.3 ± 2,835.1 input tokens | 86,126 ± 115,822 ms | 2.0 ± 1.7 releituras | 0/3 funcional
+   - Braço B: 2,202.3 ± 2,593.4 input tokens (+18.45%) | 157,996 ± 111,117 ms (+83.45%) | 6.0 ± 4.6 releituras (+200.0%) | 0/3 funcional
+   - Braço C: 2,120.3 ± 3,406.7 input tokens (+14.04%) | 102,335 ± 112,259 ms (+18.82%) | 3.3 ± 4.0 releituras (+66.5%) | 0/3 funcional
 
 3. **Tarefa T3 (Complexa — refatoração com invalidação de hash/stale e revisão):**
-   - Braço A: 3,243.7 ± 457.9 input tokens | 100,564 ms | 0.7 releituras | 0/3 funcional
-   - Braço B: 810.3 ± 643.0 input tokens (**−75.02%**) | 98,397 ms (−2.15%) | **0.0 releituras (−100%)** | 0/3 funcional
-   - Braço C: 864.0 ± 626.3 input tokens (−73.36%) | 62,192 ms (**−38.16%**) | **0.0 releituras (−100%)** | 0/3 funcional
+   - Braço A: 2,644.0 ± 3,811.1 input tokens | 98,800 ± 93,835 ms | 3.0 ± 3.6 releituras | 0/3 funcional
+   - Braço B: **184.3 ± 45.6 input tokens (−93.03%)** | **27,376 ± 9,486 ms (−72.29%)** | **0.0 releituras (−100%)** | 0/3 funcional
+   - Braço C: 4,380.7 ± 3,798.5 input tokens (+65.68%) | 124,830 ± 101,162 ms (+26.35%) | 3.3 ± 3.5 releituras (+11.0%) | 0/3 funcional
 
-### Conclusões do Benchmark A/B/C:
-- **Economia Líquida Comprovada no Braço B:** A estabilização de prefixo combinada com a recuperação JIT seletiva evitou o estouro de cache e reduziu os novos tokens de entrada em **63.27%** no agregado (com picos de **−75.02%** em tarefas complexas).
-- **Redução de Releituras:** Em T3, as releituras repetidas caíram de 0.7 para 0.0 (**−100%** de releituras evitadas).
-- **Risco de Contexto Excessivo em Modelos Menores (Braço C em T2):** Quando o modelo pequeno de 1.7B recebeu briefs densos com múltiplos símbolos do RepoMap na tarefa T2, ele entrou em loops exploratórios de releitura (+124% tokens). Isso comprova a decisão arquitetural da Seção 3.A: o contexto estrutural deve ser dosado dinamicamente pela especialidade e objetivo, nunca injetado de forma indiscriminada.
-- **Sucesso Funcional:** 0/9 em todos os braços devido ao comportamento de tool-calling do modelo Qwen3-1.7B (chamada de `grep` com caminho de arquivo em vez de diretório), mantendo exatamente a limitação honesta documentada no §3.
+### Conclusões e Diagnóstico Causa-Raiz do Benchmark A/B/C:
+- **Economia Líquida no Braço B:** Redução agregada de **−45.59%** em novos tokens de entrada (1.547,7 → 842,1), **−36.87%** em tokens efetivos faturados e **−9.97%** no volume total de tokens incluindo cache. Em tarefas complexas (T3), a economia de tokens alcançou **−93.03%** com redução de **−72.29%** no tempo de execução e eliminação completa de releituras (**−100%**).
+- **Aumento de Releituras em T2 no Braço B (+19.76% agregado):** Em T2, a ferramenta `grep` do OpenCode falhou repetidamente com `"Search path does not exist: src/calc.py"`, induzindo o modelo a emitir 6 chamadas de releitura consecutivas.
+- **Risco de Contexto Estrutural Não Solicitado (Braço C):** O Braço C elevou o consumo em +43.01% de tokens de entrada e +21.81% de duração, confirmando que o RepoMap deve ser ativado sob demanda.
+- **Auditoria do Resultado Funcional (0/9 em A, B e C):**
+  1. *Falha do modelo:* O Qwen3-1.7B passou caminhos de arquivos (`src/version.py`, `src/calc.py`, `src/tax.py`) no parâmetro `path` do tool `grep`.
+  2. *Rigidez do runtime:* O OpenCode v2.3.0 rejeita caminhos que não sejam diretórios no `grep` com `Search path does not exist`.
+  3. *Comportamento resultante:* Ao receber essa mensagem, o modelo deduziu que os arquivos não existiam no repositório.
+- **Custo financeiro:** US$ 0,00 reais comprovados em todos os testes.
 
 ## Limitações honestas restantes
 

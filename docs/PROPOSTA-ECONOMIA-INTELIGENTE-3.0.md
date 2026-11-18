@@ -104,7 +104,7 @@ Não implantar ao mesmo tempo todos os mecanismos. Prioridade: **ranking read-on
 - **Fase D (Micro-skills e biblioteca controlada):** `pattern-export` e `pattern-import` com provenance estrita, `source_hash`, neutralização estrutural e obrigatoriedade de aprovação humana explícita (`--i-approve-human`) no projeto destino.
 - **Fase E (Saídas estruturadas com evidência íntegra):** `tools/willtech-output.py` opt-in com persistência de log bruto em `.willtech/logs/<sha[:16]>.log`, sanitização de segredos antes do disco, conferência por `--expected-sha256` e 100% de preservação de stderr, stacktraces e falhas de teste.
 
-### 2. Benchmark A/B/C medido no GitHub Actions (Run 44300443490 — Custo US$ 0,00)
+### 2. Benchmark A/B/C medido no GitHub Actions (Run 44347897832 — Custo US$ 0,00)
 Medição autêntica com 27 execuções no runner gratuito Ubuntu com OpenCode V2.3.0 oficial + llama.cpp b12483 + Qwen3-1.7B-Q4_K_M (3 tarefas × 3 repetições × 3 braços):
 - **Braço A (Baseline):** WillTech-General 3.0 canônico sem otimização adaptativa.
 - **Braço B (JIT Adaptativo):** Prefixo estável + JIT adaptativo seletivo.
@@ -112,20 +112,26 @@ Medição autêntica com 27 execuções no runner gratuito Ubuntu com OpenCode V
 
 | Tarefa | Braço | Novos Input Tokens (média ± std) | Duração ms (média ± std) | Releituras (média) | Sucesso Funcional |
 |---|---|---:|---:|---:|---:|
-| **T1 (Simples)** | A (Baseline) | 59.7 ± 0.9 | 17,990 ± 2,243 | 0.0 | 0/3 (limitação 1.7B) |
-| | B (JIT Adaptativo) | **56.0 ± 0.0 (−6.08%)** | 18,367 ± 6,864 (+2.09%) | 0.0 | 0/3 (limitação 1.7B) |
-| | C (Completo) | 56.3 ± 0.5 (−5.86%) | 17,570 ± 5,286 (−2.34%) | 0.0 | 0/3 (limitação 1.7B) |
-| **T2 (Média c/ Memória)** | A (Baseline) | 1,772.3 ± 1,223.1 | 54,057 ± 15,228 | 1.0 | 0/3 (limitação 1.7B) |
-| | B (JIT Adaptativo) | **709.0 ± 898.1 (−59.99%)** | **37,605 ± 12,028 (−30.43%)** | 1.0 | 0/3 (limitação 1.7B) |
-| | C (Completo) | 3,970.7 ± 415.7 (+124.04%) | 364,570 ± 223,736 (+574.42%) | 1.0 | 0/3 (limitação 1.7B) |
-| **T3 (Complexa/Invalidação)** | A (Baseline) | 3,243.7 ± 457.9 | 100,564 ± 8,506 | 0.7 | 0/3 (limitação 1.7B) |
-| | B (JIT Adaptativo) | **810.3 ± 643.0 (−75.02%)** | 98,397 ± 8,633 (−2.15%) | **0.0 (−100%)** | 0/3 (limitação 1.7B) |
-| | C (Completo) | 864.0 ± 626.3 (−73.36%) | **62,192 ± 20,416 (−38.16%)** | **0.0 (−100%)** | 0/3 (limitação 1.7B) |
+| **T1 (Simples)** | A (Baseline) | 139.7 ± 1.1 | 7,236 ± 1,189 | 0.0 | 0/3 (bloqueio grep) |
+| | B (JIT Adaptativo) | 139.7 ± 1.1 (+0.00%) | 6,676 ± 1,116 (−7.74%) | 0.0 | 0/3 (bloqueio grep) |
+| | C (Completo) | 139.0 ± 0.0 (−0.48%) | 6,902 ± 1,550 (−4.62%) | 0.0 | 0/3 (bloqueio grep) |
+| **T2 (Média c/ Memória)** | A (Baseline) | 1,859.3 ± 2,835.1 | 86,126 ± 115,822 | 2.0 ± 1.7 | 0/3 (bloqueio grep) |
+| | B (JIT Adaptativo) | 2,202.3 ± 2,593.4 (+18.45%) | 157,996 ± 111,117 (+83.45%) | 6.0 ± 4.6 (+200.0%) | 0/3 (bloqueio grep) |
+| | C (Completo) | 2,120.3 ± 3,406.7 (+14.04%) | 102,335 ± 112,259 (+18.82%) | 3.3 ± 4.0 (+66.5%) | 0/3 (bloqueio grep) |
+| **T3 (Complexa/Invalidação)** | A (Baseline) | 2,644.0 ± 3,811.1 | 98,800 ± 93,835 | 3.0 ± 3.6 | 0/3 (bloqueio grep) |
+| | B (JIT Adaptativo) | **184.3 ± 45.6 (−93.03%)** | **27,376 ± 9,486 (−72.29%)** | **0.0 (−100.0%)** | 0/3 (bloqueio grep) |
+| | C (Completo) | 4,380.7 ± 3,798.5 (+65.68%) | 124,830 ± 101,162 (+26.35%) | 3.3 ± 3.5 (+11.0%) | 0/3 (bloqueio grep) |
 
-**Consolidação Geral:**
-- **Braço B (JIT Adaptativo):** Redução agregada de **−63.27%** em novos tokens de entrada, **−49.49%** em tokens efetivos faturados e **−12.08%** no tempo total de execução. Releituras reduzidas a zero na tarefa complexa (T3).
-- **Braço C (Completo):** Excelente desempenho em T3 (−73.36% tokens, −38.16% tempo), mas em T2 o modelo pequeno de 1.7B entrou em loop ao tentar ler múltiplos símbolos do RepoMap (+124% tokens), demonstrando que contexto denso de código só deve ser ativado quando requerido explicitamente pela tarefa.
-- **Resultado Funcional:** 0/9 em todos os braços devido a limitações estritas de tool-calling do modelo Qwen3-1.7B (chamada de `grep` com caminho de arquivo em vez de pasta). A manutenção do comportamento funcional em 100% dos testes determinísticos e anti-false-pass confirma que nenhuma capacidade foi removida.
-- **Custo financeiro:** US$ 0,00 reais em todos os 27 testes.
+**Consolidação Geral Real (27 execuções):**
+- **Braço B (JIT Adaptativo):**
+  - Redução agregada de novos tokens de entrada: **−45.59%** (1.547,7 → 842,1)
+  - Redução de tokens efetivos faturados: **−36.87%** (1.879,2 → 1.186,4)
+  - Redução do volume total de tokens (incluindo cache): **−9.97%** (20.805,1 → 18.731,2)
+  - Redução de duração/latência agregada: **−0.06%** (64.054 ms → 64.016 ms)
+  - Releituras repetidas no agregado: **+19.76%** (1,7 → 2,0), com aumento em T2 (loop de falha da ferramenta `grep`) e eliminação total em T3 (**−100%**, 3,0 → 0,0).
+- **Braço C (Completo):** Consumo agregado superior em tokens (+43,01% input, +25,50% volume) e latência (+21,81%), confirmando que briefs densos de símbolos sem necessidade induzem o modelo a investigações redundantes.
+- **Auditoria Causa-Raiz do Resultado Funcional (0/9 em A, B e C):**
+  A análise detalhada dos arquivos `*.oc.jsonl` demonstrou que em todos os 27 testes o modelo tentou inspecionar o código chamando `grep` passando o caminho do arquivo no parâmetro `path` (ex: `path: "src/version.py"`). O runtime OpenCode v2.3.0 exige estritamente um diretório no parâmetro `path`, respondendo com o erro de runtime `"Search path does not exist: src/version.py"`. Ao receber essa recusa enganosa, o modelo concluiu erroneamente que os arquivos não existiam no projeto.
+- **Custo financeiro real:** US$ 0,00 reais em todos os 27 testes.
 
-**STATUS DESTA PÁGINA: IMPLEMENTADO, MEDIDO EM BENCHMARK REAL E HOMOLOGADO. EFICIÊNCIA COMPROVADA NO BRAÇO B.**
+**STATUS DESTA PÁGINA: IMPLEMENTADO E RECONCILIADO COM OS ARTEFATOS DO RUN 44347897832. CORREÇÃO DE INTEROPERABILIDADE DE GREP E HOMOLOGAÇÃO FUNCIONAL EM ANDAMENTO.**

@@ -298,6 +298,19 @@ let blocked = false;
 try {
   await hooks["execute.before"]({ tool: "bash", sessionID: "nodesim", input: { command: "false" } });
 } catch (e) { blocked = /guard-a|bloquead|STOP/i.test(e.message); }
+
+const fs = await import("node:fs");
+const pathMod = await import("node:path");
+fs.mkdirSync(pathMod.join(dir, "src"), { recursive: true });
+fs.writeFileSync(pathMod.join(dir, "src", "version.py"), "APP_VERSION = '3.4.2'\n");
+const grepEv = { tool: "grep", input: { pattern: "APP_VERSION", path: "src/version.py" } };
+await hooks["execute.before"](grepEv);
+const grepNormalized = grepEv.input.path === "src" && grepEv.input.include.includes("version.py");
+
+const readEv = { tool: "read", input: { path: "src/version.py" } };
+await hooks["execute.before"](readEv);
+const readNormalized = readEv.input.filePath === "src/version.py";
+
 await hooks["session.prompt"]({ sessionID: "nodesim", prompt: { text: "x".repeat(250) } });
 const sys = [];
 await hooks["session.context"]({ system: sys });
@@ -305,8 +318,8 @@ const injected = sys.length === 1 && sys[0].text.includes("QUARENTENA");
 const sys2 = [];
 await hooks["session.context"]({ system: sys2 });
 cleanup();
-if (blocked && injected && sys2.length === 0) { console.log("SIM-OK"); process.exit(0); }
-console.log("SIM-FAIL blocked=" + blocked + " injected=" + injected + " once=" + (sys2.length === 0));
+if (blocked && injected && sys2.length === 0 && grepNormalized && readNormalized) { console.log("SIM-OK"); process.exit(0); }
+console.log("SIM-FAIL blocked=" + blocked + " injected=" + injected + " once=" + (sys2.length === 0) + " grep=" + grepNormalized + " read=" + readNormalized);
 process.exit(1);
 JS
   OUT=$("$NODE" "$TMP/sim.mjs" "$LAB" 2>&1 || true)
