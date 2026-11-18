@@ -3,6 +3,7 @@ import base64
 import importlib.util
 import json
 import re
+import shutil
 import subprocess
 import unittest
 from pathlib import Path
@@ -49,6 +50,70 @@ class GuiDistributionTests(unittest.TestCase):
         self.assertNotRegex(source, r'\b(setInterval|fetch|spawn|exec|eval|innerHTML|WebGL)\s*\(')
         self.assertNotIn("ctx.client", source)
         self.assertNotIn("ctx.tool", source)
+
+    def test_native_panel_menu_launcher_contract(self):
+        """Contrato real do bundle: o menu lateral abre o painel no contexto da sessao."""
+        node = shutil.which("node") or shutil.which("nodejs")
+        if not node:
+            self.skipTest("Node indisponivel; contrato GUI nativo nao exercitado")
+        script = r'''
+const fs = require("node:fs");
+const vm = require("node:vm");
+const assert = require("node:assert/strict");
+const source = fs.readFileSync(process.argv[1], "utf8");
+const mod = { exports: {} };
+const sdk = {
+  Plugin: { define: (definition) => definition },
+  Panel: "Panel", MenuItem: "MenuItem", Command: "Command",
+  Style: "Style", createKeyed: () => {},
+};
+const load = (name) => {
+  if (name === "@opencode/plugin/gui") return sdk;
+  if (name === "solid-js") return { createEffect: () => {}, createSignal: () => {}, onCleanup: () => {} };
+  if (name === "./activity.cjs") return { AGENTS: [], EVENTS: {}, projectAgents: () => [] };
+  if (name === "./assets.cjs") return {};
+  throw new Error("Import nao permitido: " + name);
+};
+vm.runInNewContext(source, { require: load, module: mod, exports: mod.exports });
+const plugin = mod.exports.default;
+assert.equal(typeof plugin.setup, "function");
+let session = { id: "sessao-real" };
+const calls = [], opened = [];
+const ctx = {
+  id: "willtech-general-visual",
+  options: { enabled: true }, app: { platform: "desktop", version: "2.3.0" },
+  sessions: { current: () => session },
+  layout: {
+    state: () => "closed",
+    open: (key, item) => opened.push([key, item]),
+    toggle: () => {},
+  },
+  add: (token, value) => calls.push({ token, value }),
+};
+plugin.setup(ctx);
+const menus = calls.filter((c) => c.token === "MenuItem");
+assert.equal(menus.length, 1, "falta menu lateral oficial");
+const row = menus[0].value();
+assert.equal(row.menu, "session.panel");
+assert.equal(row.id, "team.open");
+assert.equal(row.opened, false);
+row.run();
+assert.equal(opened.length, 1);
+assert.equal(opened[0][0], "willtech-general-visual:team");
+assert.equal(opened[0][1], session);
+session = null;
+menus[0].value().run();
+assert.equal(opened.length, 1, "nao abre painel sem sessao");
+const count = calls.length;
+ctx.options.enabled = false;
+plugin.setup(ctx);
+assert.equal(calls.length, count, "opt-in nao respeitado");
+console.log("PASS: launcher nativo, opt-in e isolamento por sessao");
+'''
+        r = subprocess.run([node, "-e", script, str(PACKAGE / "gui-source.cjs")],
+                           text=True, capture_output=True, timeout=15)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("PASS: launcher nativo", r.stdout)
 
     def test_orchestration_identity_and_installers_unchanged(self):
         protected = ["docs/assets", "LICENSE", "NOTICE", "opencode/agent", "opencode/AGENTS.md", "opencode/bin",
