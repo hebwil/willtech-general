@@ -102,8 +102,8 @@ export default {
     // até `session.idle`, evitando invalidar o cache de prefixo no turno 2+ e
     // preservando a evidência da Sala na etapa final de síntese.
     const envFlag = String(process.env.WILLTECH_ADAPTIVE_JIT || "").trim().toLowerCase();
-    const markerFile = path.join(dir, ".willtech", "adaptive-jit");
-    const adaptive = ["1", "true", "yes", "on"].includes(envFlag) || fs.existsSync(markerFile);
+    const markerFile = join(dir, ".willtech", "adaptive-jit");
+    const adaptive = ["1", "true", "yes", "on"].includes(envFlag) || existsSync(markerFile);
     let pending = null;
     const sessionCtx = new Map();
     await ctx.session.hook("prompt", (ev) => {
