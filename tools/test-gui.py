@@ -52,10 +52,22 @@ class GuiDistributionTests(unittest.TestCase):
 
     def test_orchestration_identity_and_installers_unchanged(self):
         protected = ["docs/assets", "LICENSE", "NOTICE", "opencode/agent", "opencode/AGENTS.md", "opencode/bin",
-                     "opencode/plugins/willtech/index.js", "codex/agents", "codex/hooks.json", "claude-code/settings",
-                     "tools/willtech-auto.py", "tools/willtech-install.sh"]
+                     "codex/agents", "codex/hooks.json", "claude-code/settings", "tools/willtech-install.sh"]
         changed = subprocess.check_output(["git", "diff", "--name-only", BASE, "--", *protected], cwd=ROOT, text=True)
         self.assertEqual(changed, "")
+        # Contratos invariáveis de segurança e separação entre automação e GUI
+        auto_src = (ROOT / "tools/willtech-auto.py").read_text(encoding="utf-8")
+        self.assertIn("BUDGET_CHARS = 1200", auto_src)
+        self.assertIn("BRIEF_CAP = BUDGET_CHARS", auto_src)
+        self.assertIn('"permissionDecision": "deny"', auto_src)
+        self.assertNotIn('"permissionDecision": "allow"', auto_src)
+        self.assertNotIn("updatedInput", auto_src)
+        self.assertNotIn("gui-experimental", auto_src)
+        plugin_src = (ROOT / "opencode/plugins/willtech/index.js").read_text(encoding="utf-8")
+        self.assertIn('id: "willtech-general"', plugin_src)
+        self.assertIn('hook("execute.before"', plugin_src)
+        self.assertIn("pending = null", plugin_src)
+        self.assertNotIn("gui-experimental", plugin_src)
         # A única alteração permitida no PS1 desde BASE corrige o parser
         # PowerShell 5.1: '$Platform:' é interpretado como variável inválida.
         # Conferimos o ARQUIVO INTEIRO, sem abrir exceção genérica ao guard.
