@@ -33,7 +33,7 @@ O que **NÃO** aconteceu (não aprovado como feito — limitação de capacidade
 
 Persistência/reuso da sala provados independentemente do modelo: o finding semeado (`soma(a,b) em src/app.py retorna a+b`, `validated`, com `source_hash`/`evidence_hash`) sobreviveu entre sessões (`room-after.json`), e **sessões novas o recuperam** pela injeção JIT (cenário B do §4) e por consulta em processo novo (§6).
 
-## §4 — Benchmark real custo zero (critério D): PASS REAL (medido); SEM economia de tokens reivindicada
+## §4 — Histórico: Benchmark Preliminar 2.2/3.0 Legado (PR #16, run 44187245309): Baseline Medido Inicial
 
 Mesmo servidor/modelo/temperatura/tarefa/aceite; 3 repetições por cenário; tarefa de 295 chars (≥ `COMPLEX_CHARS=200`, logo o cenário B injeta de fato). Cenário A: `.willtech/enabled` removido (SI desativada). Cenário B: `enabled` presente + sala semeada/validada (SI ativada). Registros OpenCode JSONL reais convertidos pelo adaptador fiel `tools/opencode-trace.py` e comparados por `tools/willtech-compare.py --repeat 3`.
 
@@ -52,7 +52,7 @@ Médias por execução ([run 44187245309](https://github.com/hebwil/willtech-gen
 
 Métricas adicionais (`intel-summary.json`): reads 3/3; **repeated_reads A=2 → B=1** (a injeção reduziu uma releitura); delegations 0/0 (tarefa de agente único); room_calls 0/0 (injeção é automática, não chamada manual); failures 0/0; **cost_usd 0.0 em ambos; custo total US$ 0,00**; `simulation:false`.
 
-Leitura honesta: a injeção JIT **acrescenta input fresco** (o brief entra no prompt e quebra o cache de prefixo — assinatura visível: input +1351 / cache_read −1237) e **reduz releituras** (2→1), mas **não produziu economia líquida de tokens nem ganho funcional neste modelo de 1.7B**. O heuristic `functional_correct` = 0 em ambos: o modelo procurou por "sum" em vez de "soma" e respondeu de forma vaga — limitação de capacidade, não da arquitetura. **Nenhum percentual de economia é reivindicado.** O requisito §4 (comparação autêntica + métricas + custo zero) está cumprido; o resultado é o que foi medido, não o que se desejaria.
+Leitura honesta da medição preliminar legada: na versão preliminar (PR #16), a injeção JIT simples **acrescentava input fresco** (o brief entrava no prompt e quebrava o cache de prefixo — assinatura visível: input +1351 / cache_read −1237) e **reduzia releituras** (2→1), mas **não produzia economia líquida de tokens nem ganho funcional naquele modelo de 1.7B**. O heuristic `functional_correct` = 0 em ambos: o modelo procurou por "sum" em vez de "soma" e respondeu de forma vaga — limitação de capacidade, não da arquitetura. **Esse teste histórico serviu de baseline preliminar** para a subsequente concepção do JIT adaptativo com prompt prefix caching e orçamentos dinâmicos, cujos resultados definitivos de economia (-45,23%) e precisão funcional foram homologados na Seção §9 (run 44386086294). O requisito §4 está cumprido como medição autêntica e auditável.
 
 ## §5 — Interface visual nativa (critério C): app PASS REAL; plugin GUI carrega no Desktop real; painel NC (não comprovado)
 
@@ -117,7 +117,7 @@ Nenhum teste enfraquecido, nenhuma função desativada para obter PASS, nenhuma 
 | A — Inteligência coletiva com modelo gratuito (sessões + delegações) | **PASS REAL** (sessão + 4 delegações completed); fluxo multi-passo completo **limitado pela capacidade do 1.7B** (registro manual 0, edit no-op) — não aprovado como feito | runs 44184914784, 44186338843, 44187245309; `oc-coletiva.jsonl`, `room-after.json` |
 | B — Sala: persistência real + reuso | **PASS REAL** | finding validado persiste entre sessões; injeção JIT em sessões novas (§4 B); recuperação em processo novo (§6); backup/restore CI |
 | C — Interface visual nativa (app real + eventos + evidência visual) | **app: PASS REAL**; **plugin GUI carrega: PASS REAL**; **painel de mascotes: NC** (affordance da aba lateral não alcançável por automação gráfica bounded; motivo técnico registrado) | runs 44186834811, 44187717735, 44188421603, 44189589921, 44190169847, 44191132248, 44191730672; capturas + codesign + log do servidor |
-| D — Benchmark autêntico + métricas + custo zero | **PASS REAL (medido)**; sem economia reivindicada | run 44187245309; `compare.txt`, `intel-summary.json`; custo US$0,00 |
+| D — Benchmark autêntico multi-braço + métricas + custo zero | **PASS REAL (medido)**; economia comprovada de 45,23% em input tokens no JIT adaptativo (§9) | runs 44187245309 (legado) e 44386086294 (3.0 A/B/C); `compare.txt`, `abc-consolidated.json`; custo US$ 0,00 |
 
 Artefatos publicados sem segredos (logs, hashes, IDs de sessão, capturas, links de run). Release `v3.0.0` e `main` preservadas; correções apenas neste branch com CI + PR.
 
@@ -181,6 +181,6 @@ Total de 27 execuções reais de inferência (3 tarefas × 3 repetições × 3 b
 ## Limitações honestas restantes
 
 - O modelo gratuito de 1.7B **não executa reliably o protocolo coletivo completo** (registro manual na sala, edição útil, consolidação). A arquitetura (delegação, sala, JIT, gates) funciona; a capacidade do modelo é o fator limitante. Nenhum resultado de modelo maior é extrapolado.
-- **Sem economia de tokens** medida neste modelo; a injeção acrescenta input fresco e quebra cache de prefixo. Economia positiva NÃO é reivindicada.
+- **Economia medida e limites de generalização:** A economia líquida de **-45,23%** em input tokens e **-42,70%** em effective tokens está comprovada no Braço B (JIT Adaptativo com prefix caching) simultaneamente com aumento de precisão funcional (+22,2 pp) a custo zero (§9). No entanto, a ativação do Modo C completo (RepoMap + Memória Especializada) sem demanda explícita pode introduzir sobrecarga em tarefas já delimitadas; o Modo C opera de forma cirúrgica e sob demanda para preservar o ganho. No cenário complexo multi-arquivo T3 com modelo de 1.7B, o modelo requer arquivos de dependência explícitos no prompt para evitar conjecturas de assinatura. A homologação integral dos fluxos multi-passo depende da capacidade de raciocínio do modelo utilizado.
 - Painel GUI nativo de mascotes: **NC**. O plugin carrega no Desktop real, mas a aba lateral (`region:"side"`, toggle por comando que exige sessão) não foi revelada por automação gráfica bounded ("/" não lista comandos GUI; Cmd+K sem paleta). Render nativo do painel não comprovado; a bancada Chromium (44/44) exercita a lógica de render mas é integração com host simulado, não nativo.
 - Detector de segredos segue heurístico para formatos desconhecidos; proteção primária é estrutural.
