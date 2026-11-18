@@ -43,6 +43,15 @@ class DistributionTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_distribution_version_is_consistent(self):
+        """A versao no VERSION deve estar presente no archive e no manifesto."""
+        source_version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+        self.assertEqual(source_version, build_dist.VERSION)
+        self.assertEqual(self.manifest["version"], source_version)
+        self.assertEqual(self.manifest["archive"], f"willtech-general-{source_version}.tar.gz")
+        extracted = extract(self.tarpath, self.base / "version")
+        self.assertEqual((extracted / "VERSION").read_text(encoding="utf-8").strip(), source_version)
+
     def test_archive_matches_published_code(self):
         sums = {}
         for line in (self.dist / "SHA256SUMS.txt").read_text(encoding="utf-8").splitlines():
