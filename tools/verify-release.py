@@ -7,6 +7,7 @@ arquivos DISTRIBUÍDOS. Uso: verify-release.py <dir-artefatos> <tag>. Sai != 0 e
 qualquer divergência. Zero modelo/rede além do download dos artefatos."""
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import tarfile
@@ -14,8 +15,6 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PREFIX = "willtech-general-3.0.0"
-
 
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -24,6 +23,12 @@ def sha256(path):
 def main():
     artifacts, tag = Path(sys.argv[1]), sys.argv[2]
     manifest = json.loads((artifacts / "MANIFEST.json").read_text(encoding="utf-8"))
+    version = manifest.get("version")
+    assert isinstance(version, str) and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version), "versao invalida"
+    assert tag == f"v{version}", "tag diferente da versao do arquivo"
+    assert manifest.get("name") == "willtech-general", "pacote inesperado"
+    prefix = f"willtech-general-{version}"
+    assert manifest.get("archive") == f"{prefix}.tar.gz", "nome do archive nao corresponde a versao"
     tarpath = artifacts / manifest["archive"]
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     assert manifest["commit"] == commit, f"commit da tag {commit} != manifesto {manifest['commit']}"
@@ -39,7 +44,13 @@ def main():
         src.mkdir()
         with tarfile.open(tarpath, "r:gz") as tf:
             tf.extractall(src, filter="data")
-        src = src / PREFIX
+        src = src / prefix
+        assert src.is_dir(), "arquivo sem raiz canonica da versao"
+        version_file = src / "VERSION"
+        if version_file.is_file():
+            assert version_file.read_text(encoding="utf-8").strip() == version, "VERSION incoerente"
+        else:
+            assert version == "3.0.0", "VERSION obrigatoria nas novas releases"
         extracted = {p.relative_to(src).as_posix() for p in src.rglob("*") if p.is_file()}
         assert extracted == set(sums), "conjunto de arquivos extraídos != SHA256SUMS"
         tracked = set(subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines())
@@ -52,7 +63,7 @@ def main():
         lab.mkdir()
         with tarfile.open(tarpath, "r:gz") as tf:
             tf.extractall(lab, filter="data")
-        lab = lab / PREFIX
+        lab = lab / prefix
         subprocess.check_call(["git", "init", "-q"], cwd=lab)
         install = ["sh", str(lab / "tools/willtech-install.sh"), "--repo", str(lab)]
         r = subprocess.run(install + ["--platform", "opencode", "--yes"],

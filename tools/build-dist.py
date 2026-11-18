@@ -9,9 +9,14 @@ import json
 import subprocess
 import tarfile
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = "3.0.0"
+# Uma unica fonte de versao no pacote publicado; fallback historico para v3.0.0.
+VERSION_FILE = ROOT / "VERSION"
+VERSION = VERSION_FILE.read_text(encoding="utf-8").strip() if VERSION_FILE.is_file() else "3.0.0"
+if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", VERSION):
+    raise ValueError(f"VERSION invalida: {VERSION!r}")
 PREFIX = f"willtech-general-{VERSION}"
 
 
