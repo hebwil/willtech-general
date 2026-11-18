@@ -284,6 +284,8 @@ jobs:
           open(os.path.join(home, "desktop-summary.json"), "w").write(json.dumps(summary, indent=2, ensure_ascii=False))
           print("\nCLASSIFICAÇÃO:", classification)
           for r in reason: print("  motivo:", r)
+          if not panel_visible:
+              raise SystemExit("NC: painel de sete agentes nao comprovado no Desktop real")
           PY
 
       - name: Publicar artefatos nativos (sem segredos)
