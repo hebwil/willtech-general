@@ -1,0 +1,764 @@
+{
+  "arms": [
+    {
+      "label": "A",
+      "n": 3,
+      "stats": {
+        "input_tokens": {
+          "mean": 5927.0,
+          "stddev": 5131.51,
+          "min": 2.0,
+          "max": 8946.0,
+          "n": 3
+        },
+        "output_tokens": {
+          "mean": 94.67,
+          "stddev": 2.08,
+          "min": 93.0,
+          "max": 97.0,
+          "n": 3
+        },
+        "cache_read": {
+          "mean": 7066.0,
+          "stddev": 5131.51,
+          "min": 4047.0,
+          "max": 12991.0,
+          "n": 3
+        },
+        "cache_creation": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "effective_tokens": {
+          "mean": 6021.67,
+          "stddev": 5129.5,
+          "min": 99.0,
+          "max": 9040.0,
+          "n": 3
+        },
+        "api_weighted_tokens": {
+          "mean": 6728.27,
+          "stddev": 4616.35,
+          "min": 1398.1,
+          "max": 9444.7,
+          "n": 3
+        },
+        "volume_tokens": {
+          "mean": 13087.67,
+          "stddev": 2.08,
+          "min": 13086.0,
+          "max": 13090.0,
+          "n": 3
+        },
+        "num_turns": {
+          "mean": 2.0,
+          "stddev": 0.0,
+          "min": 2.0,
+          "max": 2.0,
+          "n": 3
+        },
+        "duration_ms": {
+          "mean": 62396.67,
+          "stddev": 43505.91,
+          "min": 12165.0,
+          "max": 88103.0,
+          "n": 3
+        },
+        "delegations": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "reads": {
+          "mean": 2.0,
+          "stddev": 0.0,
+          "min": 2.0,
+          "max": 2.0,
+          "n": 3
+        },
+        "repeated_reads": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "room_calls": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "rework_edits": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "bash_failures": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "failure_loops": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "cost_usd": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        }
+      },
+      "runs": [
+        {
+          "input_tokens": 8946.0,
+          "output_tokens": 94.0,
+          "cache_read": 4047.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 9040.0,
+          "api_weighted_tokens": 9444.7,
+          "volume_tokens": 13087.0,
+          "num_turns": 2.0,
+          "duration_ms": 86922.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        },
+        {
+          "input_tokens": 8833.0,
+          "output_tokens": 93.0,
+          "cache_read": 4160.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 8926.0,
+          "api_weighted_tokens": 9342.0,
+          "volume_tokens": 13086.0,
+          "num_turns": 2.0,
+          "duration_ms": 88103.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        },
+        {
+          "input_tokens": 2.0,
+          "output_tokens": 97.0,
+          "cache_read": 12991.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 99.0,
+          "api_weighted_tokens": 1398.1000000000001,
+          "volume_tokens": 13090.0,
+          "num_turns": 2.0,
+          "duration_ms": 12165.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "n": 3,
+      "stats": {
+        "input_tokens": {
+          "mean": 1688.67,
+          "stddev": 2554.2,
+          "min": 214.0,
+          "max": 4638.0,
+          "n": 3
+        },
+        "output_tokens": {
+          "mean": 91.0,
+          "stddev": 1.0,
+          "min": 90.0,
+          "max": 92.0,
+          "n": 3
+        },
+        "cache_read": {
+          "mean": 11311.33,
+          "stddev": 2554.2,
+          "min": 8362.0,
+          "max": 12786.0,
+          "n": 3
+        },
+        "cache_creation": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "effective_tokens": {
+          "mean": 1779.67,
+          "stddev": 2555.06,
+          "min": 304.0,
+          "max": 4730.0,
+          "n": 3
+        },
+        "api_weighted_tokens": {
+          "mean": 2910.8,
+          "stddev": 2299.64,
+          "min": 1582.6,
+          "max": 5566.2,
+          "n": 3
+        },
+        "volume_tokens": {
+          "mean": 13091.0,
+          "stddev": 1.0,
+          "min": 13090.0,
+          "max": 13092.0,
+          "n": 3
+        },
+        "num_turns": {
+          "mean": 2.0,
+          "stddev": 0.0,
+          "min": 2.0,
+          "max": 2.0,
+          "n": 3
+        },
+        "duration_ms": {
+          "mean": 15838.67,
+          "stddev": 392.23,
+          "min": 15419.0,
+          "max": 16196.0,
+          "n": 3
+        },
+        "delegations": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "reads": {
+          "mean": 2.0,
+          "stddev": 0.0,
+          "min": 2.0,
+          "max": 2.0,
+          "n": 3
+        },
+        "repeated_reads": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "room_calls": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "rework_edits": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "bash_failures": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "failure_loops": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "cost_usd": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        }
+      },
+      "runs": [
+        {
+          "input_tokens": 4638.0,
+          "output_tokens": 92.0,
+          "cache_read": 8362.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 4730.0,
+          "api_weighted_tokens": 5566.2,
+          "volume_tokens": 13092.0,
+          "num_turns": 2.0,
+          "duration_ms": 15419.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        },
+        {
+          "input_tokens": 214.0,
+          "output_tokens": 91.0,
+          "cache_read": 12786.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 305.0,
+          "api_weighted_tokens": 1583.6000000000001,
+          "volume_tokens": 13091.0,
+          "num_turns": 2.0,
+          "duration_ms": 15901.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        },
+        {
+          "input_tokens": 214.0,
+          "output_tokens": 90.0,
+          "cache_read": 12786.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 304.0,
+          "api_weighted_tokens": 1582.6000000000001,
+          "volume_tokens": 13090.0,
+          "num_turns": 2.0,
+          "duration_ms": 16196.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        }
+      ]
+    },
+    {
+      "label": "C",
+      "n": 3,
+      "stats": {
+        "input_tokens": {
+          "mean": 1709.0,
+          "stddev": 2589.42,
+          "min": 214.0,
+          "max": 4699.0,
+          "n": 3
+        },
+        "output_tokens": {
+          "mean": 98.0,
+          "stddev": 2.65,
+          "min": 95.0,
+          "max": 100.0,
+          "n": 3
+        },
+        "cache_read": {
+          "mean": 11413.0,
+          "stddev": 2589.42,
+          "min": 8423.0,
+          "max": 12908.0,
+          "n": 3
+        },
+        "cache_creation": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "effective_tokens": {
+          "mean": 1807.0,
+          "stddev": 2586.82,
+          "min": 313.0,
+          "max": 4794.0,
+          "n": 3
+        },
+        "api_weighted_tokens": {
+          "mean": 2948.3,
+          "stddev": 2327.88,
+          "min": 1603.8,
+          "max": 5636.3,
+          "n": 3
+        },
+        "volume_tokens": {
+          "mean": 13220.0,
+          "stddev": 2.65,
+          "min": 13217.0,
+          "max": 13222.0,
+          "n": 3
+        },
+        "num_turns": {
+          "mean": 2.0,
+          "stddev": 0.0,
+          "min": 2.0,
+          "max": 2.0,
+          "n": 3
+        },
+        "duration_ms": {
+          "mean": 17709.33,
+          "stddev": 763.93,
+          "min": 16828.0,
+          "max": 18182.0,
+          "n": 3
+        },
+        "delegations": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "reads": {
+          "mean": 2.0,
+          "stddev": 0.0,
+          "min": 2.0,
+          "max": 2.0,
+          "n": 3
+        },
+        "repeated_reads": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "room_calls": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "rework_edits": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "bash_failures": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "failure_loops": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        },
+        "cost_usd": {
+          "mean": 0.0,
+          "stddev": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 3
+        }
+      },
+      "runs": [
+        {
+          "input_tokens": 4699.0,
+          "output_tokens": 95.0,
+          "cache_read": 8423.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 4794.0,
+          "api_weighted_tokens": 5636.3,
+          "volume_tokens": 13217.0,
+          "num_turns": 2.0,
+          "duration_ms": 16828.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        },
+        {
+          "input_tokens": 214.0,
+          "output_tokens": 100.0,
+          "cache_read": 12908.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 314.0,
+          "api_weighted_tokens": 1604.8000000000002,
+          "volume_tokens": 13222.0,
+          "num_turns": 2.0,
+          "duration_ms": 18118.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        },
+        {
+          "input_tokens": 214.0,
+          "output_tokens": 99.0,
+          "cache_read": 12908.0,
+          "cache_creation": 0.0,
+          "effective_tokens": 313.0,
+          "api_weighted_tokens": 1603.8000000000002,
+          "volume_tokens": 13221.0,
+          "num_turns": 2.0,
+          "duration_ms": 18182.0,
+          "delegations": 0.0,
+          "reads": 2.0,
+          "repeated_reads": 0.0,
+          "room_calls": 0.0,
+          "rework_edits": 0.0,
+          "bash_failures": 0.0,
+          "failure_loops": 0.0,
+          "cost_usd": 0.0
+        }
+      ]
+    }
+  ],
+  "baseline": "A",
+  "sufficient_sample": true,
+  "min_required_per_arm": 3,
+  "cache_weight": 0.0,
+  "deltas_vs_baseline": {
+    "B": {
+      "input_tokens": {
+        "abs": -4238.33,
+        "pct": -71.51
+      },
+      "output_tokens": {
+        "abs": -3.67,
+        "pct": -3.88
+      },
+      "cache_read": {
+        "abs": 4245.33,
+        "pct": 60.08
+      },
+      "cache_creation": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "effective_tokens": {
+        "abs": -4242.0,
+        "pct": -70.45
+      },
+      "api_weighted_tokens": {
+        "abs": -3817.47,
+        "pct": -56.74
+      },
+      "volume_tokens": {
+        "abs": 3.33,
+        "pct": 0.03
+      },
+      "num_turns": {
+        "abs": 0.0,
+        "pct": 0.0
+      },
+      "duration_ms": {
+        "abs": -46558.0,
+        "pct": -74.62
+      },
+      "delegations": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "reads": {
+        "abs": 0.0,
+        "pct": 0.0
+      },
+      "repeated_reads": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "room_calls": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "rework_edits": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "bash_failures": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "failure_loops": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "cost_usd": {
+        "abs": 0.0,
+        "pct": null
+      }
+    },
+    "C": {
+      "input_tokens": {
+        "abs": -4218.0,
+        "pct": -71.17
+      },
+      "output_tokens": {
+        "abs": 3.33,
+        "pct": 3.52
+      },
+      "cache_read": {
+        "abs": 4347.0,
+        "pct": 61.52
+      },
+      "cache_creation": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "effective_tokens": {
+        "abs": -4214.67,
+        "pct": -69.99
+      },
+      "api_weighted_tokens": {
+        "abs": -3779.97,
+        "pct": -56.18
+      },
+      "volume_tokens": {
+        "abs": 132.33,
+        "pct": 1.01
+      },
+      "num_turns": {
+        "abs": 0.0,
+        "pct": 0.0
+      },
+      "duration_ms": {
+        "abs": -44687.34,
+        "pct": -71.62
+      },
+      "delegations": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "reads": {
+        "abs": 0.0,
+        "pct": 0.0
+      },
+      "repeated_reads": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "room_calls": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "rework_edits": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "bash_failures": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "failure_loops": {
+        "abs": 0.0,
+        "pct": null
+      },
+      "cost_usd": {
+        "abs": 0.0,
+        "pct": null
+      }
+    }
+  },
+  "scenario": "T2",
+  "scenario_meta": {
+    "name": "T2_media_reuso_sessao",
+    "complexity": "media",
+    "prior_memory": true,
+    "prompt": "Leia os arquivos src/calc.py e src/validator.py com a ferramenta read para revisar as regras do modulo de calculo e sua dependencia para documentar a API interna. Qual e o limite maximo numerico definido em MAX_TAXA e qual excecao calcular_desconto levanta quando a taxa e invalida?"
+  },
+  "functional": {
+    "A": {
+      "passes": 3,
+      "total": 3,
+      "rate": 1.0
+    },
+    "B": {
+      "passes": 3,
+      "total": 3,
+      "rate": 1.0
+    },
+    "C": {
+      "passes": 3,
+      "total": 3,
+      "rate": 1.0
+    }
+  },
+  "lab_tests": {
+    "A": {
+      "passed": true,
+      "returncode": 0
+    },
+    "B": {
+      "passed": true,
+      "returncode": 0
+    },
+    "C": {
+      "passed": true,
+      "returncode": 0
+    }
+  },
+  "jit_telemetry": {
+    "A": {
+      "prompt_hook_calls": 0,
+      "avg_injected_chars": null,
+      "room_hits": 0,
+      "repomap_hits": 0
+    },
+    "B": {
+      "prompt_hook_calls": 3,
+      "avg_injected_chars": 613.0,
+      "room_hits": 3,
+      "repomap_hits": 0
+    },
+    "C": {
+      "prompt_hook_calls": 3,
+      "avg_injected_chars": 827.0,
+      "room_hits": 3,
+      "repomap_hits": 3
+    }
+  },
+  "reviewer_pack_verified": null,
+  "stale_invalidation_verified": null,
+  "cost_real_usd": 0.0,
+  "simulation": false
+}
