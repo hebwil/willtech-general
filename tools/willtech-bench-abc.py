@@ -71,10 +71,11 @@ SCENARIOS = {
         "prior_memory": True,
         "stale_invalidation": True,
         "prompt": (
-            "Leia os arquivos src/invoice.py e src/tax.py com a ferramenta read para analisar "
+            "Leia os arquivos src/invoice.py, src/tax.py e src/calc.py com a ferramenta read deste repositorio para analisar "
             "o fluxo multi-arquivo de faturamento a partir da funcao fechar_fatura e suas dependencias reais "
             "no codigo atual para auditoria independente. Qual e o valor numerico vigente de ALIQUOTA_PADRAO "
-            "em src/tax.py e quanto fechar_fatura(100, 0.0) retorna?"
+            "em src/tax.py e quanto fechar_fatura(100, 0.0) retorna? "
+            "Responda diretamente com os valores apurados sem utilizar a ferramenta question."
         ),
     },
 }

@@ -1,0 +1,18 @@
+sessão        ses_e0f6af907fferEc9maPCEJGZTK
+modelo        llamacpp/qwen3-1.7b
+permissão     None
+cwd           /home/runner/work/_temp/wt-lab-coletiva
+init visto    True   campos ausentes: ['tools', 'agents', 'skills', 'mcp_servers']
+ferramentas   0: -
+agentes       0: -
+skills        0: -
+mcp           0: -
+delegações    4: explore, general, willtech-explorador, willtech-general
+aninhadas     0: -
+skill usada   -
+ferr. usadas  Task
+falhas Bash   0
+ferr. ociosas 0: -
+negadas       0
+tokens        in=6319 out=177 cache_read=4 cache_write=0
+resultado     success erro=False turnos=1 custo=$0.0
