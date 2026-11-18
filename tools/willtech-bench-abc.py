@@ -48,7 +48,7 @@ SCENARIOS = {
         "complexity": "simples",
         "prior_memory": False,
         "prompt": (
-            "Consulte o arquivo src/version.py deste repositorio para confirmar a "
+            "Leia o arquivo src/version.py com a ferramenta read deste repositorio para confirmar a "
             "configuracao atual de release do pacote. Informe exatamente qual string "
             "literal esta definida em APP_VERSION e o que a funcao obter_versao "
             "retorna, sem modificar nenhum arquivo."
@@ -59,9 +59,9 @@ SCENARIOS = {
         "complexity": "media",
         "prior_memory": True,
         "prompt": (
-            "Preciso revisar as regras do modulo de calculo em src/calc.py e sua "
-            "dependencia src/validator.py para documentar a API interna. Qual e o "
-            "limite maximo numerico definido em MAX_TAXA e qual excecao "
+            "Leia os arquivos src/calc.py e src/validator.py com a ferramenta read para revisar "
+            "as regras do modulo de calculo e sua dependencia para documentar a API interna. "
+            "Qual e o limite maximo numerico definido em MAX_TAXA e qual excecao "
             "calcular_desconto levanta quando a taxa e invalida?"
         ),
     },
@@ -71,10 +71,10 @@ SCENARIOS = {
         "prior_memory": True,
         "stale_invalidation": True,
         "prompt": (
-            "Analise o fluxo multi-arquivo de faturamento a partir da funcao "
-            "fechar_fatura em src/invoice.py e confira suas dependencias reais no "
-            "codigo atual para auditoria independente. Qual e o valor numerico "
-            "vigente de ALIQUOTA_PADRAO em src/tax.py e quanto fechar_fatura(100, 0.0) retorna?"
+            "Leia os arquivos src/invoice.py e src/tax.py com a ferramenta read para analisar "
+            "o fluxo multi-arquivo de faturamento a partir da funcao fechar_fatura e suas dependencias reais "
+            "no codigo atual para auditoria independente. Qual e o valor numerico vigente de ALIQUOTA_PADRAO "
+            "em src/tax.py e quanto fechar_fatura(100, 0.0) retorna?"
         ),
     },
 }
@@ -295,6 +295,7 @@ def warm_neutral_prefix(lab_base, provider_id="llamacpp", model_id="qwen3-1.7b")
         with open(os.path.join(warm_dir, "opencode.json"), "w", encoding="utf-8") as fh:
             json.dump(oc_cfg, fh, indent=2)
     env = dict(os.environ)
+    env["PWD"] = os.path.abspath(warm_dir)
     env["OPENCODE_CONFIG"] = os.path.join(warm_dir, "opencode.json")
     try:
         subprocess.run(
@@ -338,6 +339,7 @@ def cmd_run_scenario(a):
 
             env = dict(os.environ)
             env.update(arm_env)
+            env["PWD"] = os.path.abspath(lab_dir)
             env["OPENCODE_CONFIG"] = os.path.join(lab_dir, "opencode.json")
 
             t0 = time.monotonic()

@@ -321,6 +321,12 @@ class AdaptiveIntelligencePositiveTests(unittest.TestCase):
         self.assertNotIn("erlang distribuido", raw_metrics)
         self.assertNotIn("evolucao segura do calculo", raw_metrics)
 
+        # Valida que o plugin OpenCode V2 possui normalização defensiva de grep e read
+        plugin_code = (ROOT / "opencode" / "plugins" / "willtech" / "index.js").read_text(encoding="utf-8")
+        self.assertIn('ev.tool === "grep"', plugin_code)
+        self.assertIn("statSync(fullP).isFile()", plugin_code)
+        self.assertIn('ev.tool === "read"', plugin_code)
+
 
 class AdaptiveIntelligenceAdversarialTests(unittest.TestCase):
     def setUp(self):

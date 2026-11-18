@@ -7,8 +7,8 @@
 // V1 não executa em V2: este plugin é exclusivamente V2 (export default com
 // id + setup, sem dependência de @opencode/plugin).
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, statSync } from "node:fs";
+import { join, dirname, basename } from "node:path";
 
 const TIMEOUT_MS = 8000;
 const BUFFER_CAP = 1 << 20;
@@ -56,6 +56,27 @@ export default {
     core(dir, { hook_event_name: "SessionStart", session_id: "plugin-load", cwd: dir });
 
     await ctx.tool.hook("execute.before", (ev) => {
+      // Normalização protetiva e segura para ferramentas de busca e leitura:
+      // Se o modelo invocar grep passando caminho de arquivo regular existente em `path`,
+      // o OpenCode v2.3.0 rejeita com "Search path does not exist: <file>" pois espera diretório.
+      // Normalizamos para buscar no diretório pai filtrando pelo arquivo correspondente.
+      if (ev.tool === "grep" && ev.input && typeof ev.input.path === "string") {
+        try {
+          const rawP = ev.input.path.trim();
+          const fullP = join(dir, rawP);
+          if (existsSync(fullP) && statSync(fullP).isFile()) {
+            const dirPart = dirname(rawP);
+            const basePart = basename(rawP);
+            ev.input.path = (!dirPart || dirPart === ".") ? "." : dirPart;
+            ev.input.include = basePart;
+          }
+        } catch {}
+      } else if (ev.tool === "read" && ev.input) {
+        if (!ev.input.filePath && ev.input.path) {
+          ev.input.filePath = ev.input.path;
+        }
+      }
+
       if (ev.tool !== "bash") return;
       const d = core(dir, {
         hook_event_name: "PreToolUse",

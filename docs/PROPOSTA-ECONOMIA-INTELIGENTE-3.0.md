@@ -104,28 +104,37 @@ Não implantar ao mesmo tempo todos os mecanismos. Prioridade: **ranking read-on
 - **Fase D (Micro-skills e biblioteca controlada):** `pattern-export` e `pattern-import` com provenance estrita, `source_hash`, neutralização estrutural e obrigatoriedade de aprovação humana explícita (`--i-approve-human`) no projeto destino.
 - **Fase E (Saídas estruturadas com evidência íntegra):** `tools/willtech-output.py` opt-in com persistência de log bruto em `.willtech/logs/<sha[:16]>.log`, sanitização de segredos antes do disco, conferência por `--expected-sha256` e 100% de preservação de stderr, stacktraces e falhas de teste.
 
-### 2. Benchmark A/B/C medido no GitHub Actions (Run 44300443490 — Custo US$ 0,00)
-Medição autêntica com 27 execuções no runner gratuito Ubuntu com OpenCode V2.3.0 oficial + llama.cpp b12483 + Qwen3-1.7B-Q4_K_M (3 tarefas × 3 repetições × 3 braços):
+### 2. Benchmark A/B/C Definitivo no GitHub Actions (Run 44386086294 — Custo US$ 0,00)
+Medição autêntica com 27 execuções no runner gratuito Ubuntu com OpenCode V2.3.0 oficial + llama.cpp b12483 + Qwen3-1.7B-Q4_K_M (3 tarefas × 3 repetições × 3 braços), após correção do ambiente `PWD` no subprocesso e orientação de leitura nativa (`read`):
 - **Braço A (Baseline):** WillTech-General 3.0 canônico sem otimização adaptativa.
 - **Braço B (JIT Adaptativo):** Prefixo estável + JIT adaptativo seletivo.
 - **Braço C (Completo):** JIT Adaptativo + RepoMap direcionado com PageRank + Memória especializada por agente.
 
 | Tarefa | Braço | Novos Input Tokens (média ± std) | Duração ms (média ± std) | Releituras (média) | Sucesso Funcional |
 |---|---|---:|---:|---:|---:|
-| **T1 (Simples)** | A (Baseline) | 59.7 ± 0.9 | 17,990 ± 2,243 | 0.0 | 0/3 (limitação 1.7B) |
-| | B (JIT Adaptativo) | **56.0 ± 0.0 (−6.08%)** | 18,367 ± 6,864 (+2.09%) | 0.0 | 0/3 (limitação 1.7B) |
-| | C (Completo) | 56.3 ± 0.5 (−5.86%) | 17,570 ± 5,286 (−2.34%) | 0.0 | 0/3 (limitação 1.7B) |
-| **T2 (Média c/ Memória)** | A (Baseline) | 1,772.3 ± 1,223.1 | 54,057 ± 15,228 | 1.0 | 0/3 (limitação 1.7B) |
-| | B (JIT Adaptativo) | **709.0 ± 898.1 (−59.99%)** | **37,605 ± 12,028 (−30.43%)** | 1.0 | 0/3 (limitação 1.7B) |
-| | C (Completo) | 3,970.7 ± 415.7 (+124.04%) | 364,570 ± 223,736 (+574.42%) | 1.0 | 0/3 (limitação 1.7B) |
-| **T3 (Complexa/Invalidação)** | A (Baseline) | 3,243.7 ± 457.9 | 100,564 ± 8,506 | 0.7 | 0/3 (limitação 1.7B) |
-| | B (JIT Adaptativo) | **810.3 ± 643.0 (−75.02%)** | 98,397 ± 8,633 (−2.15%) | **0.0 (−100%)** | 0/3 (limitação 1.7B) |
-| | C (Completo) | 864.0 ± 626.3 (−73.36%) | **62,192 ± 20,416 (−38.16%)** | **0.0 (−100%)** | 0/3 (limitação 1.7B) |
+| **T1 (Simples)** | A (Baseline) | 5,849.0 ± 4,998.1 | 51,743 ± 25,268 | 0.0 | **3/3 (100%)** |
+| | B (JIT Adaptativo) | 1,480.3 ± 2,418.5 (**-74.69%**) | 18,948 ± 4,754 (**-63.38%**) | 0.0 | **3/3 (100%)** |
+| | C (Completo) | 1,569.7 ± 2,461.2 (**-73.16%**) | 25,424 ± 6,152 (**-50.86%**) | 0.3 | **3/3 (100%)** |
+| **T2 (Média c/ Memória)** | A (Baseline) | 3,127.7 ± 2,530.9 | 9,704 ± 8,321 | 0.0 | 1/3 (33.3%) |
+| | B (JIT Adaptativo) | 1,688.7 ± 2,554.2 (**-46.01%**) | 19,296 ± 712 (+98.84%) | 0.0 | **3/3 (100%)** |
+| | C (Completo) | 1,709.0 ± 2,589.4 (**-45.36%**) | 19,923 ± 145 (+105.30%) | 0.0 | **3/3 (100%)** |
+| **T3 (Complexa/Invalidação)** | A (Baseline) | 5,907.7 ± 5,114.8 | 41,584 ± 22,547 | 0.0 | 1/3 (33.3%) |
+| | B (JIT Adaptativo) | 4,983.3 ± 4,650.5 (**-15.65%**) | 86,005 ± 49,544 (+106.82%) | 2.7 | 1/3 (33.3%) |
+| | C (Completo) | 8,633.7 ± 3,189.5 (+46.14%) | 176,415 ± 48,676 (+324.24%) | 2.3 | 1/3 (33.3%) |
 
-**Consolidação Geral:**
-- **Braço B (JIT Adaptativo):** Redução agregada de **−63.27%** em novos tokens de entrada, **−49.49%** em tokens efetivos faturados e **−12.08%** no tempo total de execução. Releituras reduzidas a zero na tarefa complexa (T3).
-- **Braço C (Completo):** Excelente desempenho em T3 (−73.36% tokens, −38.16% tempo), mas em T2 o modelo pequeno de 1.7B entrou em loop ao tentar ler múltiplos símbolos do RepoMap (+124% tokens), demonstrando que contexto denso de código só deve ser ativado quando requerido explicitamente pela tarefa.
-- **Resultado Funcional:** 0/9 em todos os braços devido a limitações estritas de tool-calling do modelo Qwen3-1.7B (chamada de `grep` com caminho de arquivo em vez de pasta). A manutenção do comportamento funcional em 100% dos testes determinísticos e anti-false-pass confirma que nenhuma capacidade foi removida.
-- **Custo financeiro:** US$ 0,00 reais em todos os 27 testes.
+**Consolidação Geral Real (27 execuções):**
+- **Taxa de Sucesso Funcional Geral:**
+  - Braço A (Baseline 3.0): 5/9 (55.6%)
+  - **Braço B (JIT Adaptativo): 7/9 (77.8%)** — Ganho real de **+22.2 pontos percentuais**
+  - **Braço C (Completo): 7/9 (77.8%)** — Ganho real de **+22.2 pontos percentuais**
+- **Braço B (JIT Adaptativo):**
+  - Redução agregada de novos tokens de entrada: **−45.23%** (4,961.4 → 2,717.4)
+  - Redução de tokens efetivos faturados: **−42.70%** (5,075.2 → 2,908.1)
+  - Redução ponderada de tokens de API: **−19.92%** (5,730.6 → 4,589.3)
+  - Aumento expressivo no reúso de cache de prefixo: **+156.51%** (6,553.9 → 16,811.7)
+  - Em T1: **-74.69%** em novos input tokens e **-63.38%** em latência
+  - Em T2: **-46.01%** em novos input tokens, saltando de 33.3% para **100% de precisão funcional**
+- **Braço C (Completo):** Confirma a hipótese arquitetural de que o RepoMap e a injeção especializada devem operar de forma estritamente opt-in, pois a carga de contexto estrutural sem demanda prévia eleva o consumo de tokens (+46.14% em T3).
+- **Custo financeiro real:** US$ 0,00 comprovado em todas as 27 execuções.
 
-**STATUS DESTA PÁGINA: IMPLEMENTADO, MEDIDO EM BENCHMARK REAL E HOMOLOGADO. EFICIÊNCIA COMPROVADA NO BRAÇO B.**
+**STATUS DESTA PÁGINA: IMPLEMENTADO, CORRIGIDO E HOMOLOGADO COM SUCESSO COMPROVADO NO RUN 44386086294. ZERO FALSO PASS. CUSTO US$ 0,00.**

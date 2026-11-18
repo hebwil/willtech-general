@@ -1,0 +1,2 @@
+41a1d0df0abbec1c48b506f347781e4b3d10f74423f0b6359f8b277df7e09a0a  llama.tar.gz
+d2387ca2dbfee2ffabce7120d3770dadca0b293052bc2f0e138fdc940d9bc7b5  model.gguf
