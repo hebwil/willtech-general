@@ -1,0 +1,22 @@
+sessão        ses_e0fc22369ffe34ZCBADRhtImGI
+modelo        llamacpp/qwen3-1.7b
+permissão     None
+cwd           /home/runner/work/_temp/wt-lab-coletiva
+init visto    True   campos ausentes: ['tools', 'agents', 'skills', 'mcp_servers']
+ferramentas   0: -
+agentes       0: -
+skills        0: -
+mcp           0: -
+delegações    4: testador, revisor, explore, general
+aninhadas     0: -
+skill usada   -
+ferr. usadas  Task
+falhas Bash   0
+ferr. ociosas 0: -
+negadas       0
+tokens        in=11082 out=338 cache_read=2084 cache_write=0
+resultado     success erro=False turnos=2 custo=$0.0
+texto         The subagent is working in the background (sessionID: ses_e0fc03c36ffe8c7868WMiRVmos). You will receive a <subagent> message when it goes idle, and again after each later round of work.
+DO NOT sleep, poll, proactively check on its progress, or duplicate this subagent's work.
+Work on non-overlapping tasks, or briefly tell the user what you launched and end your response.
+To send it follow-ups or ch
