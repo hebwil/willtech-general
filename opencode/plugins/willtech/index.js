@@ -150,8 +150,6 @@ export default {
       }
     });
     await ctx.session.hook("context", (ev) => {
-      const toolHint = "Orientação de ferramentas: para inspecionar arquivos específicos, utilize a ferramenta read (com filePath). A ferramenta grep deve ser usada apenas em diretórios (path='.') com padrão regex.";
-      ev.system.push({ type: "text", text: toolHint });
       if (adaptive) {
         const sid = (ev && ev.sessionID) || "default";
         const active = sessionCtx.get(sid);
