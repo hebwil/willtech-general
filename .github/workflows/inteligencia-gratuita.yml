@@ -1,28 +1,32 @@
 name: inteligencia-gratuita
 
-# WILLTECH-GENERAL 3.0 — homologação zero custo §§3 e 4 (critérios A e D).
-# Reusa o laboratório de modelo aberto gratuito PROVADO em modelo-gratuito.yml
-# (llama.cpp CPU + Qwen3-1.7B GGUF, 127.0.0.1, enable_thinking=false) e o host
-# oficial OpenCode V2 com o provider openai-compatible APENAS no lab descartável.
+# WILLTECH-GENERAL 3.0 — Benchmark Real A/B/C + Sessão Coletiva (Custo US$ 0,00).
+# Reusa o laboratório de modelo aberto gratuito comprovado (llama.cpp CPU +
+# Qwen3-1.7B GGUF em 127.0.0.1, enable_thinking=false) e o host oficial OpenCode V2
+# com provider openai-compatible APENAS no laboratório descartável.
 #
-# §3 (A): sessão autêntica comandante->General->especialistas com modelo REAL;
-#         observa delegações e uso da sala; distingue capacidade do modelo de
-#         falha de arquitetura. Não aprova delegação que não aconteceu.
-# §4 (D): benchmark REAL com/sem Shared Intelligence, mesma tarefa/modelo/temp,
-#         3 repetições por lado; métricas via adaptador fiel + willtech-compare.py.
-#         Custo US$0 (modelo local). Nenhum número inventado.
+# Compara sob condições idênticas (3 repetições por cenário × 3 cenários × 3 braços = 27 execuções):
+# - Braço A: General 3.0 atual (WILLTECH_ADAPTIVE_JIT=0, WILLTECH_SPECIALIZED_MEMORY=0)
+# - Braço B: General com JIT adaptativo (WILLTECH_ADAPTIVE_JIT=1, WILLTECH_SPECIALIZED_MEMORY=0)
+# - Braço C: General com JIT adaptativo + RepoMap direcionado + memória especializada
+#            (WILLTECH_ADAPTIVE_JIT=1, WILLTECH_SPECIALIZED_MEMORY=1)
 #
 # Segurança: runner público gratuito; permissions contents:read; nenhum segredo
-# pessoal; apiKey do provider é placeholder de laboratório ("lab-no-auth").
+# pessoal; apiKey do provider é placeholder local ("lab-no-auth").
 # Não toca main, tags, release v3.0.0 nem instalações pessoais.
 
 on:
   push:
-    branches: [qoder/homologacao-zero-custo]
+    branches:
+      - codex/3.0-inteligencia-economia
+      - qoder/homologacao-zero-custo
     paths:
       - ".github/workflows/inteligencia-gratuita.yml"
       - "tools/opencode-trace.py"
       - "tools/willtech-compare.py"
+      - "tools/willtech-bench-abc.py"
+      - "tools/willtech-repomap.py"
+      - "tools/willtech-output.py"
       - "claude-code/bin/willtech_trace.py"
       - "tools/willtech-auto.py"
       - "tools/willtech-room.py"
@@ -39,15 +43,16 @@ env:
   GGUF_FILE: Qwen3-1.7B-Q4_K_M.gguf
   MODEL_ID: qwen3-1.7b
   PROVIDER_ID: llamacpp
-  # Tarefa não trivial (>= COMPLEX_CHARS=200): só assim o núcleo injeta a sala
-  # no UserPromptSubmit (ev_prompt). Mesma tarefa/modelo/temp nos dois cenários.
-  TASK_BENCH: "Preciso entender o comportamento da funcao soma no arquivo src/app.py deste projeto para planejar uma refatoracao segura do modulo de calculo. Investigue o codigo, considere dependencias e efeitos colaterais, e responda de forma concisa o que a funcao soma retorna e como ela trata os operandos."
 
 jobs:
-  inteligencia:
-    name: inteligencia coletiva + benchmark (ubuntu, modelo gratuito)
+  benchmark-abc:
+    name: benchmark A/B/C (${{ matrix.scenario }}, ×3, gratuito)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [T1, T2, T3]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -68,9 +73,9 @@ jobs:
         run: |
           set -e
           mkdir -p ~/lab-cache
-          curl -fsSL -o ~/lab-cache/llama.tar.gz \
+          curl --retry 3 --retry-delay 3 -fsSL -o ~/lab-cache/llama.tar.gz \
             "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_BUILD}/llama-${LLAMA_BUILD}-bin-ubuntu-x64.tar.gz"
-          curl -fsSL -o ~/lab-cache/model.gguf \
+          curl --retry 3 --retry-delay 3 -fsSL -o ~/lab-cache/model.gguf \
             "https://huggingface.co/${GGUF_REPO}/resolve/main/${GGUF_FILE}?download=true"
           (cd ~/lab-cache && sha256sum llama.tar.gz model.gguf > SHA256SUMS.txt && cat SHA256SUMS.txt)
 
@@ -104,24 +109,102 @@ jobs:
       - name: Instalar OpenCode oficial (gratuito, runner isolado)
         run: |
           set -e
-          curl -fsSL https://opencode.ai/v2/install | bash
+          curl --retry 3 --retry-delay 3 -fsSL https://opencode.ai/v2/install | bash
           echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
           "$HOME/.opencode/bin/opencode" --version | tee ~/opencode-version.txt
 
-      - name: Laboratório WillTech + sala semeada + provider (só no lab)
+      - name: Executar Benchmark Real A/B/C — cenário ${{ matrix.scenario }} (3 repetições por braço)
         run: |
           set -e
           export PATH="$HOME/.opencode/bin:$PATH"
-          LAB="$RUNNER_TEMP/wt-lab"
-          mkdir -p "$LAB"
+          mkdir -p ~/bench-out
+          python3 tools/willtech-bench-abc.py run-scenario \
+            --scenario "${{ matrix.scenario }}" \
+            --repeat 3 \
+            --out-dir ~/bench-out \
+            --lab-base "$RUNNER_TEMP/abc-lab" \
+            --provider "${PROVIDER_ID}" \
+            --model "${MODEL_ID}" \
+            --timeout 240
+          echo "=== JSON do cenário ${{ matrix.scenario }} ==="
+          cat ~/bench-out/${{ matrix.scenario }}-compare.json
+
+      - name: Publicar artefato do cenário ${{ matrix.scenario }}
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ matrix.scenario }}
+          path: |
+            ~/bench-out/*
+            ~/server.log
+            ~/opencode-version.txt
+            ~/lab-cache/SHA256SUMS.txt
+
+  sessao-coletiva:
+    name: sessão coletiva autêntica (ubuntu, modelo gratuito)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache do binário llama.cpp e do GGUF (gratuito)
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/lab-cache
+          key: llama-${{ env.LLAMA_BUILD }}-${{ env.GGUF_FILE }}-v1
+
+      - name: Baixar llama.cpp + GGUF Qwen3 (públicos)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          mkdir -p ~/lab-cache
+          curl --retry 3 --retry-delay 3 -fsSL -o ~/lab-cache/llama.tar.gz \
+            "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_BUILD}/llama-${LLAMA_BUILD}-bin-ubuntu-x64.tar.gz"
+          curl --retry 3 --retry-delay 3 -fsSL -o ~/lab-cache/model.gguf \
+            "https://huggingface.co/${GGUF_REPO}/resolve/main/${GGUF_FILE}?download=true"
+
+      - name: Extrair llama.cpp e iniciar servidor local
+        run: |
+          set -e
+          mkdir -p ~/llama
+          tar xzf ~/lab-cache/llama.tar.gz -C ~/llama
+          BIN=$(find ~/llama -maxdepth 3 -type f -name 'llama-server' | head -1)
+          test -n "$BIN"
+          chmod +x "$BIN"
+          sudo apt-get update -qq && sudo apt-get install -y -qq libgomp1 libopenblas0 || true
+          export LD_LIBRARY_PATH="$(dirname "$BIN"):${LD_LIBRARY_PATH:-}"
+          nohup "$BIN" -m ~/lab-cache/model.gguf \
+            --host 127.0.0.1 --port 8080 --jinja -c 8192 --threads 4 -np 1 \
+            --chat-template-kwargs '{"enable_thinking":false}' \
+            > ~/server.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1 && { echo "servidor pronto"; break; }
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/health
+
+      - name: Instalar OpenCode oficial + preparar laboratório coletivo
+        run: |
+          set -e
+          curl --retry 3 --retry-delay 3 -fsSL https://opencode.ai/v2/install | bash
+          export PATH="$HOME/.opencode/bin:$PATH"
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+          LAB="$RUNNER_TEMP/wt-lab-coletiva"
+          mkdir -p "$LAB/claude-code/bin" "$LAB/src"
           cp -R tools opencode "$LAB/"
+          cp claude-code/bin/willtech_trace.py "$LAB/claude-code/bin/"
           git -C "$LAB" init -q
           git -C "$LAB" config user.email lab@willtech
           git -C "$LAB" config user.name lab
           sh "$LAB/tools/willtech-install.sh" --repo "$LAB" --platform opencode --yes
           mkdir -p "$LAB/.opencode/agent"
           cp "$LAB/opencode/agent/"*.md "$LAB/.opencode/agent/"
-          mkdir -p "$LAB/src"
           printf 'def soma(a, b):\n    return a + b\n' > "$LAB/src/app.py"
           printf 'def dobro(x):\n    return 2 * x\n' > "$LAB/src/util.py"
           cat > "$LAB/opencode.json" <<JSON
@@ -141,7 +224,6 @@ jobs:
           JSON
           mkdir -p "$LAB/.willtech"
           touch "$LAB/.willtech/enabled"
-          # Sala real: init + descoberta validada sobre soma (evidência = hash do arquivo).
           ROOM="$LAB/.willtech/room.db"
           python3 "$LAB/tools/willtech-room.py" init "$ROOM" --repo "$LAB"
           H0=$(sha256sum "$LAB/src/app.py" | cut -d' ' -f1)
@@ -149,26 +231,29 @@ jobs:
             --summary "soma(a,b) em src/app.py retorna a+b" --path-ref src/app.py \
             --evidence-hash "$H0" --repo "$LAB" | grep -o 'id=[0-9]*' | cut -d= -f2)
           python3 "$LAB/tools/willtech-room.py" validate "$ROOM" --id "$FID" --by reviewer --repo "$LAB"
-          echo "FINDING_ID=$FID" >> "$GITHUB_ENV"
           git -C "$LAB" add -A
           git -C "$LAB" commit -qm base
+          python3 "$LAB/tools/willtech-repomap.py" update "$LAB" "$LAB/.willtech/repomap.json"
           echo "WT_LAB=$LAB" >> "$GITHUB_ENV"
           echo "OPENCODE_CONFIG=$LAB/opencode.json" >> "$GITHUB_ENV"
-          opencode models | tee ~/oc-models.txt
 
-      - name: §3 — sessão coletiva AUTÊNTICA (comandante -> General -> especialistas)
+      - name: Sessão coletiva AUTÊNTICA com JIT Adaptativo + Memória Especializada
+        env:
+          WILLTECH_ADAPTIVE_JIT: "1"
+          WILLTECH_SPECIALIZED_MEMORY: "1"
         run: |
           set -e
           export PATH="$HOME/.opencode/bin:$PATH"
           cd "$WT_LAB"
-          TASK3="Tarefa multi-etapa em varios arquivos: (1) investigue src/app.py e src/util.py; (2) registre na sala compartilhada o que a funcao soma faz; (3) delegue ao testador a verificacao; (4) consolide o resultado. Siga AGENTS.md e use os agentes WillTech."
-          timeout 600 opencode run --standalone --model "${PROVIDER_ID}/${MODEL_ID}" \
+          TASK3="Tarefa multi-etapa em varios arquivos: (1) investigue src/app.py e src/util.py; (2) registre na sala compartilhada o que a funcao dobro faz; (3) delegue ao testador a verificacao; (4) consolide o resultado. Siga AGENTS.md e use os agentes WillTech."
+          timeout 480 opencode run --standalone --model "${PROVIDER_ID}/${MODEL_ID}" \
             --format json --auto "$TASK3" > ~/oc-coletiva.jsonl 2> ~/oc-coletiva.err || echo "coletiva exit=$?"
-          echo "=== plugin carregou? (state-plugin-load) ==="
           ls -la .willtech/ | tee ~/lab-state.txt
-          echo "=== sala após a sessão (export) ==="
+          cat .willtech/jit-metrics.jsonl > ~/coletiva-jit-metrics.jsonl 2>/dev/null || true
           python3 tools/willtech-room.py export .willtech/room.db --repo "$WT_LAB" > ~/room-after.json 2>&1 || true
-          echo "=== eventos da sessão coletiva ==="
+          python3 "$GITHUB_WORKSPACE/tools/opencode-trace.py" ~/oc-coletiva.jsonl ~/conv-coletiva.jsonl \
+            --model "${PROVIDER_ID}/${MODEL_ID}" --cwd "$WT_LAB"
+          python3 "$GITHUB_WORKSPACE/claude-code/bin/willtech_trace.py" ~/conv-coletiva.jsonl | tee ~/coletiva-trace.txt
           python3 - <<'PY'
           import json, os
           evs = [json.loads(l) for l in open(os.path.expanduser("~/oc-coletiva.jsonl")) if l.strip()]
@@ -178,125 +263,69 @@ jobs:
                    if e.get("type") == "tool_use" and e["part"].get("tool") in ("task", "subagent", "agent")]
           room_calls = [e["part"].get("state", {}).get("input", {}).get("command", "") for e in evs
                         if e.get("type") == "tool_use" and "willtech-room" in str(e["part"].get("state", {}).get("input", {}))]
-          print("sessionID:", sid)
-          print("ferramentas usadas:", tools)
-          print("DELEGAÇÕES reais (task/subagent):", len(deleg))
-          for d in deleg:
-              print("  ->", json.dumps(d, ensure_ascii=False)[:200])
-          print("chamadas à sala:", len(room_calls))
-          for c in room_calls:
-              print("  room$", c[:120])
+          coletiva_meta = {
+              "sessionID": sid,
+              "tools_used": tools,
+              "delegations_count": len(deleg),
+              "room_calls_count": len(room_calls),
+              "cost_real_usd": 0.0,
+              "simulation": False,
+          }
+          open(os.path.expanduser("~/coletiva-summary.json"), "w").write(json.dumps(coletiva_meta, indent=2, ensure_ascii=False))
+          print(json.dumps(coletiva_meta, indent=2, ensure_ascii=False))
           assert sid, "sessão coletiva sem sessionID — não aconteceu"
-          print("SESSÃO COLETIVA REAL registrada. Delegação observada:", "SIM" if deleg else "NÃO (limitação de capacidade do modelo 1.7B; arquitetura provada deterministicamente em smoke-intelligence)")
           PY
 
-      - name: §4 — benchmark A (Shared Intelligence DESATIVADA) ×3
-        run: |
-          set -e
-          export PATH="$HOME/.opencode/bin:$PATH"
-          cd "$WT_LAB"
-          rm -f .willtech/enabled   # núcleo vira no-op -> sem injeção da sala
-          for i in 1 2 3; do
-            timeout 300 opencode run --standalone --model "${PROVIDER_ID}/${MODEL_ID}" \
-              --format json --auto "$TASK_BENCH" > ~/bench-a-$i.jsonl 2> ~/bench-a-$i.err || echo "A$i exit=$?"
-            echo "A$i capturado ($(wc -l < ~/bench-a-$i.jsonl) linhas)"
-          done
-
-      - name: §4 — benchmark B (Shared Intelligence ATIVADA + sala) ×3
-        run: |
-          set -e
-          export PATH="$HOME/.opencode/bin:$PATH"
-          cd "$WT_LAB"
-          touch .willtech/enabled   # núcleo injeta contexto da sala validada
-          for i in 1 2 3; do
-            timeout 300 opencode run --standalone --model "${PROVIDER_ID}/${MODEL_ID}" \
-              --format json --auto "$TASK_BENCH" > ~/bench-b-$i.jsonl 2> ~/bench-b-$i.err || echo "B$i exit=$?"
-            echo "B$i capturado ($(wc -l < ~/bench-b-$i.jsonl) linhas)"
-          done
-
-      - name: §4 — análise fiel (adaptador + willtech-compare) e métricas reais
-        run: |
-          set -e
-          cd "$GITHUB_WORKSPACE"
-          for side in a b; do
-            for i in 1 2 3; do
-              python3 tools/opencode-trace.py ~/bench-$side-$i.jsonl ~/conv-$side-$i.jsonl \
-                --model "${PROVIDER_ID}/${MODEL_ID}" --cwd "$WT_LAB"
-            done
-          done
-          python3 tools/opencode-trace.py ~/oc-coletiva.jsonl ~/conv-coletiva.jsonl \
-            --model "${PROVIDER_ID}/${MODEL_ID}" --cwd "$WT_LAB" || true
-          echo "=== willtech-compare (média por execução, 3×3) ==="
-          python3 tools/willtech-compare.py --repeat 3 --label "sem SI:com SI" \
-            --baseline ~/conv-a-1.jsonl --baseline ~/conv-a-2.jsonl --baseline ~/conv-a-3.jsonl \
-            --optimized ~/conv-b-1.jsonl --optimized ~/conv-b-2.jsonl --optimized ~/conv-b-3.jsonl | tee ~/compare.txt
-          echo "=== métricas extras + resultado funcional (dados reais) ==="
-          python3 - <<'PY'
-          import json, os, glob
-          def load(p):
-              return [json.loads(l) for l in open(os.path.expanduser(p)) if l.strip()]
-          def metrics(side):
-              deleg = reads = room = fails = turns = 0
-              cost = 0.0; tin = tout = 0; ok = 0; texts = []
-              read_paths = {}
-              for i in (1, 2, 3):
-                  evs = load(f"~/bench-{side}-{i}.jsonl")
-                  for e in evs:
-                      t = e.get("type"); p = e.get("part", {})
-                      if t == "tool_use":
-                          tool = p.get("tool"); st = p.get("state", {}); inp = st.get("input", {})
-                          if tool in ("task", "subagent", "agent"): deleg += 1
-                          if tool in ("read", "glob", "grep"):
-                              reads += 1
-                              fp = inp.get("filePath") or inp.get("path") or ""
-                              read_paths[fp] = read_paths.get(fp, 0) + 1
-                          if "willtech-room" in str(inp): room += 1
-                          ex = (st.get("metadata", {}).get("metadata", {}) or {}).get("exit")
-                          if st.get("status") == "error" or (ex not in (0, None)): fails += 1
-                      elif t == "step_finish":
-                          turns += 1; cost += float(p.get("cost") or 0)
-                          tok = p.get("tokens", {}); tin += tok.get("input", 0); tout += tok.get("output", 0)
-                      elif t == "text":
-                          texts.append(p.get("text", ""))
-                  joined = " ".join(texts).lower()
-                  if "a+b" in joined or "a + b" in joined or "soma de a" in joined: ok += 1
-              repeated = sum(c - 1 for c in read_paths.values() if c > 1)
-              return {"delegations": deleg, "reads": reads, "repeated_reads": repeated,
-                      "room_calls": room, "failures": fails, "turns": turns,
-                      "input_tokens": tin, "output_tokens": tout, "cost_usd": cost,
-                      "functional_correct": ok, "reps": 3}
-          A = metrics("a"); B = metrics("b")
-          summary = {"cenario_A_sem_SI": A, "cenario_B_com_SI": B,
-                     "modelo": "llamacpp/qwen3-1.7b (local, gratuito)", "custo_total_usd": A["cost_usd"] + B["cost_usd"],
-                     "simulation": False}
-          print(json.dumps(summary, indent=2, ensure_ascii=False))
-          open(os.path.expanduser("~/intel-summary.json"), "w").write(json.dumps(summary, indent=2, ensure_ascii=False))
-          print("\n=== sessão coletiva (parser da homologação) ===")
-          os.system("python3 claude-code/bin/willtech_trace.py ~/conv-coletiva.jsonl")
-          PY
-
-      - name: Publicar artefatos de homologação (sem segredos)
+      - name: Publicar artefato da sessão coletiva
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: homolog-inteligencia-gratuita
+          name: homolog-coletiva
           path: |
-            ~/server.log
-            ~/opencode-version.txt
-            ~/oc-models.txt
             ~/oc-coletiva.jsonl
             ~/oc-coletiva.err
+            ~/conv-coletiva.jsonl
+            ~/coletiva-trace.txt
+            ~/coletiva-summary.json
+            ~/coletiva-jit-metrics.jsonl
             ~/room-after.json
             ~/lab-state.txt
-            ~/bench-a-1.jsonl
-            ~/bench-a-2.jsonl
-            ~/bench-a-3.jsonl
-            ~/bench-b-1.jsonl
-            ~/bench-b-2.jsonl
-            ~/bench-b-3.jsonl
-            ~/conv-coletiva.jsonl
-            ~/compare.txt
-            ~/intel-summary.json
-            ~/lab-cache/SHA256SUMS.txt
-          if-no-files-found: warn
-          retention-days: 14
+
+  consolidar-abc:
+    name: consolidar benchmark A/B/C (27 execuções reais)
+    runs-on: ubuntu-latest
+    needs: [benchmark-abc, sessao-coletiva]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Baixar artefatos dos cenários T1, T2, T3 e sessão coletiva
+        uses: actions/download-artifact@v4
+        with:
+          path: ~/downloaded-artifacts
+
+      - name: Consolidar resultados reais A/B/C (sem números inventados)
+        run: |
+          set -e
+          mkdir -p ~/all-compare ~/consolidated
+          find ~/downloaded-artifacts -name '*-compare.json' -exec cp {} ~/all-compare/ \;
+          ls -la ~/all-compare/
+          python3 tools/willtech-bench-abc.py consolidate \
+            --in-dir ~/all-compare \
+            --out-json ~/consolidated/abc-consolidated.json \
+            --out-md ~/consolidated/abc-report.md
+          cat ~/consolidated/abc-report.md >> "$GITHUB_STEP_SUMMARY"
+          cp ~/downloaded-artifacts/homolog-coletiva/coletiva-summary.json ~/consolidated/ 2>/dev/null || true
+
+      - name: Publicar relatório consolidado A/B/C
+        uses: actions/upload-artifact@v4
+        with:
+          name: homolog-abc-consolidado
+          path: |
+            ~/consolidated/*
+            ~/all-compare/*

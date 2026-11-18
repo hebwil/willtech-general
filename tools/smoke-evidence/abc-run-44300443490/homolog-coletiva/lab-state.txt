@@ -1,0 +1,14 @@
+total 184
+drwxr-xr-x 2 runner runner  4096 Nov 18 12:10 .
+drwxr-xr-x 9 runner runner  4096 Nov 18 12:10 ..
+-rw-r--r-- 1 runner runner     0 Nov 18 12:05 enabled
+-rw-r--r-- 1 runner runner    75 Nov 18 12:05 installed.json
+-rw-r--r-- 1 runner runner   324 Nov 18 12:05 jit-metrics.jsonl
+-rw-r--r-- 1 runner runner 96092 Nov 18 12:05 repomap.json
+-rw-r--r-- 1 runner runner 53248 Nov 18 12:05 room.db
+-rw-r--r-- 1 runner runner     0 Nov 18 12:05 room.db.lock
+-rw-r--r-- 1 runner runner     2 Nov 18 12:05 state-plugin-load.json
+-rw-r--r-- 1 runner runner     2 Nov 18 12:06 state-ses_e11731789ffefzqkjVtbOXubrs.json
+-rw-r--r-- 1 runner runner     2 Nov 18 12:06 state-ses_e1173178affeFoT4XBTr60aak4.json
+-rw-r--r-- 1 runner runner     2 Nov 18 12:06 state-ses_e1173178bffedBp0Xn4yeaKPqk.json
+-rw-r--r-- 1 runner runner    20 Nov 18 12:10 state-ses_e11741e67ffeHUpFhw5Hxq87CA.json

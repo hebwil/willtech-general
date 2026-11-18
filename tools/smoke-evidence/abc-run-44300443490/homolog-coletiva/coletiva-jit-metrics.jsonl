@@ -1,0 +1,2 @@
+{"ts": "2026-11-18T12:05:07Z", "event": "SessionStart", "mode": "specialized", "role": "general", "injected_chars": 299, "room_hit": true, "repomap_hit": false}
+{"ts": "2026-11-18T12:05:07Z", "event": "UserPromptSubmit", "mode": "specialized", "role": "tester", "injected_chars": 407, "room_hit": true, "repomap_hit": true}

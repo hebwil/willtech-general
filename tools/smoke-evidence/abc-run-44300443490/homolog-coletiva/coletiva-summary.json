@@ -1,0 +1,15 @@
+{
+  "sessionID": "ses_e11741e67ffeHUpFhw5Hxq87CA",
+  "tools_used": [
+    "subagent",
+    "subagent",
+    "subagent",
+    "skill",
+    "edit",
+    "write"
+  ],
+  "delegations_count": 3,
+  "room_calls_count": 0,
+  "cost_real_usd": 0.0,
+  "simulation": false
+}

@@ -125,6 +125,10 @@ def convert(events, model=None, cwd=None):
             txt = part.get("text")
             if isinstance(txt, str) and txt.strip():
                 last_text = txt
+                out.append({"type": "assistant", "message": {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": txt}]
+                }})
 
         elif etype == "error":
             emit_init()

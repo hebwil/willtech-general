@@ -54,7 +54,7 @@ jobs:
           for t in test-room test-room-v3 test-handoff test-jit test-smoke-e2e \
                    test-compare test-repomap test-supervisor test-compat \
                    test-claude test-homolog test-gui-install test-gui test-dist \
-                   test-opencode-trace; do
+                   test-opencode-trace test-adaptive-intelligence test-bench-abc; do
             echo "=== $t ==="
             python "tools/$t.py"
           done
@@ -67,6 +67,7 @@ jobs:
           set -e
           python tools/test-jit.py
           python tools/test-room-v3.py
+          python tools/test-adaptive-intelligence.py
 
       - name: Protocolo REAL do codex-app-server (binario oficial)
         shell: bash

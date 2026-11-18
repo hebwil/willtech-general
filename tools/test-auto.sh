@@ -312,6 +312,45 @@ JS
   OUT=$("$NODE" "$TMP/sim.mjs" "$LAB" 2>&1 || true)
   has "$OUT" 'SIM-OK'
   check $? "plugin V2 simulado: throw no loop + contexto injetado uma única vez"
+
+  cat > "$TMP/sim-adaptive.mjs" <<'JS'
+import plugin from "./willtech-plugin.mjs";
+const dir = process.argv[2];
+const hooks = {};
+let emitIdle = null;
+const ctx = {
+  location: { directory: dir },
+  tool: { hook: async (n, fn) => { hooks[n] = fn; } },
+  session: { hook: async (n, fn) => { hooks["session." + n] = fn; } },
+  event: { subscribe: () => ({ [Symbol.asyncIterator]() {
+    let sent = false;
+    return { next: async () => new Promise((res) => {
+      if (sent) return res({ done: true });
+      emitIdle = (sid) => { sent = true; res({ done: false, value: { type: "session.idle", properties: { sessionID: sid } } }); };
+    }) };
+  } }) },
+};
+const cleanup = await plugin.setup(ctx);
+await hooks["session.prompt"]({ sessionID: "sA", prompt: { text: "x".repeat(250) } });
+await hooks["session.prompt"]({ sessionID: "sB", prompt: { text: "oi" } });
+const sysA1 = [], sysA2 = [], sysB1 = [];
+await hooks["session.context"]({ sessionID: "sA", system: sysA1 });
+await hooks["session.context"]({ sessionID: "sA", system: sysA2 });
+await hooks["session.context"]({ sessionID: "sB", system: sysB1 });
+const stable = sysA1.length === 1 && sysA2.length === 1 && sysA1[0].text === sysA2[0].text;
+const isolated = sysB1.length === 0;
+if (emitIdle) emitIdle("sA");
+await new Promise((r) => setTimeout(r, 50));
+const sysA3 = [];
+await hooks["session.context"]({ sessionID: "sA", system: sysA3 });
+cleanup();
+if (stable && isolated && sysA3.length === 0) { console.log("ADAPT-OK"); process.exit(0); }
+console.log("ADAPT-FAIL stable=" + stable + " isolated=" + isolated + " cleared=" + (sysA3.length === 0));
+process.exit(1);
+JS
+  OUT=$(WILLTECH_ADAPTIVE_JIT=1 "$NODE" "$TMP/sim-adaptive.mjs" "$LAB" 2>&1 || true)
+  has "$OUT" 'ADAPT-OK'
+  check $? "plugin V2 adaptativo: isolamento por sessao + prefixo estavel entre turnos"
 else
   printf 'SKIP node ausente: simulação do plugin V2 não executada\n'
 fi

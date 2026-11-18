@@ -95,20 +95,47 @@ export default {
       }
     });
 
-    // O hook "context" roda antes de CADA request ao modelo: injeta apenas
-    // quando há contexto pendente (uma vez), nunca em toda chamada.
+    // O hook "context" roda antes de CADA request ao modelo.
+    // Modo padrão (fallback 3.0): injeta uma única vez via `pending`.
+    // Modo adaptativo (WILLTECH_ADAPTIVE_JIT=1 ou .willtech/adaptive-jit): isola por sessionID e mantém o
+    // mesmo bloco estável durante todos os turnos de ferramentas daquela sessão
+    // até `session.idle`, evitando invalidar o cache de prefixo no turno 2+ e
+    // preservando a evidência da Sala na etapa final de síntese.
+    const envFlag = String(process.env.WILLTECH_ADAPTIVE_JIT || "").trim().toLowerCase();
+    const markerFile = join(dir, ".willtech", "adaptive-jit");
+    const adaptive = ["1", "true", "yes", "on"].includes(envFlag) || existsSync(markerFile);
     let pending = null;
+    const sessionCtx = new Map();
     await ctx.session.hook("prompt", (ev) => {
+      const sid = (ev && ev.sessionID) || "default";
       const d = core(dir, {
         hook_event_name: "UserPromptSubmit",
-        session_id: ev.sessionID,
+        session_id: sid,
         cwd: dir,
         prompt: (ev.prompt && ev.prompt.text) || "",
       });
-      if (d.context) pending = d.context;
+      if (adaptive) {
+        if (d.context) {
+          if (sessionCtx.size >= 64 && !sessionCtx.has(sid)) {
+            const oldest = sessionCtx.keys().next().value;
+            sessionCtx.delete(oldest);
+          }
+          sessionCtx.set(sid, d.context);
+        } else {
+          sessionCtx.delete(sid);
+        }
+      } else if (d.context) {
+        pending = d.context;
+      }
     });
     await ctx.session.hook("context", (ev) => {
-      if (pending) {
+      if (adaptive) {
+        const sid = (ev && ev.sessionID) || "default";
+        const active = sessionCtx.get(sid);
+        if (active) {
+          ev.system.push({ type: "text", text: active });
+        }
+      } else if (pending) {
         ev.system.push({ type: "text", text: pending });
         pending = null;
       }
@@ -121,9 +148,11 @@ export default {
       try {
         for await (const e of ctx.event.subscribe({ signal: ctrl.signal })) {
           if (e.type === "session.idle") {
+            const idleSid = (e.properties && e.properties.sessionID) || "idle";
+            sessionCtx.delete(idleSid);
             core(dir, {
               hook_event_name: "Stop",
-              session_id: (e.properties && e.properties.sessionID) || "idle",
+              session_id: idleSid,
               cwd: dir,
               stop_hook_active: false,
             });
