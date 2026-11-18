@@ -109,6 +109,36 @@ class CompareTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertNotIn("%", out)
 
+    def test_08_multi_arm_abc_stats_and_json_report(self):
+        arms = {"A": (1000, 1100, 900), "B": (800, 820, 780), "C": (700, 720, 680)}
+        arm_args = []
+        for lbl, vals in arms.items():
+            paths = []
+            for idx, v in enumerate(vals):
+                p = self.d / f"{lbl}_{idx}.jsonl"
+                write_transcript(p, 3, v, 50)
+                paths.append(str(p))
+            arm_args.extend(["--arm", f"{lbl}={','.join(paths)}"])
+        jout = self.d / "abc.json"
+        code, out = run(*arm_args, "--json-out", str(jout))
+        self.assertEqual(code, 0, out)
+        self.assertIn("-20.00%", out)  # B input_tokens: 800 vs 1000
+        self.assertIn("-30.00%", out)  # C input_tokens: 700 vs 1000
+        data = json.loads(jout.read_text(encoding="utf-8"))
+        self.assertTrue(data["sufficient_sample"])
+        self.assertEqual(data["arms"][0]["stats"]["input_tokens"]["mean"], 1000.0)
+        self.assertEqual(data["arms"][0]["stats"]["input_tokens"]["stddev"], 100.0)
+        self.assertEqual(data["deltas_vs_baseline"]["C"]["input_tokens"]["pct"], -30.0)
+
+    def test_09_multi_arm_under_3_reps_suppresses_percent(self):
+        a1, b1 = self.d / "ma1.jsonl", self.d / "mb1.jsonl"
+        write_transcript(a1, 3, 1000, 50)
+        write_transcript(b1, 3, 700, 50)
+        code, out = run("--arm", f"A={a1}", "--arm", f"B={b1}")
+        self.assertEqual(code, 0, out)
+        self.assertIn("AMOSTRA INSUFICIENTE", out)
+        self.assertNotIn("%", out)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
