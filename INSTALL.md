@@ -3,9 +3,10 @@
 ## Sistemas operacionais
 
 Os comandos das seções por plataforma são Unix (`sh`): executam em **macOS**
-(validado nesta estação) e seguem os mesmos requisitos em **Linux** e dentro
-do **WSL** (python3, git, shell POSIX) — esses dois caminhos não foram
-exercitados aqui e não têm suporte anunciado. **Não execute comandos `sh`
+e **Linux**; instalação, atualização e desinstalação foram exercitadas nos
+runners nativos `macos-latest` e `ubuntu-latest` de CI. Dentro do **WSL**
+exigem Python 3, Git e shell POSIX, mas **WSL não foi homologado diretamente**.
+O Windows nativo tem instalador PowerShell próprio validado em `windows-latest`. **Não execute comandos `sh`
 diretamente no PowerShell**: para Windows nativo use o instalador PowerShell
 dedicado (seção abaixo). Os wrappers de sandbox do OpenCode usam
 `sandbox-exec`, exclusivo do macOS; em Linux/WSL/Windows permanecem as
