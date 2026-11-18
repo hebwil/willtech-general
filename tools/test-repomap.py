@@ -159,6 +159,52 @@ class RepoMapTests(unittest.TestCase):
               f"update incremental {t_inc:.3f}s vs rebuild {t_full:.3f}s; "
               f"parses: primeiro={self.nfiles}, incremental=0")
 
+    def test_11_ast_parse_genuinely_skipped_when_unchanged(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("rm_under_test", str(TOOL))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        idx2 = str(Path(self.tmp.name) / "idx-parse-check.json")
+
+        class Args:
+            repo = str(self.repo)
+            index = idx2
+
+        mod._PARSE_CALLS = 0
+        self.assertEqual(mod.cmd_update(Args()), 0)
+        first_parses = mod._PARSE_CALLS
+        self.assertGreaterEqual(first_parses, 9)
+        mod._PARSE_CALLS = 0
+        self.assertEqual(mod.cmd_update(Args()), 0)
+        self.assertEqual(mod._PARSE_CALLS, 0,
+                         "arquivos inalterados não podem reexecutar parse_symbols/ast.parse")
+
+    def test_12_pagerank_directed_brief_and_affected_tests(self):
+        tdir = self.repo / "tests"
+        tdir.mkdir(exist_ok=True)
+        tfile = tdir / "test_alpha.py"
+        tfile.write_text("from pkg.a import alpha\n\ndef test_alpha_ok():\n    assert alpha(1)\n")
+        try:
+            code, _ = run("update", str(self.repo), self.index)
+            self.assertEqual(code, 0)
+            # Sem --objective, ordem alfabética colocaria mod0..mod6 antes de pkg/a.py;
+            # Com --objective "alpha", pkg/a.py e dependentes/deps sobem ao topo!
+            code, directed = run("brief", self.index, "--objective", "investigar funcao alpha",
+                                 "--repo", str(self.repo), "--max-chars", "450")
+            self.assertEqual(code, 0, directed)
+            self.assertIn("pkg/a.py", directed)
+            self.assertIn("used_by:", directed)
+            self.assertLess(directed.index("pkg/a.py"),
+                            directed.index("mod0.py") if "mod0.py" in directed else len(directed) + 1)
+            # Descoberta de testes afetados para o Testador
+            code, aff = run("query", self.index, "--affected", "pkg/a.py", "--repo", str(self.repo))
+            self.assertEqual(code, 0, aff)
+            self.assertIn("TEST_AFETADO tests/test_alpha.py", aff)
+        finally:
+            if tfile.exists():
+                tfile.unlink()
+            run("update", str(self.repo), self.index)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
