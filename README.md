@@ -15,7 +15,7 @@ Origin: WILLTECH custom multi-agent implementation
 </p>
 
 <p align="center">
-  <sub>Versão estável em preparação: <strong>3.1.0</strong> (Shared Intelligence + JIT adaptativo) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
+  <sub>Versão da linha de código: <strong>3.1.0</strong> (Shared Intelligence + JIT adaptativo; confira a release publicada) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
 </p>
 
 <p align="center">
