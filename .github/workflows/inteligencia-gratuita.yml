@@ -20,6 +20,7 @@ on:
     branches:
       - codex/3.0-inteligencia-economia
       - qoder/homologacao-zero-custo
+      - fix/**
     paths:
       - ".github/workflows/inteligencia-gratuita.yml"
       - "tools/opencode-trace.py"
