@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      GH_TOKEN: ${{ github.token }
+      GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: v3.1.0
       BENCHMARK_SOURCE_SHA: 31747cd4666596c0056d238cf992de4a02a52dde
       PYTHONUTF8: "1"
