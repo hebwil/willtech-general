@@ -558,6 +558,11 @@ def cmd_query(a):
     return 0
 
 
+def neutralize(val):
+    """Remove quebras de linha e cercas markdown para garantir quarentena estrita."""
+    return re.sub(r"[\r\n`]+", " ", str(val or "")).strip()
+
+
 def format_brief(index, repo=None, paths=None, objective="", specialty=None, max_chars=1200):
     scope = DOSSIE.scope_list(paths)
     files = index.get("files", {})
@@ -588,18 +593,19 @@ def format_brief(index, repo=None, paths=None, objective="", specialty=None, max
     if repo is None:
         out.append(UNREVALIDATED)
     for rel in rels[:40]:
+        safe_rel = neutralize(rel)
         raw_syms = files[rel].get("symbols", [])
         if tokens:
             raw_syms = sorted(
                 raw_syms,
                 key=lambda s: (0 if s["n"].lower() in tokens else 1, s["l"]))
-        syms = ", ".join(f"{s['n']}@{s['l']}" for s in raw_syms[:12])
-        targets = out_edges.get(rel, [])
-        line = f"{rel}: {syms}"
+        syms = ", ".join(f"{neutralize(s['n'])}@{s['l']}" for s in raw_syms[:12])
+        targets = [neutralize(t) for t in out_edges.get(rel, [])]
+        line = f"{safe_rel}: {syms}"
         if targets:
             line += " | deps: " + ",".join((targets if directed else sorted(targets))[:6])
         if directed:
-            callers = in_edges.get(rel, [])
+            callers = [neutralize(c) for c in in_edges.get(rel, [])]
             if callers:
                 line += " | used_by: " + ",".join(callers[:4])
         if repo and source_state(repo, rel, files[rel]):

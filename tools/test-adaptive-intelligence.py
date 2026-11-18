@@ -479,6 +479,41 @@ class AdaptiveIntelligenceAdversarialTests(unittest.TestCase):
         self.assertEqual(rc, 2)
         self.assertIn("hash divergente", bad_out)
 
+        # Anti-traversal e validação estrita de expected-sha256
+        rc, trav_out = run_tool(
+            OUTPUT_TOOL, "read-log", "src/calc.py",
+            "--expected-sha256", parts["evidence_hash"], "--repo", self.repo)
+        self.assertEqual(rc, 2)
+        self.assertIn("fora do diretorio .willtech/logs", trav_out)
+
+        rc, short_h = run_tool(
+            OUTPUT_TOOL, "read-log", parts["path"],
+            "--expected-sha256", "   ", "--repo", self.repo)
+        self.assertEqual(rc, 2)
+        self.assertIn("formato invalido", short_h)
+
+        # Redação em persist_and_summarize e read-log
+        # Se arquivo de entrada for caminho sensível (ex: secret.txt), deve recusar com rc=2
+        cred_file = Path(self.tmp.name) / "secret_leak.txt"
+        cred_file.write_text("token=123", encoding="utf-8")
+        rc_cred, _ = run_tool(OUTPUT_TOOL, "summarize", cred_file, "--repo", self.repo)
+        self.assertEqual(rc_cred, 2)
+
+        secret_out = "dump: authorization: bearer sk-sec1234567890abcdef\nRuntimeError: falha encadeada\n"
+        in_sec = Path(self.tmp.name) / "sample_out.txt"
+        in_sec.write_text(secret_out, encoding="utf-8")
+        rc, sec_sum = run_tool(
+            OUTPUT_TOOL, "summarize", in_sec, "--repo", self.repo)
+        self.assertEqual(rc, 0)
+        self.assertNotIn("sk-sec1234567890abcdef", sec_sum)
+        sec_raw_p = [l for l in sec_sum.splitlines() if l.startswith("RAW_LOG:")][0].split()[1].split("=")[1]
+        log_disk = (self.repo / sec_raw_p).read_text(encoding="utf-8")
+        self.assertNotIn("sk-sec1234567890abcdef", log_disk)
+        rc, sec_read = run_tool(OUTPUT_TOOL, "read-log", sec_raw_p, "--repo", self.repo)
+        self.assertEqual(rc, 0)
+        self.assertNotIn("sk-sec1234567890abcdef", sec_read)
+        self.assertTrue("<redacted>" in sec_read or "[REDACTED]" in sec_read)
+
     def test_07_adaptive_failure_falls_back_safely_to_canonical_30(self):
         run_tool(ROOM_TOOL, "put", self.room, "--repo", self.repo,
                  "--kind", "finding", "--specialty", "explorer",
@@ -517,8 +552,17 @@ class AdaptiveIntelligenceAdversarialTests(unittest.TestCase):
                            capture_output=True, text=True, timeout=15)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+        base_ref = None
+        for cand in ("origin/main", "main", "50b18d0406f6622b5e04bb9ee8dc62a4e2ee6d48", "v3.0.0"):
+            chk = subprocess.run(
+                ["git", "-C", str(ROOT), "rev-parse", "--verify", "--quiet", cand],
+                capture_output=True, text=True)
+            if chk.returncode == 0:
+                base_ref = cand
+                break
+        self.assertIsNotNone(base_ref, "nenhuma ref git base encontrada")
         diff = subprocess.check_output(
-            ["git", "-C", str(ROOT), "diff", "--name-only", "main", "--",
+            ["git", "-C", str(ROOT), "diff", "--name-only", base_ref, "--",
              "opencode/agent", "opencode/AGENTS.md", "opencode/bin",
              "codex/agents", "claude-code/agents", "claude-code/settings"],
             text=True)

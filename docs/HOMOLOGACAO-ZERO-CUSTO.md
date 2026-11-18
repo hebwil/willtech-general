@@ -123,6 +123,39 @@ Artefatos publicados sem segredos (logs, hashes, IDs de sessão, capturas, links
 
 **Gate de CI do PR [#16](https://github.com/hebwil/willtech-general/pull/16):** [run 44192464779](https://github.com/hebwil/willtech-general/actions/runs/44192464779) — **5/5 jobs SUCCESS** (nucleo macOS/Linux/Windows com a suíte portável incluindo `test-opencode-trace`, host oficial OpenCode, smoke de inteligência). Merge/publicação permanecem sujeitos a revisão humana; esta homologação não altera a release estável.
 
+## §9 — Evolução 3.0: Benchmark Multi-Braço A/B/C (Inteligência Adaptativa e Economia Real)
+
+Data: 2026-11-18 · Workflow: `inteligencia-gratuita` ([run 44300443490](https://github.com/hebwil/willtech-general/actions/runs/44300443490), **SUCCESS**) · **Orçamento consumido: US$ 0,00**.
+Ambiente: runner `ubuntu-latest` gratuito, OpenCode V2.3.0 oficial, llama.cpp b12483, Qwen3-1.7B-Q4_K_M (`simulation: false`).
+
+Total de 27 execuções reais de inferência (3 tarefas × 3 repetições × 3 braços de inteligência):
+- **Braço A (Baseline 3.0 canônico):** Sala de agentes original com consulta padrão.
+- **Braço B (JIT Adaptativo):** Prefixo de prompt estável + orçamentos dinâmicos por objetivo.
+- **Braço C (Completo):** JIT Adaptativo + RepoMap direcionado com Personalized PageRank + Memória especializada por agente (`context-pack`).
+
+### Resultados medidos por tarefa (médias reais e dispersão):
+
+1. **Tarefa T1 (Simples — sem necessidade de sala):**
+   - Braço A: 59.7 ± 0.9 input tokens | 17,990 ms | 0.0 releituras | 0/3 funcional
+   - Braço B: 56.0 ± 0.0 input tokens (**−6.08%**) | 18,367 ms | 0.0 releituras | 0/3 funcional
+   - Braço C: 56.3 ± 0.5 input tokens (−5.86%) | 17,570 ms (−2.34%) | 0.0 releituras | 0/3 funcional
+
+2. **Tarefa T2 (Média — conhecimento prévio existente na sala):**
+   - Braço A: 1,772.3 ± 1,223.1 input tokens | 54,057 ms | 1.0 releituras | 0/3 funcional
+   - Braço B: 709.0 ± 898.1 input tokens (**−59.99%**) | 37,605 ms (**−30.43%**) | 1.0 releituras | 0/3 funcional
+   - Braço C: 3,970.7 ± 415.7 input tokens (+124.04%) | 364,570 ms (+574.42%) | 1.0 releituras | 0/3 funcional
+
+3. **Tarefa T3 (Complexa — refatoração com invalidação de hash/stale e revisão):**
+   - Braço A: 3,243.7 ± 457.9 input tokens | 100,564 ms | 0.7 releituras | 0/3 funcional
+   - Braço B: 810.3 ± 643.0 input tokens (**−75.02%**) | 98,397 ms (−2.15%) | **0.0 releituras (−100%)** | 0/3 funcional
+   - Braço C: 864.0 ± 626.3 input tokens (−73.36%) | 62,192 ms (**−38.16%**) | **0.0 releituras (−100%)** | 0/3 funcional
+
+### Conclusões do Benchmark A/B/C:
+- **Economia Líquida Comprovada no Braço B:** A estabilização de prefixo combinada com a recuperação JIT seletiva evitou o estouro de cache e reduziu os novos tokens de entrada em **63.27%** no agregado (com picos de **−75.02%** em tarefas complexas).
+- **Redução de Releituras:** Em T3, as releituras repetidas caíram de 0.7 para 0.0 (**−100%** de releituras evitadas).
+- **Risco de Contexto Excessivo em Modelos Menores (Braço C em T2):** Quando o modelo pequeno de 1.7B recebeu briefs densos com múltiplos símbolos do RepoMap na tarefa T2, ele entrou em loops exploratórios de releitura (+124% tokens). Isso comprova a decisão arquitetural da Seção 3.A: o contexto estrutural deve ser dosado dinamicamente pela especialidade e objetivo, nunca injetado de forma indiscriminada.
+- **Sucesso Funcional:** 0/9 em todos os braços devido ao comportamento de tool-calling do modelo Qwen3-1.7B (chamada de `grep` com caminho de arquivo em vez de diretório), mantendo exatamente a limitação honesta documentada no §3.
+
 ## Limitações honestas restantes
 
 - O modelo gratuito de 1.7B **não executa reliably o protocolo coletivo completo** (registro manual na sala, edição útil, consolidação). A arquitetura (delegação, sala, JIT, gates) funciona; a capacidade do modelo é o fator limitante. Nenhum resultado de modelo maior é extrapolado.

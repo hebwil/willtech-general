@@ -392,18 +392,20 @@ def cmd_run_scenario(a):
 
         if a.scenario == "T3" and arm_name == "C":
             room_py = os.path.join(lab_dir, "tools", "willtech-room.py")
-            rc_p, out_p = subprocess.getstatusoutput(
-                f'"{sys.executable}" "{room_py}" context-pack "{room_db}" '
-                f'--repo "{lab_dir}" --for-agent reviewer --handoff-id 6 '
-                f'--objective "fechar_fatura ALIQUOTA_PADRAO"')
+            cp_res = subprocess.run(
+                [sys.executable, room_py, "context-pack", room_db,
+                 "--repo", lab_dir, "--for-agent", "reviewer",
+                 "--handoff-id", "6", "--objective", "fechar_fatura ALIQUOTA_PADRAO"],
+                capture_output=True, text=True)
             reviewer_pack_verified = (
-                rc_p == 0
-                and "CONCLUSAO_EXECUTOR_PRIVADA_NAO_VAZAR" not in out_p
-                and "omitido por política" in out_p
+                cp_res.returncode == 0
+                and "CONCLUSAO_EXECUTOR_PRIVADA_NAO_VAZAR" not in cp_res.stdout
+                and "omitido por política" in cp_res.stdout
             )
-            rc_exp, out_exp = subprocess.getstatusoutput(
-                f'"{sys.executable}" "{room_py}" export "{room_db}" --repo "{lab_dir}"')
-            stale_verified = (rc_exp == 0 and '"status": "stale"' in out_exp)
+            exp_res = subprocess.run(
+                [sys.executable, room_py, "export", room_db, "--repo", lab_dir],
+                capture_output=True, text=True)
+            stale_verified = (exp_res.returncode == 0 and '"status": "stale"' in exp_res.stdout)
 
         # Executa a suíte de testes unitários do laboratório para registrar integridade
         tr = subprocess.run(
@@ -522,8 +524,8 @@ def cmd_consolidate(a):
         sa, sb, sc = overall_stats["A"][m], overall_stats["B"][m], overall_stats["C"][m]
         pb = overall_deltas["B"][m]["pct"]
         pc = overall_deltas["C"][m]["pct"]
-        pbs = f"{pb:+.2f}%" if pb is not None else "0.00%"
-        pcs = f"{pc:+.2f}%" if pc is not None else "0.00%"
+        pbs = f"{pb:+.2f}%" if pb is not None else "n/a"
+        pcs = f"{pc:+.2f}%" if pc is not None else "n/a"
         md.append(
             f"| `{m}` | {sa['mean']:.1f} ± {sa['stddev']:.1f} | "
             f"{sb['mean']:.1f} ± {sb['stddev']:.1f} | "

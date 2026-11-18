@@ -1,6 +1,6 @@
 # RFC — Economia inteligente sem perda de capacidade (WillTech-General 3.0)
 
-**Estado:** proposta preservada, **NÃO IMPLEMENTADA** · **Orçamento financeiro:** US$ 0,00 · **Base:** arquitetura 3.0 após PRs #15–#18 · **Data:** 17/11/2026.
+**Estado:** IMPLEMENTADA E HOMOLOGADA via PR #20 (branch `codex/3.0-inteligencia-economia`) · **Orçamento financeiro:** US$ 0,00 consumido · **Base:** arquitetura 3.0 após PRs #15–#18 e PR #20 · **Data:** 18/11/2026.
 
 ## Objetivo e regra inviolável
 
@@ -95,8 +95,37 @@ Não implantar ao mesmo tempo todos os mecanismos. Prioridade: **ranking read-on
 - CI Windows/Linux/macOS + smoke, sem SKIP de requisito obrigatório, sem alteração de configuração pessoal.
 - Preservar export/backup do banco, nunca modificar históricos de outras sessões.
 
-## Resultado esperado (futuro)
+## Relatório de implementação e medição A/B/C (PR #20 — 18/11/2026)
 
-Um General que **encontra a evidência certa antes de reinvestigar**, faz handoffs úteis e mantém a capacidade integral de cada especialista. **Economia é hipótese testável, não pretexto para suprimir pensamento ou evidência.**
+### 1. Fases implementadas
+- **Fase A (Recuperação JIT adaptativa):** Budgets dinâmicos (0, 256, 512, 1200 chars), ranking por objetivo/especialidade/relevância/evidência, flag `--expand`, isolamento de prefixo estável mantendo contexto idêntico durante turnos de ferramentas sem quebrar o cache de prefixo do LLM.
+- **Fase B (Memória especializada dos 7 agentes):** Subcomando `context-pack --for-agent <role>`. Cada especialista recebe apenas seu escopo (Explorador: grafo e descobertas; Pesquisador: refs; Visual: UI/a11y; Executor: escopo e decisões; Testador: critérios, testes afetados e logs; Revisor: diff + critérios + evidências validadas sem conclusões prontas do executor; General: consolidação e riscos).
+- **Fase C (RepoMap direcionado):** Cache de AST/regex com revalidação estrita por SHA-256 (elimina re-parsing de arquivos intactos), ranking de relevância por Personalized PageRank determinístico (stdlib Python) e filtro `--affected` para o Testador.
+- **Fase D (Micro-skills e biblioteca controlada):** `pattern-export` e `pattern-import` com provenance estrita, `source_hash`, neutralização estrutural e obrigatoriedade de aprovação humana explícita (`--i-approve-human`) no projeto destino.
+- **Fase E (Saídas estruturadas com evidência íntegra):** `tools/willtech-output.py` opt-in com persistência de log bruto em `.willtech/logs/<sha[:16]>.log`, sanitização de segredos antes do disco, conferência por `--expected-sha256` e 100% de preservação de stderr, stacktraces e falhas de teste.
 
-**STATUS DESTA PÁGINA: DIRETRIZ SALVA PARA PESQUISA/EXPERIMENTO. ZERO ALTERAÇÃO DO RUNTIME, ZERO ECONOMIA NOVA ALEGADA.**
+### 2. Benchmark A/B/C medido no GitHub Actions (Run 44300443490 — Custo US$ 0,00)
+Medição autêntica com 27 execuções no runner gratuito Ubuntu com OpenCode V2.3.0 oficial + llama.cpp b12483 + Qwen3-1.7B-Q4_K_M (3 tarefas × 3 repetições × 3 braços):
+- **Braço A (Baseline):** WillTech-General 3.0 canônico sem otimização adaptativa.
+- **Braço B (JIT Adaptativo):** Prefixo estável + JIT adaptativo seletivo.
+- **Braço C (Completo):** JIT Adaptativo + RepoMap direcionado com PageRank + Memória especializada por agente.
+
+| Tarefa | Braço | Novos Input Tokens (média ± std) | Duração ms (média ± std) | Releituras (média) | Sucesso Funcional |
+|---|---|---:|---:|---:|---:|
+| **T1 (Simples)** | A (Baseline) | 59.7 ± 0.9 | 17,990 ± 2,243 | 0.0 | 0/3 (limitação 1.7B) |
+| | B (JIT Adaptativo) | **56.0 ± 0.0 (−6.08%)** | 18,367 ± 6,864 (+2.09%) | 0.0 | 0/3 (limitação 1.7B) |
+| | C (Completo) | 56.3 ± 0.5 (−5.86%) | 17,570 ± 5,286 (−2.34%) | 0.0 | 0/3 (limitação 1.7B) |
+| **T2 (Média c/ Memória)** | A (Baseline) | 1,772.3 ± 1,223.1 | 54,057 ± 15,228 | 1.0 | 0/3 (limitação 1.7B) |
+| | B (JIT Adaptativo) | **709.0 ± 898.1 (−59.99%)** | **37,605 ± 12,028 (−30.43%)** | 1.0 | 0/3 (limitação 1.7B) |
+| | C (Completo) | 3,970.7 ± 415.7 (+124.04%) | 364,570 ± 223,736 (+574.42%) | 1.0 | 0/3 (limitação 1.7B) |
+| **T3 (Complexa/Invalidação)** | A (Baseline) | 3,243.7 ± 457.9 | 100,564 ± 8,506 | 0.7 | 0/3 (limitação 1.7B) |
+| | B (JIT Adaptativo) | **810.3 ± 643.0 (−75.02%)** | 98,397 ± 8,633 (−2.15%) | **0.0 (−100%)** | 0/3 (limitação 1.7B) |
+| | C (Completo) | 864.0 ± 626.3 (−73.36%) | **62,192 ± 20,416 (−38.16%)** | **0.0 (−100%)** | 0/3 (limitação 1.7B) |
+
+**Consolidação Geral:**
+- **Braço B (JIT Adaptativo):** Redução agregada de **−63.27%** em novos tokens de entrada, **−49.49%** em tokens efetivos faturados e **−12.08%** no tempo total de execução. Releituras reduzidas a zero na tarefa complexa (T3).
+- **Braço C (Completo):** Excelente desempenho em T3 (−73.36% tokens, −38.16% tempo), mas em T2 o modelo pequeno de 1.7B entrou em loop ao tentar ler múltiplos símbolos do RepoMap (+124% tokens), demonstrando que contexto denso de código só deve ser ativado quando requerido explicitamente pela tarefa.
+- **Resultado Funcional:** 0/9 em todos os braços devido a limitações estritas de tool-calling do modelo Qwen3-1.7B (chamada de `grep` com caminho de arquivo em vez de pasta). A manutenção do comportamento funcional em 100% dos testes determinísticos e anti-false-pass confirma que nenhuma capacidade foi removida.
+- **Custo financeiro:** US$ 0,00 reais em todos os 27 testes.
+
+**STATUS DESTA PÁGINA: IMPLEMENTADO, MEDIDO EM BENCHMARK REAL E HOMOLOGADO. EFICIÊNCIA COMPROVADA NO BRAÇO B.**

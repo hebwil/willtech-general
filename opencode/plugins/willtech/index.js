@@ -97,11 +97,13 @@ export default {
 
     // O hook "context" roda antes de CADA request ao modelo.
     // Modo padrão (fallback 3.0): injeta uma única vez via `pending`.
-    // Modo adaptativo (WILLTECH_ADAPTIVE_JIT=1): isola por sessionID e mantém o
+    // Modo adaptativo (WILLTECH_ADAPTIVE_JIT=1 ou .willtech/adaptive-jit): isola por sessionID e mantém o
     // mesmo bloco estável durante todos os turnos de ferramentas daquela sessão
     // até `session.idle`, evitando invalidar o cache de prefixo no turno 2+ e
     // preservando a evidência da Sala na etapa final de síntese.
-    const adaptive = process.env.WILLTECH_ADAPTIVE_JIT === "1";
+    const envFlag = String(process.env.WILLTECH_ADAPTIVE_JIT || "").trim().toLowerCase();
+    const markerFile = path.join(dir, ".willtech", "adaptive-jit");
+    const adaptive = ["1", "true", "yes", "on"].includes(envFlag) || fs.existsSync(markerFile);
     let pending = null;
     const sessionCtx = new Map();
     await ctx.session.hook("prompt", (ev) => {

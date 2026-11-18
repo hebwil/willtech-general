@@ -36,28 +36,51 @@ if os.path.isfile(_tspec_path):
 else:
     TRACE = None
 
+_EXPLICIT_SECRET_PATTERNS = (
+    re.compile(r"\b(ghp_|github_pat_|gho_|ghu_|ghs_|ghr_)[A-Za-z0-9_]+"),
+    re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._\-]+"),
+    re.compile(r"(?i)(--password[= ])\S+"),
+    re.compile(r"\b(sk|pk|rk)-[A-Za-z0-9_\-]{8,}"),
+    re.compile(r"\b(AKIA|ASIA)[0-9A-Z]{16}\b"),
+    re.compile(r"(?i)(?:api[_-]?key|secret|password|passwd|token)\s*[:=]\s*['\"]?([A-Za-z0-9_\-]{8,})['\"]?"),
+    re.compile(r'(?i)"(?:api[_-]?key|secret|password|passwd|token)"\s*:\s*"([^"]{6,})"'),
+    re.compile(r"(?i)\bauthorization\s*:\s*(?:basic|bearer)\s+[A-Za-z0-9._\-+/=]+"),
+    re.compile(r"\b[a-z][a-z0-9+.\-]*://[^\s/@:]+:[^\s/@]+@"),
+    re.compile(r"[?&](?:api[_-]?key|token|secret|password)=([^\s&#]{6,})"),
+    re.compile(r"\beyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}"),
+    re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----"),
+)
+
 CATEGORIES = ("test", "git", "list", "generic")
 ROLES = ("explorer", "researcher", "visual", "executor", "tester", "reviewer", "general",
          "explorador", "pesquisador", "testador", "revisor", "comandante")
 
 ERROR_LINE_RE = re.compile(
-    r"(?i)(\btraceback\b|\bexception\b|\berror\b|\bfail(?:ed|ure)?\b|"
+    r"(?i)(\btraceback\b|\b[A-Za-z0-9_]*(?:error|exception)\b|\bfail(?:ed|ure)?\b|"
     r"\bassertionerror\b|\bfatal\b|\bpanic\b|\bsegfault\b|"
-    r"\bsyntaxerror\b|\btypeerror\b|\bvalueerror\b|\bkeyerror\b|"
-    r"^\s*E\s+|^\s*at\s+\S+\s*\()")
+    r"during handling of the above exception|^\s*E\s+|^\s*at\s+\S+\s*\(|"
+    r"^_{3,}\s+\S+.*_{3,}\s*$|^\s*File\s+\"[^\"]+\",\s+line\s+\d+)")
 PASS_TEST_RE = re.compile(
     r"^(\s*test_[A-Za-z0-9_]+\s+\([^)]+\)\s+\.\.\.\s+ok\s*$|"
     r"\s*ok\s+\d*\s*\S.*$|\s*PASS\s+\S.*$|\s*✓\s+\S.*$)")
 
 
 def _redact(text):
-    return TRACE.redact(text) if TRACE else text
+    if not text:
+        return text
+    t = TRACE.redact(text) if TRACE else text
+    for pat in _EXPLICIT_SECRET_PATTERNS:
+        t = pat.sub("[REDACTED]", t)
+    return t
 
 
 def _is_critical_block_start(line):
     low = line.strip().lower()
     return (low.startswith("traceback (most recent call last)")
             or low.startswith("======")
+            or low.startswith("------")
+            or (low.startswith("___") and low.endswith("___"))
+            or low.startswith("during handling of the above exception")
             or low.startswith("fail:")
             or low.startswith("error:"))
 
@@ -110,8 +133,14 @@ def summarize_stream(stdout_text, stderr_text="", exit_code=0,
             continue
         if in_trace:
             critical_lines.append(ln)
-            if stripped == "" and len(critical_lines) > 3:
-                in_trace = False
+            # Desliga traceback apenas quando encontrar delimitador de fim ou linha comum não-trace
+            if stripped.startswith("===") or stripped.startswith("---") or stripped.startswith("___"):
+                if len(critical_lines) > 2 and not any(k in stripped.lower() for k in ("fail", "error", "traceback")):
+                    in_trace = False
+            elif stripped == "" and len(critical_lines) > 8:
+                # Mantém até o próximo bloco se a linha anterior for frame de arquivo
+                if not any(critical_lines[-2].strip().startswith(p) for p in ('File "', "during handling", "^", "~")):
+                    in_trace = False
             continue
         if ERROR_LINE_RE.search(ln):
             critical_lines.append(ln)
@@ -192,7 +221,9 @@ def persist_and_summarize(stdout_text, stderr_text="", exit_code=0,
         if combined and not combined.endswith("\n"):
             combined += "\n"
         combined += "[STDERR]\n" + stderr_text
-    raw_bytes = combined.encode("utf-8", "replace")
+    # Redige segredos antes de salvar em disco para evitar persistência de credenciais
+    safe_combined = _redact(combined)
+    raw_bytes = safe_combined.encode("utf-8", "replace")
     sha = hashlib.sha256(raw_bytes).hexdigest()
 
     os.makedirs(log_dir_abs, exist_ok=True)
@@ -214,7 +245,7 @@ def persist_and_summarize(stdout_text, stderr_text="", exit_code=0,
               f"bytes={len(raw_bytes)}")
 
     if full:
-        return _redact(combined) + ("\n" if not combined.endswith("\n") else "") + footer
+        return safe_combined + ("\n" if not safe_combined.endswith("\n") else "") + footer
 
     summary = summarize_stream(stdout_text, stderr_text=stderr_text,
                                exit_code=exit_code, category=category,
@@ -268,20 +299,34 @@ def cmd_read_log(a):
     if DOSSIE.is_credential_path(a.log_path):
         print("recusado: caminho de credencial")
         return 2
+    repo_abs = os.path.realpath(os.path.abspath(a.repo))
     p = os.path.abspath(a.log_path) if os.path.isabs(a.log_path) else os.path.abspath(
         os.path.join(a.repo, a.log_path))
-    if not os.path.isfile(p):
+    p_real = os.path.realpath(p)
+
+    # Confinamento obrigatório: só permite ler logs dentro de .willtech/logs deste projeto
+    log_dir_real = os.path.realpath(os.path.join(repo_abs, ".willtech", "logs"))
+    if not (p_real == log_dir_real or p_real.startswith(log_dir_real + os.sep)):
+        print("recusado: caminho fora do diretorio .willtech/logs do projeto")
+        return 2
+
+    if not os.path.isfile(p_real):
         print("recusado: log bruto ausente")
         return 2
-    with open(p, "rb") as fh:
+    with open(p_real, "rb") as fh:
         raw = fh.read()
     actual = hashlib.sha256(raw).hexdigest()
-    if a.expected_sha256:
+    if a.expected_sha256 is not None:
         exp = a.expected_sha256.strip().lower()
+        if not (re.fullmatch(r"[0-9a-fA-F]{16,64}", exp)):
+            print("recusado: formato invalido de expected-sha256 (minimo 16 hexadecimais)")
+            return 2
         if not actual.startswith(exp):
             print(f"recusado: hash divergente do log bruto (expected={exp[:16]} actual={actual[:16]})")
             return 2
-    sys.stdout.write(raw.decode("utf-8", "replace"))
+    # Redige segredos antes de enviar para stdout
+    text = _redact(raw.decode("utf-8", "replace"))
+    sys.stdout.write(text)
     return 0
 
 
