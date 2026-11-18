@@ -138,7 +138,7 @@ jobs:
           wire_api = "responses"
           requires_openai_auth = false
           EOF
-            timeout 240 codex exec --json --sandbox workspace-write --model qwen3-4b \
+            timeout 240 codex exec --trust --json --sandbox workspace-write --model qwen3-4b \
               "Leia src/version.py usando cat src/version.py sem pedir elevacao de permissao (nao e necessaria). Responda o valor literal APP_VERSION presente no arquivo." \
               > "$HOME/native-host-session.jsonl" 2> "$HOME/native-host-session.err"
           else
