@@ -98,8 +98,8 @@ jobs:
             --notes-file docs/RELEASE-NOTES-3.1.0.md \
             dist/MANIFEST.json dist/SHA256SUMS.txt \
             dist/willtech-general-3.1.0.tar.gz
-          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')
-          test "$TAG_SHA" = "$GITHUB_SHA"
+          TARGET_SHA=$(gh release view "$RELEASE_TAG" --json targetCommitish --jq .targetCommitish)
+          test "$TARGET_SHA" = "$GITHUB_SHA"
           echo "PASS: draft/tag fixados no commit validado $GITHUB_SHA"
 
       - name: Verificar ativos baixados do DRAFT antes de publicar
