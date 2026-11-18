@@ -295,6 +295,7 @@ def warm_neutral_prefix(lab_base, provider_id="llamacpp", model_id="qwen3-1.7b")
         with open(os.path.join(warm_dir, "opencode.json"), "w", encoding="utf-8") as fh:
             json.dump(oc_cfg, fh, indent=2)
     env = dict(os.environ)
+    env["PWD"] = os.path.abspath(warm_dir)
     env["OPENCODE_CONFIG"] = os.path.join(warm_dir, "opencode.json")
     try:
         subprocess.run(
@@ -338,6 +339,7 @@ def cmd_run_scenario(a):
 
             env = dict(os.environ)
             env.update(arm_env)
+            env["PWD"] = os.path.abspath(lab_dir)
             env["OPENCODE_CONFIG"] = os.path.join(lab_dir, "opencode.json")
 
             t0 = time.monotonic()
