@@ -138,7 +138,19 @@ jobs:
           wire_api = "responses"
           requires_openai_auth = false
           EOF
-            timeout 240 codex exec --trust --json --sandbox workspace-write --model qwen3-1.7b \
+            # APENAS NO RUNNER descartavel: contrato de hooks revisado antes.
+            # O flag oficial e para one-off automation vetada, nunca no usuario.
+            python3 - "$WT_LAB/.codex/hooks.json" <<'PY'
+          import json,sys
+          cfg=json.load(open(sys.argv[1],encoding="utf-8"))
+          commands=[h["command"] for groups in cfg.get("hooks",{}).values()
+                    for g in groups for h in g.get("hooks",[])
+                    if h.get("type")=="command"]
+          assert commands and all("tools/willtech-auto.py" in c and " codex" in c
+                                  for c in commands), "hooks inesperados; nao autorizar lab"
+          print("hooks vetados:",len(commands))
+          PY
+            timeout 240 codex exec --trust --dangerously-bypass-hook-trust --json --sandbox workspace-write --model qwen3-1.7b \
               "Leia src/version.py usando cat src/version.py sem pedir elevacao de permissao (nao e necessaria). Responda o valor literal APP_VERSION presente no arquivo." \
               > "$HOME/native-host-session.jsonl" 2> "$HOME/native-host-session.err"
           else
