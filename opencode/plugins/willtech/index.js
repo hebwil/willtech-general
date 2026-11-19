@@ -43,9 +43,12 @@ function pythonCmd(dir) {
 
   // 1. Variável de ambiente explícita
   const envPy = process.env.WILLTECH_PYTHON || process.env.PYTHON;
-  if (envPy && testCompat(envPy)) {
-    PY = [envPy, []];
-    return PY;
+  if (envPy) {
+    if (testCompat(envPy)) {
+      PY = [envPy, []];
+      return PY;
+    }
+    return null;
   }
 
   // 2. Configuração persistida na instalação local do projeto
@@ -103,8 +106,8 @@ function pythonCmd(dir) {
       candidates.push(["/Library/Frameworks/Python.framework/Versions/3.13/bin/python3", []]);
     } else {
       // Linux
-      candidates.push(["/usr/bin/python3.12", []]);
-      candidates.push(["/usr/bin/python3.13", []]);
+      candidates.push(["python3.12", []]);
+      candidates.push(["python3.13", []]);
       candidates.push(["/usr/local/bin/python3.12", []]);
       candidates.push(["/usr/local/bin/python3.13", []]);
     }

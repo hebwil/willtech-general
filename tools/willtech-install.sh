@@ -45,13 +45,14 @@ for path in "$BASE" "$BASE/enabled" "$BASE/installed.json"; do
 done
 
 find_python() {
-  if [ -n "${WILLTECH_PYTHON:-}" ] && [ -x "$WILLTECH_PYTHON" ]; then
-    if "$WILLTECH_PYTHON" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1; then
+  if [ -n "${WILLTECH_PYTHON:-}" ]; then
+    if [ -x "$WILLTECH_PYTHON" ] && "$WILLTECH_PYTHON" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1; then
       printf '%s\n' "$WILLTECH_PYTHON"
       return 0
     fi
+    return 1
   fi
-  cands="python3.12 python3.13 /opt/homebrew/bin/python3.12 /opt/homebrew/bin/python3.13 /opt/homebrew/bin/python3 /usr/local/bin/python3.12 /usr/local/bin/python3.13 /usr/local/bin/python3 /usr/bin/python3.12 /usr/bin/python3.13 $HOME/.local/bin/python3.12 $HOME/.local/bin/python3.13 $HOME/.local/bin/python3 $HOME/.pyenv/shims/python3 /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 /Library/Frameworks/Python.framework/Versions/3.13/bin/python3 python3 python"
+  cands="python3.12 python3.13 /opt/homebrew/bin/python3.12 /opt/homebrew/bin/python3.13 /opt/homebrew/bin/python3 /usr/local/bin/python3.12 /usr/local/bin/python3.13 /usr/local/bin/python3 $HOME/.local/bin/python3.12 $HOME/.local/bin/python3.13 $HOME/.local/bin/python3 $HOME/.pyenv/shims/python3 /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 /Library/Frameworks/Python.framework/Versions/3.13/bin/python3 python3 python"
   for c in $cands; do
     if command -v "$c" >/dev/null 2>&1 || [ -x "$c" ]; then
       if "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1; then

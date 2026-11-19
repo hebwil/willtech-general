@@ -147,7 +147,7 @@ main().catch(err => {{
         fake_home = self.temp / "empty_home"
         fake_home.mkdir()
 
-        # Cria um python3 mock que simula Python 3.9 (falha na checagem >= 3.12)
+        # Cria mocks para todos os comandos de python que simulam Python 3.9 (falha na checagem >= 3.12)
         mock_py = isolated_bin / "python3"
         mock_py.write_text("""#!/bin/sh
 if [ "$1" = "--version" ]; then
@@ -162,11 +162,24 @@ echo "Mock Python 3.9.6 invocado" >&2
 exit 1
 """, encoding="utf-8")
         mock_py.chmod(mock_py.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        for name in ("python", "python3.12", "python3.13"):
+            os.symlink(mock_py, isolated_bin / name)
 
         dest_repo = self.temp / "dest_repo"
         shutil.copytree(str(ROOT / "tools"), str(dest_repo / "tools"))
         subprocess.run(["git", "init"], cwd=str(dest_repo), capture_output=True)
 
+        # 1a. Teste com WILLTECH_PYTHON apontando para interpretador incompatível
+        res_inst_ov = subprocess.run(
+            [BASH_BIN, str(ROOT / "tools/willtech-install.sh"), "--repo", str(dest_repo), "--platform", "all", "--yes"],
+            env={"PATH": "/bin:/usr/bin", "HOME": str(fake_home), "WILLTECH_PYTHON": str(mock_py)},
+            capture_output=True,
+            text=True
+        )
+        self.assertEqual(res_inst_ov.returncode, 2, f"Instalador deveria recusar WILLTECH_PYTHON incompatível: {res_inst_ov.stderr}")
+        self.assertIn("Python >= 3.12 não encontrado", res_inst_ov.stderr)
+
+        # 1b. Teste com ambiente sem nenhum Python compatível no PATH
         env_no_py = {
             "PATH": f"{isolated_bin}:/bin:/usr/bin",
             "HOME": str(fake_home),
