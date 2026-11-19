@@ -19,9 +19,9 @@ permissions:
 env:
   PYTHONUTF8: "1"
   LLAMA_BUILD: b12483
-  GGUF_REPO: ggml-org/Qwen3-4B-GGUF
-  GGUF_FILE: Qwen3-4B-Q4_K_M.gguf
-  MODEL_ID: qwen3-4b
+  GGUF_REPO: ggml-org/Qwen3-1.7B-GGUF
+  GGUF_FILE: Qwen3-1.7B-Q4_K_M.gguf
+  MODEL_ID: qwen3-1.7b
 
 jobs:
   validar-host:
@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/lab-cache
-          key: llama-b12483-qwen3-4b-q4km-v1
+          key: llama-b12483-qwen3-1.7b-q4km-v1
 
       - name: Preparar modelo local e servidor loopback
         shell: bash
@@ -128,7 +128,7 @@ jobs:
             export CODEX_HOME="$RUNNER_TEMP/codex-home"
             mkdir -p "$CODEX_HOME"
             cat > "$CODEX_HOME/config.toml" <<'EOF'
-          model = "qwen3-4b"
+          model = "qwen3-1.7b"
           model_provider = "willtech_local"
           approval_policy = "never"
           sandbox_mode = "workspace-write"
@@ -138,13 +138,13 @@ jobs:
           wire_api = "responses"
           requires_openai_auth = false
           EOF
-            timeout 240 codex exec --trust --json --sandbox workspace-write --model qwen3-4b \
+            timeout 240 codex exec --trust --json --sandbox workspace-write --model qwen3-1.7b \
               "Leia src/version.py usando cat src/version.py sem pedir elevacao de permissao (nao e necessaria). Responda o valor literal APP_VERSION presente no arquivo." \
               > "$HOME/native-host-session.jsonl" 2> "$HOME/native-host-session.err"
           else
             export CLAUDE_PROJECT_DIR="$WT_LAB"
             timeout 240 claude --print --verbose --output-format stream-json --max-turns 5 \
-              --model qwen3-4b \
+              --model qwen3-1.7b \
               "Use a ferramenta de leitura para ler src/version.py. Qual e o valor de APP_VERSION? Responda exatamente a partir do arquivo." \
               > "$HOME/native-host-session.jsonl" 2> "$HOME/native-host-session.err"
           fi
