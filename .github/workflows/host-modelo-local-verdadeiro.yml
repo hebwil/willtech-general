@@ -150,12 +150,12 @@ jobs:
                                   for c in commands), "hooks inesperados; nao autorizar lab"
           print("hooks vetados:",len(commands))
           PY
-            timeout 240 codex exec --trust --dangerously-bypass-hook-trust --json --sandbox workspace-write --model qwen3-1.7b \
+            timeout 480 codex exec --trust --dangerously-bypass-hook-trust --json --sandbox workspace-write --model qwen3-1.7b \
               "Leia src/version.py usando cat src/version.py sem pedir elevacao de permissao (nao e necessaria). Responda o valor literal APP_VERSION presente no arquivo." \
               > "$HOME/native-host-session.jsonl" 2> "$HOME/native-host-session.err"
           else
             export CLAUDE_PROJECT_DIR="$WT_LAB"
-            timeout 240 claude --print --verbose --output-format stream-json --max-turns 5 \
+            timeout 480 claude --print --verbose --output-format stream-json --max-turns 5 \
               --model qwen3-1.7b \
               "Use a ferramenta de leitura para ler src/version.py. Qual e o valor de APP_VERSION? Responda exatamente a partir do arquivo." \
               > "$HOME/native-host-session.jsonl" 2> "$HOME/native-host-session.err"

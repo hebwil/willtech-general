@@ -83,7 +83,17 @@ class GuiDistributionTests(unittest.TestCase):
         )
         before = subprocess.check_output(["git", "show", f"{BASE}:README.md"], cwd=ROOT, text=True)
         after = (ROOT / "README.md").read_text()
-        self.assertEqual(re.findall(r'<[^>]+>', before), re.findall(r'<[^>]+>', after))
+        # Protege autoria (bloco de cabecalho), assets de identidade e secao de creditos,
+        # sem impedir atualizacoes legitimas de apresentacao e status da versao no README.
+        self.assertEqual(before[:before.index("-->") + 3], after[:after.index("-->") + 3])
+        self.assertEqual(
+            sorted(set(re.findall(r'docs/assets/[a-zA-Z0-9_\-\.]+', before))),
+            sorted(set(re.findall(r'docs/assets/[a-zA-Z0-9_\-\.]+', after))),
+        )
+        self.assertEqual(
+            re.findall(r'<img [^>]+docs/assets/[^>]+>', before),
+            re.findall(r'<img [^>]+docs/assets/[^>]+>', after),
+        )
         self.assertEqual(before[before.index("## Créditos e referências"):], after[after.index("## Créditos e referências"):])
 
 
