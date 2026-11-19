@@ -1,4 +1,4 @@
-const { Plugin, Panel, MenuItem, Command, Style, createKeyed } = require("@opencode/plugin/gui");
+const { Plugin, Panel, Command, Style, createKeyed } = require("@opencode/plugin/gui");
 const { createEffect, createSignal, onCleanup } = require("solid-js");
 const { AGENTS, EVENTS, projectAgents } = (() => { const module = { exports: {} };
 const AGENTS = [
@@ -216,19 +216,6 @@ module.exports.default = Plugin.define({
       id: "team", region: "side", width: 380,
       list: (input) => input.open.includes("team") ? [tab] : [],
       render: (props) => renderPanel(props, ctx),
-    });
-    ctx.add(MenuItem, () => {
-      const session = ctx.sessions.current();
-      return {
-        menu: "session.panel",
-        id: "team.open",
-        title: "WillTech: abrir equipe",
-        icon: "users",
-        opened: !!session && ctx.layout.state(`${ctx.id}:team`, session) !== "closed",
-        run: () => {
-          if (session) ctx.layout.open(`${ctx.id}:team`, session);
-        },
-      };
     });
     ctx.add(Command, {
       id: "team.toggle", title: "WillTech: mostrar/ocultar equipe",
