@@ -10,156 +10,82 @@ Origin: WILLTECH custom multi-agent implementation
 <h1 align="center">WILLTECH-GENERAL</h1>
 
 <p align="center">
-  <strong>Inteligência Multiagente, Memória Contextual e Orquestração Nativa</strong><br>
-  <em>Uma arquitetura. Sete agentes. Inteligência integrada. Um único comando.</em>
+  <strong>Orquestração multiagente com inteligência compartilhada, memória persistente e execução supervisionada</strong>
 </p>
 
 <p align="center">
-  <sub>Versão da linha de código: <strong>3.1.1</strong> (Shared Intelligence + JIT adaptativo; confira a release publicada) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
+  <strong>7 agentes · 3 plataformas · SQLite local · JIT adaptativo · Open source</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/hebwil/willtech-general/releases/tag/v3.1.1"><strong>Versão estável 3.1.1</strong></a> ·
+  <a href="INSTALL.md">Instalação</a> ·
+  <a href="docs/ARQUITETURA-3.0.md">Arquitetura</a> ·
+  <a href="docs/RELEASE-NOTES-3.1.1.md">Novidades</a> ·
+  <a href="LICENSE">MIT</a>
 </p>
 
 <p align="center">
   <img src="docs/assets/willtech-team-banner.webp" alt="Equipe WILLTECH-GENERAL: General ao centro, ladeado pelos seis especialistas" width="100%">
 </p>
 
-**Status tecnológico — v3.1.1 em validação:** núcleo e integrações OpenCode V2, Codex e Claude Code; sete agentes, memória SQLite, JIT adaptativo e distribuição multiplataforma. Os resultados completos pertencem aos commits e workflows indicados abaixo. Para verificar a instalação real no OpenCode, consulte o [teste rápido de ponta a ponta](docs/TESTE-RAPIDO-OPENCODE-3.1.1.md).
+## Inteligência coletiva para desenvolver com controle
 
-**Evidências de homologação da linha 3.1 (19/11/2026):** o núcleo multiagente e a distribuição 3.1.0 foram testados em runners limpos com verificações reais de instalação, integridade, rollback e execução. [Homologação 5/5](https://github.com/hebwil/willtech-general/actions/runs/44427692105) e [sessões reais de Codex + Claude Code com modelo local e hooks](https://github.com/hebwil/willtech-general/actions/runs/44427692067) concluíram com sucesso. Os sete agentes preservam suas responsabilidades e o comandante de cada host mantém a autoridade. O painel visual é validado pelo proprietário em seu ambiente de uso e **não integra o gate automatizado do núcleo**; testes do macOS runner não são apresentados como PASS visual nativo. A economia medida do modo B é **45,40% menos tokens novos de entrada**, com **8/9 acertos** (igual ao baseline), sem afirmar desconto monetário de API. O modo C segue opt-in e experimental (7/9 nesta amostra). Esta declaração de **FULL PASS** refere-se ao **escopo de núcleo, distribuição e integração dos hosts testados**, não a 100% de acertos de todo modelo em qualquer projeto.
+O **WillTech-General**, desenvolvido pela **WILLTECH-BH**, reúne um coordenador (General) e seis especialistas em um sistema de orquestração para **OpenCode V2, OpenAI Codex e Claude Code**. Ele atua ao lado do agente principal da plataforma, sem substituir suas autorizações, ferramentas ou decisões.
 
----
+A proposta é simples: o comandante define o objetivo; o General organiza o trabalho; os especialistas atuam somente quando necessário; e as descobertas relevantes podem ser preservadas na Sala compartilhada para reutilização entre sessões.
 
-O **WillTech-General** é uma arquitetura open source de orquestração multiagente desenvolvida pela **WILLTECH-BH** para OpenCode, OpenAI Codex e Claude Code.
+### O que o produto oferece
 
-Combina coordenação especializada, aprendizado baseado em evidências, memória contextual, planejamento inteligente, revisão independente e automação nativa — preservando a autoridade do agente principal de cada plataforma.
+| Capacidade | Valor na prática |
+|---|---|
+| **Orquestração de sete agentes** | General coordena Explorador, Pesquisador, Visual, Executor, Testador e Revisor, com funções separadas e delegação seletiva. |
+| **Shared Intelligence** | Sala SQLite projeto-local com proveniência, estado de validação e recuperação contextual entre sessões. |
+| **Contexto sob demanda (JIT)** | Busca por objetivo e especialidade, priorizando registros validados sem despejar todo o histórico no contexto. |
+| **Planejamento proporcional** | Tarefas diretas seguem fluxo curto; mudanças complexas recebem plano, critérios de aceite e revisão independente quando apropriado. |
+| **RepoMap incremental** | Índice de símbolos e dependências atualizado por hash para evitar releituras desnecessárias. |
+| **Supervisão e anti-loop** | Controle de repetição, delegações duplicadas, concorrência de escrita, tentativas e tempos limite com estados verificáveis. |
+| **Automação nativa reversível** | Hooks e plugins por plataforma, instalação com consentimento, backup e remoção preservando componentes de terceiros. |
+| **Segurança por contexto** | Dados externos tratados como dados, não comandos; proteção de segredos, isolamento de projeto e respeito às permissões do host. |
 
-Incorpora mecanismos próprios inspirados em conceitos do Microsoft TokenEconomizer e do Google Elephant-Goldfish Model, sem exigir a execução desses frameworks externos.
-
-O resultado é uma arquitetura projetada para reduzir retrabalho, evitar loops, melhorar decisões e oferecer execução supervisionada com evidências verificáveis.
-
----
-
-## Inteligência integrada
-
-A partir das versões **2.0 → 3.0**, a arquitetura deixou de ser apenas hierarquia de delegação e passou a incorporar mecanismos determinísticos de inteligência operacional, acionados pelos hooks e plugins nativos de cada runtime:
-
-| Capacidade | O que faz | Estado |
-|---|---|---|
-| 🧠 **Memória de experiências** | Lições registradas com comando + hash SHA-256 da saída real; nunca conteúdo de arquivo. Recusa caminhos de credenciais na entrada | ✅ Homologada |
-| 🔄 **Aprendizado entre sessões** | Confirmação progressiva, contradição marca a lição antiga como `superseded`, invalidação por commit; `prune` automático descarta o que envelheceu | ✅ Homologada |
-| 📦 **Cache contextual por projeto e commit** | Mapa de contexto com chave `HEAD + working tree`; escopo seletivo por caminhos — sujeira fora do escopo não invalida o cache | ✅ Homologada |
-| 📋 **Brief contextual** | Contexto essencial injetado automaticamente no início de tarefas complexas; tarefa simples não recebe overhead | ✅ Homologada |
-| 🗺️ **Planejamento com evidências** | Requisito → decisão → implementação → teste rastreáveis no dossiê; decisões entram com evidência em hash | 🧪 Validada em simulação |
-| 🐟 **Revisão independente seletiva (Goldfish)** | Revisor em contexto fresco, acionado só em mudança crítica, arquitetural ou de segurança; uma rodada por padrão, sem herdar conclusões do implementador | 🧪 Validada em simulação |
-| ⛔ **Controle determinístico de loops** | Terceira tentativa do mesmo comando falho é negada pelo runtime; registrar a lição verificada libera a guarda; sem juiz LLM, sem custo de modelo | ✅ Homologada |
-| 🎯 **Seleção proporcional de especialistas** | Tarefa simples fica com o comandante; delegação declara apenas os recursos necessários — sem desativação automática de ferramentas | 🧪 Validada em simulação |
-| 🛡️ **Proteção anti-injection e anti-vazamento** | Conteúdo de web/docs é dado, nunca instrução; segredos do trace são redigidos; dossiê corrompido bloqueia o controle (falha fechado) | ✅ Homologada |
-| 🔍 **Detecção de drift** | Gate determinístico entre código, decisões e documentação: README ↔ arquivos, contratos ↔ subcomandos, decisões sem evidência | ✅ Homologada |
-| ⚙️ **Automação nativa por hooks/plugins** | SessionStart, PreToolUse, Stop e afins do Claude Code e Codex; plugin V2 no OpenCode — zero chamadas de modelo, zero comandos manuais | 🧪 Validada em simulação |
-| 🔧 **Instalação reversível** | Idempotente, projeto-local, com consentimento, backup, `--disable` e `--uninstall` que restaura o estado anterior | ✅ Homologada |
-| 🐘 **Elephant/Goldfish determinístico** | `tools/willtech-dossie.py plan` classifica complexidade (DIRECT/PLAN/PLAN+REVIEW); `review-pack` entrega diff + aceite + evidências sem conclusões do executor; `resolve` classifica críticas com evidência; `catalyst` limita a exploração a uma alternativa após impasse | 🧪 Validada em simulação |
-| 🗺️ **RepoMap incremental compartilhado** | `tools/willtech-repomap.py` indexa símbolos/dependências sem copiar conteúdo; reparse só do que mudou; briefings substituem releituras; trechos revalidados por hash; isolamento por projeto e exclusão de credenciais | 🧪 Validada em simulação |
-| ⏱️ **Supervisor de delegações** | `tools/willtech-supervisor.py` rastreia cada delegação com soft/hard timeout, bloqueia recursão/duplicação/escrita concorrente, retry único reconciliado; timed_out nunca afirma interrupção; cancelamento só com confirmação do runtime | 🧪 Validada em simulação |
-
-> **Evidência da linha v3.1.0:** o benchmark inicial sem JIT adaptativo (run 44187245309) é histórico e não demonstrou economia; o [benchmark definitivo](https://github.com/hebwil/willtech-general/actions/runs/44402745515) com OpenCode e modelo aberto local mediu **−45,40% de tokens novos de entrada no modo B**, mantendo **8/9 acertos funcionais**, contra 8/9 da baseline. O volume incluindo cache **aumentou 22,20%**, e a duração média B **aumentou 3,61%**. São dados limitados a três tarefas com três repetições, não equivalentes a desconto de API. Codex e Claude Code tiveram sessões reais de leitura, resposta correta, ferramentas e hooks com modelo local no laboratório gratuito ([evidência](https://github.com/hebwil/willtech-general/actions/runs/44427692067)); o visual foi confirmado pelo proprietário em seu ambiente próprio, sem atribuir PASS ao teste automatizado de render do runner. Veja [notas da release publicada](docs/RELEASE-NOTES-3.1.0.md).
-
-### As três melhorias da rodada 2.3 (integradas na `main` via [PR #9](https://github.com/hebwil/willtech-general/pull/9))
-
-1. **Planejamento seletivo Elephant/Goldfish com revisão independente** — `tools/willtech-dossie.py plan` classifica a tarefa por heurísticas determinísticas (DIRECT / PLAN / PLAN+REVIEW): tarefas simples executam direto; tarefas complexas exigem plano escrito com critérios de aceite; mudanças críticas/arquiteturais/de segurança acionam o Revisor em contexto fresco (`review-pack` entrega diff + aceite + evidências, sem conclusões do implementador). `resolve` classifica críticas com evidência em hash e `catalyst` limita a exploração a uma alternativa após impasse. Sem juiz LLM, sem custo de modelo.
-2. **RepoMap incremental compartilhado** — `tools/willtech-repomap.py` mantém um índice de símbolos e dependências por hash de conteúdo: reparse apenas do que mudou, renames reaproveitam símbolos, isolamento por projeto e exclusão de credenciais. **Medição real em bancada** (fixture de 10 arquivos): leitura integral 380 bytes (~95 tokens estimados) vs briefing de 256 bytes (~64); parses na primeira rodada = 10, rodadas seguintes sem mudanças = 0. Valores medidos no cenário de teste, não extrapolados como percentual.
-3. **Supervisor determinístico de delegações** — `tools/willtech-supervisor.py` registra cada delegação com soft/hard timeout honestos (`timed_out` nunca afirma interrupção sem confirmação), cancelamento somente com confirmação do runtime, anti-loop (recursão, duplicação e escrita concorrente bloqueadas) e retry único reconciliado. Estado e evidências ficam no dossiê (hashes, nunca conteúdo).
-
-As três melhorias reutilizam o núcleo existente (dossiê, trace, guardas) e preservam os 7 agentes, hooks, instaladores e contratos das três plataformas (contratos 2.3 / 2.3.1 / 2.3.2). As suítes determinísticas cobrem os contratos; a integração adicional com runtime real foi homologada em [OpenCode](https://github.com/hebwil/willtech-general/actions/runs/44427692105) e em [Codex/Claude Code com modelo local](https://github.com/hebwil/willtech-general/actions/runs/44427692067), dentro dos cenários executados.
+**Compatibilidade:** núcleo e distribuição para macOS, Linux e Windows nativo. Cada integração utiliza as capacidades próprias do OpenCode, Codex ou Claude Code; recursos de sandbox, hooks e interface podem variar conforme o runtime. No Windows nativo, use as instruções PowerShell do guia de instalação, não comandos de shell Unix.
 
 ---
 
-## Atualização da Sala e dos agentes (pós-homologação gratuita)
+## Como a arquitetura trabalha
 
-A consulta JIT da sala **prioriza registros validados**, tanto com índice FTS5 quanto com fallback LIKE. Na abertura de sessão (`SessionStart`), a consulta sem objetivo seleciona somente descobertas validadas como orientação geral; candidatos permanecem disponíveis **apenas em consultas direcionadas por objetivo**, com status explícito e cabeçalho de quarentena. Handoffs pendentes e skills não promovidas continuam fora da injeção automática. O orçamento, o isolamento entre projetos, a invalidação por hash e a aprovação humana de micro-skills permanecem preservados. Esta atualização é verificada por testes determinísticos; não é alegado ganho de raciocínio nem economia de tokens sem nova medição.
-
-**Estado da evidência:** testes reais com modelo gratuito e benchmark 3×3 em [docs/HOMOLOGACAO-ZERO-CUSTO.md](docs/HOMOLOGACAO-ZERO-CUSTO.md); distribuição versionada e hosts oficiais com gates aprovados nos cenários cobertos. Painel visual confirmado pelo proprietário em seu ambiente de uso; o runner Desktop macOS não reproduziu uma prova automatizada completa dessa tela, portanto **não se atribui PASS de GUI ao workflow**. O status FULL PASS descrito acima corresponde ao núcleo e aos hosts testados.
-
----
-
-## WillTech 3.0 — Shared Intelligence
-
-**Evolução implementada para v3.1.0:** [Economia inteligente sem perda de capacidade](docs/PROPOSTA-ECONOMIA-INTELIGENTE-3.0.md) — JIT adaptativo, seleção de evidências por objetivo/especialidade, RepoMap direcionado, contexto por agente e saídas opt-in com logs completos. A instalação e os agentes mantêm suas permissões e acesso ao contexto. **Modo C é experimental** (7/9 acertos versus 8/9 na baseline); use apenas quando os benefícios forem demonstrados na tarefa. [Resultados de release](docs/RELEASE-NOTES-3.1.0.md).
-
-Uma memória compartilhada local para os sete agentes: a **sala dos agentes** ([`tools/willtech-room.py`](tools/willtech-room.py)), banco SQLite projeto-local em `.willtech/room.db` (somente stdlib Python, FTS5 opcional com fallback LIKE portável, schema versionado com migração não destrutiva). Cada registro carrega provenance (arquivo de origem + hash), a consulta é limitada por um orçamento de contexto (1200 chars por consulta, aplicado pela ferramenta; o brief do dossiê tem o seu próprio teto, também 1200) e toda saída vem com header QUARENTENA: **informação recuperada é dado, nunca instrução**.
-
-### Como cada especialista usa a sala
-
-| Especialidade | Consulta (`query --specialty`) | Registra |
-|---|---|---|
-| explorador | descobertas e mapa estrutural do projeto | `put --kind finding` |
-| pesquisador | referências e decisões de documentação | `put --kind ref` |
-| visual | padrões de interface e acessibilidade | `put --kind finding` ou `--kind risk` |
-| executor | decisões de implementação e riscos | `put --kind decision` |
-| testador | resultados de teste e micro-skills | `put --kind test_result`, `skill-add` |
-| revisor | riscos e handoffs recebidos | `put --kind risk`, `handoff-record` |
-| general | tudo, filtrado por objetivo | `query --objective`, `handoff-pack` |
-
-### Comandos de uso diário
-
-```sh
-python3 tools/willtech-room.py init .willtech/room.db --repo .     # cria/migra (idempotente)
-python3 tools/willtech-room.py query .willtech/room.db --repo . \
-  --objective "onde esta o cache" --specialty explorador           # consulta JIT
-python3 tools/willtech-room.py check .willtech/room.db --repo .    # integridade + contagens
-python3 tools/willtech-room.py export .willtech/room.db --repo .   # auditoria JSONL
+```mermaid
+flowchart TB
+    Host["Comandante nativo<br/>OpenCode · Codex · Claude Code"]
+    General["WILLTECH-GENERAL<br/>coordenação e consolidação"]
+    subgraph Team["Especialistas acionados conforme a tarefa"]
+      E["Explorador"]
+      P["Pesquisador"]
+      V["Visual"]
+      X["Executor"]
+      T["Testador"]
+      R["Revisor"]
+    end
+    Room[("Sala compartilhada<br/>SQLite · JIT · evidências")]
+    Host -->|"autoriza"| General
+    General --> E
+    General --> P
+    General --> V
+    General --> X
+    General --> T
+    General --> R
+    General <-->|"consulta e registra"| Room
+    E -.-> Room
+    P -.-> Room
+    V -.-> Room
+    X -.-> Room
+    T -.-> Room
+    R -.-> Room
 ```
 
-Ciclo de vida, handoff sem vazamento e micro-skills com gate humano (`skill-promote` exige `--i-approve-human`) em [docs/SHARED-INTELLIGENCE.md](docs/SHARED-INTELLIGENCE.md).
+O **General é um dos sete agentes**. A Sala é um serviço de conhecimento, não um oitavo agente. O comandante nativo continua responsável por consentimento, escopo e decisão final; o General não toma controle irrestrito do host.
 
-**Custos e dependências:** núcleo com Python stdlib e SQLite, FTS5 opcional com fallback LIKE testado em CI; recursos experimentais de navegação e saídas não exigem serviços pagos. O benchmark com Qwen3-1.7B executou em runner gratuito: custo financeiro observado **US$ 0,00**, sem implicar custo zero para provedores externos. O JIT B reduziu **45,40% dos tokens novos** nesse laboratório, mas o volume incluindo cache aumentou **22,20%**. [Matriz e limitações](docs/HOMOLOGACAO-ZERO-CUSTO.md).
-
----
-
-## Arquitetura e hierarquia
-
-**Mapa tecnológico completo:** [Arquitetura técnica WillTech-General 3.0 — 11 diagramas Mermaid](docs/ARQUITETURA-3.0.md) (topologia, controle/delegação, Sala SQLite v3, consultas JIT, handoffs, segurança, automação, RepoMap, supervisor, interfaces e rastreabilidade).
-
-~~~mermaid
-flowchart TB
-    Native["COMANDANTE NATIVO\nOpenCode · Codex · Claude Code"]
-    General["WILLTECH-GENERAL\ncoordenador — agente 1/7"]
-    subgraph Specialists["SEIS ESPECIALISTAS — agentes 2–7"]
-        Explorer["Explorador"]
-        Researcher["Pesquisador"]
-        Visual["Visual"]
-        Executor["Executor"]
-        Tester["Testador"]
-        Reviewer["Revisor"]
-    end
-    Room[("SALA DOS AGENTES\nSQLite v3 · JIT · handoffs · evidências")]
-    Native -->|"autoriza / delega"| General
-    General -->|"seleciona"| Explorer
-    General -->|"seleciona"| Researcher
-    General -->|"seleciona"| Visual
-    General -->|"autoriza"| Executor
-    General -->|"verifica"| Tester
-    General -->|"revisão independente"| Reviewer
-    General -.->|"consulta / registra"| Room
-    Explorer -.-> Room
-    Researcher -.-> Room
-    Visual -.-> Room
-    Executor -.-> Room
-    Tester -.-> Room
-    Reviewer -.-> Room
-    classDef coordinator fill:#d9e8fd,stroke:#2c5e9e,color:#182b42;
-    classDef memory fill:#e0f3ea,stroke:#28765a,color:#163b2c;
-    class General coordinator;
-    class Room memory;
-~~~
-
-**Leitura do mapa:** setas contínuas representam autoridade/delegação; tracejadas representam consulta/registro de conhecimento. O **comandante nativo não é um agente WILLTECH**. O **General é o primeiro dos sete**; a **Sala é um serviço de memória compartilhada, não um oitavo agente** e não coordena tarefas. A equipe é acionada seletivamente, conforme a tarefa.
-
-**Nível 1 — Comandante.** O agente principal da plataforma permanece responsável pelas decisões, autorizações, escopo e entrega final.
-
-**Nível 2 — WillTech-General.** Recebe tarefas complexas, identifica dependências, organiza etapas, seleciona especialistas, acompanha resultados e consolida evidências. Não assume o controle da sessão nem substitui o comandante.
-
-**Nível 3 — Especialistas.** Seis agentes com responsabilidades específicas. A arquitetura prioriza delegação seletiva, evitando mobilizar toda a equipe para operações simples.
-
-### O coordenador
+### O General
 
 <p align="center">
   <picture>
@@ -169,9 +95,7 @@ flowchart TB
   </picture>
 </p>
 
----
-
-## Equipe dos sete agentes
+### Os seis especialistas
 
 <table>
   <tr>
@@ -210,185 +134,110 @@ flowchart TB
   </tr>
 </table>
 
-Cada agente possui um contrato operacional, com responsabilidades, limites e critérios de entrega. O modelo de permissões depende das capacidades e configurações de cada runtime — as restrições são verificadas tecnicamente, não apenas declaradas nos prompts.
+As atribuições são complementares: o Explorador mapeia, o Pesquisador fundamenta, o Visual avalia experiências, o Executor implementa, o Testador verifica e o Revisor oferece análise independente.
 
 ---
 
-## Compatibilidade e homologação
+## Comece a usar
 
-### Sistemas operacionais
+**Requisitos:** Git, Python 3 e ao menos uma das plataformas suportadas. O núcleo usa Python e SQLite locais; eventuais custos de modelos dependem do provedor escolhido no host.
 
-| Sistema | Estado | Condição objetiva |
-|---|---|---|
-| **macOS** | Validado (estação arm64 + CI `macos-latest`) | Suítes determinísticas, smoke tests e wrappers `sandbox-exec` exercitados integralmente em macOS (estação arm64 e [CI nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/44140677603)). Os wrappers de sandbox do OpenCode usam `sandbox-exec`, exclusivo do macOS |
-| **Linux** | Validado em CI nativo (`ubuntu-latest`) | [CI nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/44140677603): todas as suítes portáveis do núcleo, fallback real sem FTS5, protocolo real do App Server Codex (binário oficial), suítes shell + instalador (`test-auto/plan/dossie/drift/trace/wrappers/install`). Requisitos: python3, git, sh. O sandbox `sandbox-exec` dos wrappers não se aplica (exclusivo macOS); o contrato estrutural de permissões é validado em Linux |
-| **Windows nativo** | Núcleo + instalador homologados em CI nativo (`windows-latest`) | [CI nativo aprovado](https://github.com/hebwil/willtech-general/actions/runs/44140677603): suítes portáveis do núcleo, fallback real sem FTS5, `msvcrt.locking` com processos concorrentes (test-compat: anti-loop, hooks das 3 plataformas, `.env` recusado) e ciclo PowerShell 5.1 completo: backup, merge preservando configurações do usuário, idempotência, disable/enable/uninstall, caminho Unicode e integridade dos arquivos. Wrappers `sandbox-exec` não instalados — shell dos agentes segue restrito pelo runtime. Runtimes de IA em Windows não homologados por este teste |
-| **Windows via WSL** | Não validado | Caminho Linux dentro da distribuição WSL (python3, git, sh; instalador `sh` utilizável). Sem ambiente WSL disponível para exercício; mesmas condições do Linux |
-
-As três integrações de IA abaixo são independentes do sistema operacional: cada uma usa os mecanismos nativos do seu runtime.
-
-### Plataformas de IA
-
-| Plataforma | Agentes | Delegação hierárquica | Hooks / plugins (2.2.1) | Memória, revisão e controle de loops | Isolamento por agente |
-|---|---|---|---|---|---|
-| **OpenCode V2** | Subagentes Markdown + wrappers sandbox + plugin V2 | Delegação real comprovada; tarefa DeepSeek não homologada (leitura rejeitada) | Plugin V2 nativo; **carga + SessionStart reais no host oficial 2.3.0** (CI isolado, custo zero) | Contratos ativos; automação com modelo pendente | Aplicado pelo runtime (≥ 2.2.6; carga comprovada em 2.3.0) |
-| **OpenAI Codex** | Agentes nativos em TOML | Validada em runtime real | Hooks projeto-local com trust via `/hooks`; **protocolo App Server real no CI** (binário oficial v0.169.0) | Contratos ativos; automação com modelo pendente | Instrucional (limitação do runtime) |
-| **Claude Code** | Subagentes Markdown + templates de hooks | Pacote implementado; homologação de runtime pendente | Templates de hooks com `onFailure: block` | Contratos ativos; automação validada em simulação | Depende dos controles do runtime |
-
-**Terminologia:** *homologada em runtime real* indica execução comprovada em sessão autenticada com evidência registrada; *validada em simulação* indica comportamento exercitado por suítes determinísticas sobre contratos verificados na documentação oficial, com homologação em runtime ainda pendente; *implementado* indica o componente presente no pacote, pronto para homologação.
-
-A estrutura conceitual é compartilhada; os mecanismos de delegação, execução e controle de permissões variam entre plataformas. A classificação completa, com evidências e limitações técnicas, está em [EVOLUCAO.md](EVOLUCAO.md).
-
----
-
-## Comece aqui
-
-**Pré-requisitos:** um dos runtimes suportados (OpenCode V2, Codex ou Claude Code) e `git`. As ferramentas de inteligência usam apenas a biblioteca padrão do Python 3 — sem dependências externas e sem custo de modelo. Os comandos abaixo são Unix (`sh`): executam em macOS, Linux e dentro do WSL, **não diretamente no PowerShell/Windows nativo** (condições por sistema na seção Compatibilidade).
-
-### OpenCode V2 (variante homologada no runtime 2.2.6)
+**1. Obtenha a versão oficial**
 
 ```sh
-# 1. Backup
-STAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p ~/.willtech-backups/opencode-$STAMP
-cp -a ~/.config/opencode/agent ~/.willtech-backups/opencode-$STAMP/
-
-# 2. Instalar agentes, wrappers e política do comandante
-cp opencode/agent/*.md ~/.config/opencode/agent/
-mkdir -p ~/.config/opencode/bin && cp opencode/bin/* ~/.config/opencode/bin/
-chmod +x ~/.config/opencode/bin/*
-cp opencode/AGENTS.md ~/.config/opencode/AGENTS.md
-
-# 3. Requisito para delegação aninhada (mesclar, sem sobrescrever o resto)
-#    { "experimental": { "subagent_depth": 2 } }  em ~/.config/opencode/opencode.json
-
-# 4. Reiniciar a sessão e verificar
-opencode debug agents
-sh opencode/tests/test-wrappers.sh   # regressão sem custo de modelo
+git clone https://github.com/hebwil/willtech-general.git
+cd willtech-general
 ```
 
-### OpenAI Codex
+Para uma instalação reprodutível, escolha a [release v3.1.1](https://github.com/hebwil/willtech-general/releases/tag/v3.1.1) e siga o [guia de instalação por plataforma](INSTALL.md), que inclui os procedimentos de backup, registro dos sete agentes e configuração de permissões.
 
-```sh
-mkdir -p ~/.codex/agents
-# Backup apenas se já existirem agentes (instalação limpa não tem o que copiar)
-if [ -n "$(ls -A ~/.codex/agents 2>/dev/null)" ]; then
-  cp -a ~/.codex/agents ~/.codex/agents.backup-$(date +%Y%m%d-%H%M%S)
-fi
-cp codex/agents/*.toml ~/.codex/agents/
-# Reinicie a sessão e confirme os sete nomes willtech-*
-```
+**2. Integre ao seu ambiente**
 
-### Claude Code
-
-```sh
-mkdir -p ~/.claude/agents
-# Backup apenas se já existirem agentes (instalação limpa não tem o que copiar)
-if [ -n "$(ls -A ~/.claude/agents 2>/dev/null)" ]; then
-  cp -a ~/.claude/agents ~/.claude/agents.backup-$(date +%Y%m%d-%H%M%S)
-fi
-cp -a claude-code/agents/. ~/.claude/agents/
-```
-
-> A variante Claude Code está implementada e pronta para uso; a homologação de delegação em runtime segue o mesmo protocolo aplicado às demais plataformas. Detalhes em [INSTALL.md](INSTALL.md).
-
-### Automação nativa 2.2.1 (opcional, projeto-local, com consentimento)
-
-```sh
-sh tools/willtech-install.sh            # lista as mudanças e pede confirmação
-sh tools/willtech-install.sh --platform opencode   # apenas uma plataforma
-sh tools/willtech-install.sh --uninstall           # reverter com restauração de backups
-```
-
-Escreve **apenas dentro do repositório alvo** (`.claude/`, `.codex/`, `.opencode/`, `.willtech/`); as telas oficiais de trust/permissão de cada plataforma continuam valendo.
-
-**Desativação e reversão:** `--disable` remove somente `.willtech/enabled`; `--uninstall` remove apenas handlers registrados pelo instalador e restaura os backups dos componentes, inclusive do plugin. Arquivos de terceiros, configurações acrescentadas depois, dossiê/cache e diretórios preexistentes são preservados. Componentes sem registro de posse ou plugins modificados pelo usuário não são apagados. Detalhes de distribuição por projeto e reversão em [INSTALL.md](INSTALL.md).
-
-**Delegação DeepSeek — evidência parcial:** no OpenCode Desktop 2.2.6, o comandante acionou o General e este chamou o Explorador real por `subagent`, recebendo seu retorno de erro. A leitura foi rejeitada por `permission.rejected` no cliente não interativo; o processo terminou por timeout de 60 segundos. Isso comprova comunicação real, **não homologação completa da tarefa**. Profundidade 2 e permissões corretas não substituem a aprovação oficial do runtime. Registros e limitações em [EVOLUCAO.md](EVOLUCAO.md).
-
-### Painel visual dos agentes (experimental, opt-in)
-
-Contribuição gráfica independente para **OpenCode Desktop 2.2.6**, baseada na API oficial `@opencode/plugin/gui` e no export `gui-experimental`, integrada na `main` via [PR #8](https://github.com/hebwil/willtech-general/pull/8). Reutiliza os **sete mascotes originais** e exibe cinco estados por agente — **Aguardando, Coordenando/Executando, Concluído, Erro e Interrompido/Bloqueado** — observando apenas eventos nativos de execução, sem acionar agentes nem modelos. Ativação exige opt-in explícito (`enabled: true`), superfície desktop e versão compatível; respeita `prefers-reduced-motion`, oferece pausa reversível e fallback estático WebP, e limpa todas as inscrições no unmount/desconexão. Não altera os hooks nem é instalada pelo instalador de automação.
-
-**Smoke headless de laboratório aprovado com o bundle real e os mascotes originais:** 64/64 verificações em três rodadas consecutivas + 3/3 em modo reduced-motion — carga das sete imagens, associação agente↔imagem por hash SHA-256, avanço de quadros do APNG provado por decodificação WebCodecs (18 quadros), estados, isolamento de eventos do General, deduplicação de atualizações, limpeza pós-unmount e zero chamadas de rede/modelo (evidência de rede: apenas `file://` e `data:`). Resultados, hashes e capturas de tela em [tools/smoke-evidence/](tools/smoke-evidence/).
-
-**Homologação gráfica nativa — estado atualizado:** o aplicativo OpenCode Desktop foi executado e capturado em macOS 15 e 26, e o plugin GUI carregou no servidor real. **O painel dos sete mascotes permanece NÃO COMPROVADO (NC)**; o smoke headless não equivale à sua pintura nativa. Veja [homologação zero custo](docs/HOMOLOGACAO-ZERO-CUSTO.md). Ativação, reversão e limites de Codex/Claude Code em [INSTALL.md](INSTALL.md#painel-visual-experimental-opencode-desktop).
-
-### Smoke tests dos adaptadores
-
-Os três adaptadores da `main` passaram em smoke tests mínimos com **código real publicado**: plugin/hooks carregados, núcleo Python executado e bloqueio anti-loop comprovado — a terceira tentativa idêntica é negada após duas falhas (OpenCode V2 via `throw` no plugin; Codex e Claude Code via JSON `deny` no contrato de hooks). Os testes simulam apenas o ambiente externo e os eventos; **não constituem homologação em sessão real com modelo**, que permanece pendente e documentada em [EVOLUCAO.md](EVOLUCAO.md).
-
-### Interface visual dos sete agentes (experimental)
-
-Os sete mascotes oficiais reagem à atividade real dos agentes em cada plataforma, reutilizando **um único núcleo de interpretação de estado** ([`opencode/plugins/willtech/visual/activity.cjs`](opencode/plugins/willtech/visual/activity.cjs)) — cópia verbatim com teste anti-drift em cada adaptador. Animações locais (APNG, SMIL, CSS), sem nenhuma chamada de IA, com pausa manual e suporte a reduced-motion.
-
-| Plataforma | Mecanismo oficial | Estado | Evidência |
-|---|---|---|---|
-| **OpenCode** | Plugin GUI (painel nativo no Desktop, versões ≥ 2.2.6) | Aplicativo Desktop renderizado e plugin GUI carregado em macOS real; **painel dos mascotes NC** | `tools/smoke-evidence/mission5-gui-v230.png` |
-| **Claude Code** | Mod oficial (validado pelo tooling oficial): `Pane` desktop com SVG+SMIL e terminal com `Image` + `$.ui.blit` | Kit oficial 3/3 em runtime real de hooks; pintura nativa **não** observada | `claude/plugins/willtech-visual/evidence/preview-lab.png` |
-| **Codex** | Visualizador **complementar e independente** (Codex não expõe painel nativo de 7 agentes; Pets é um companheiro agregado e a extensão de IDE não suporta pets/plugins) | Pipeline real hooks→feed→SSE→viewer exercitado; handshake App Server real (binário oficial v0.169.0, offline); sessão real com modelo **não** exercitada | `codex/willtech-visual/evidence/viewer-lab.png` |
-
-> **Rótulo honesto:** tudo o que está nesta seção foi aprovado em **laboratório** (suítes determinísticas, kit oficial do Claude Code, binário descartável do App Server e capturas headless). **O OpenCode Desktop foi executado nativamente e carregou o plugin GUI, mas o painel de mascotes não foi visualmente comprovado.** As integrações visuais Claude Code/Codex seguem com as limitações descritas; sessão com modelo e pintura nativa completa não foram homologadas. Por isso o estado declarado é **experimental**; simulação, compilação ou decodificação não são apresentadas como homologação nativa. Detalhes e limitações comprovadas em [EVOLUCAO.md](EVOLUCAO.md).
-
-Para usar: o painel OpenCode acompanha o plugin (opt-in `enabled: true` no Desktop ≥ 2.2.6); o Mod Claude Code instala-se via `claude plugin validate`/`install` a partir de `claude/plugins/willtech-visual/` (comando `/willtech-team` abre o painel); o visualizador Codex sobe com `node codex/willtech-visual/viewer/server.cjs` após mesclar `codex/willtech-visual/hooks/hooks.json` ao arquivo .codex/hooks.json do projeto (trust via `/hooks`).
-
----
-
-## Segurança, automação e limitações
-
-O WillTech-General foi concebido com separação de responsabilidades, proteção do escopo autorizado e revisão de resultados. Entretanto, **instruções de agentes não constituem, por si só, isolamento de segurança** — a proteção efetiva depende do runtime e deve ser verificada tecnicamente.
-
-### OpenCode 2.2.6 — isolamento aplicado
-
-No OpenCode, as permissões são ordenadas e a **última regra que casa vence**. Os agentes de leitura negam explicitamente `shell`, `edit`, `subagent`, `execute` e as ferramentas nativas de worktree.
-
-Shell é liberado apenas pelos wrappers:
-
-```sh
-~/.config/opencode/bin/willtech-read-shell "COMANDO"
-~/.config/opencode/bin/willtech-test-shell "COMANDO"
-```
-
-O comando deve ir **inteiro entre aspas duplas**. Sem aspas, o runtime nega a chamada — isso impede que `>`, `;`, `&&` e `|` sejam executados fora do sandbox. O wrapper de leitura bloqueia escrita; o de teste confina escrita a `~/willtech-lab`, bloqueia rede, SSH, `.env` e configurações sensíveis.
-
-### Limitações por plataforma
-
-| Plataforma | Isolamento real | Classificação |
-|---|---|---|
-| **OpenCode 2.2.6** | Por agente, aplicado pelo runtime + sandbox dos wrappers | Homologado nos testes documentados |
-| **Codex** | Instrucional; o TOML não oferece permissão por agente | Limitação do runtime |
-| **Claude Code** | Delegado aos controles nativos do runtime | Pendente de homologação |
-
-Matriz completa, testes adversariais e limitações honestas (incluindo lacunas de runtime classificadas como tais) em [AUDITORIA.md](AUDITORIA.md) e [opencode/HOMOLOGACAO.md](opencode/HOMOLOGACAO.md).
-
----
-
-## Documentação técnica
-
-| Documento | Conteúdo |
+| Plataforma | Integração principal |
 |---|---|
-| [EVOLUCAO.md](EVOLUCAO.md) | Registro completo das rodadas 2.0 → 3.0 e da publicação final: mecanismos, evidências, o que foi adiado e por quê |
-| [AUDITORIA.md](AUDITORIA.md) | Testes de homologação, falhas adversariais e limitações por plataforma |
-| [INSTALL.md](INSTALL.md) | Procedimentos completos de instalação, rollback e automação por plataforma |
-| [HISTORICO.md](HISTORICO.md) | Linhagem das versões desde o executor técnico pré-comercial |
-| [NOTICE.md](NOTICE.md) | Declaração formal de autoria e componentes externos |
-| [opencode/HOMOLOGACAO.md](opencode/HOMOLOGACAO.md) | Matriz de permissões e limites dos wrappers sandbox |
+| **OpenCode V2** | Subagentes em `opencode/agent/`, política do comandante, wrappers e plugin V2; a delegação General → especialistas requer profundidade de subagentes configurada para 2. |
+| **Codex** | Agentes TOML em `codex/agents/` e hooks projeto-local, sujeitos à autorização nativa do Codex. |
+| **Claude Code** | Agentes em `claude-code/agents/` e hooks integrados ao mecanismo nativo da plataforma. |
 
-**Estrutura principal:**
+**3. Ative a automação no projeto, se desejar**
+
+Em macOS ou Linux, depois de configurar os agentes conforme o guia, o instalador de automação pode ser executado no projeto desejado com consentimento:
+
+```sh
+sh tools/willtech-install.sh --platform opencode
+```
+
+O exemplo seleciona OpenCode; consulte [INSTALL.md](INSTALL.md) para as alternativas Codex e Claude Code, Windows PowerShell, atualização, desativação e desinstalação. A automação é **projeto-local** e não deve sobrescrever configurações globais ou de terceiros.
+
+**4. Delegue pelo comandante da plataforma**
+
+> Analise a estrutura deste projeto com o WillTech-General. Delegue a exploração ao Explorador, use a Sala para recuperar decisões relevantes e peça revisão independente ao Revisor antes de propor alterações. Não modifique arquivos sem autorização.
+
+---
+
+## Memória compartilhada: a Sala dos Agentes
+
+A **Sala** é um banco SQLite em `.willtech/room.db` que conecta descobertas, decisões, riscos e handoffs aos seus autores e às evidências de origem. Cada registro mantém contexto de projeto, status e, quando aplicável, hash de proveniência. Assim, conhecimento antigo ou contraditório não é tratado automaticamente como verdade atual.
+
+Os hooks podem recuperar orientação validada ao iniciar uma sessão. Durante um trabalho, a consulta JIT busca somente informações relevantes ao objetivo e à especialidade. Registros candidatos permanecem identificados como não validados; micro-habilidades exigem promoção humana explícita.
+
+**Operação local pelo terminal (na raiz do projeto):**
+
+```sh
+python3 tools/willtech-room.py init .willtech/room.db --repo .
+python3 tools/willtech-room.py query .willtech/room.db --repo . --objective "estrutura do projeto" --specialty explorador
+python3 tools/willtech-room.py check .willtech/room.db --repo .
+```
+
+Leia [Shared Intelligence](docs/SHARED-INTELLIGENCE.md) para os ciclos de vida dos registros, recuperação contextual, handoffs e micro-habilidades.
+
+---
+
+## Controles de engenharia e segurança
+
+- **Permissões do host preservadas.** Uma negativa real, como `permission.rejected`, não é contornada nem reclassificada como sucesso.
+- **Separação de responsabilidades.** O agente de implementação não substitui a revisão; o General não executa indiscriminadamente todas as especialidades.
+- **Evidência e rastreabilidade.** Decisões e retornos de tarefas podem ser associados a hashes, estados e registros locais, sem guardar o conteúdo completo de arquivos sensíveis.
+- **Defesa contra repetição e deriva.** O supervisor controla tentativas redundantes, concorrência e tempos limite; a recuperação de conhecimento respeita validação e escopo de projeto.
+- **Instalação consciente.** Hooks e plugins são ativados por opção explícita, com registro de propriedade e caminhos de reversão descritos em [INSTALL.md](INSTALL.md).
+
+**Nota de segurança:** os controles variam de acordo com a plataforma. O sandbox adicional dos wrappers do OpenCode utiliza `sandbox-exec` no macOS; em outros sistemas prevalecem as permissões disponíveis no host. Os arquivos TOML do Codex, por si, não fornecem isolamento forte por agente. Nenhum prompt substitui as proteções reais do runtime.
+
+---
+
+## Identidade visual e experiência
+
+Os sete mascotes acompanham a arquitetura com estados de atividade como aguardando, executando, concluído e bloqueado. As animações são locais, têm opção de pausa e respeitam a preferência por movimento reduzido.
+
+- **OpenCode Desktop:** painel visual opt-in, com suporte condicionado à interface GUI nativa e à versão compatível.
+- **Claude Code:** mod visual com superfícies disponibilizadas pela plataforma.
+- **Codex:** visualizador complementar separado; não é apresentado como painel nativo integrado ao IDE.
+
+A interface visual é independente da lógica de orquestração: sua ativação não muda agentes, permissões ou decisões. Consulte [instalação](INSTALL.md) para habilitar a experiência adequada ao seu ambiente.
+
+---
+
+## Documentação e estrutura do projeto
+
+| Guia | Conteúdo |
+|---|---|
+| [Instalação](INSTALL.md) | Passo a passo para cada host, sistemas operacionais, atualização e reversão. |
+| [Arquitetura](docs/ARQUITETURA-3.0.md) | Topologia dos agentes, orquestração, memória, automação e fluxos de segurança. |
+| [Shared Intelligence](docs/SHARED-INTELLIGENCE.md) | Sala SQLite, JIT, proveniência, estados, handoffs e micro-skills. |
+| [Notas da v3.1.1](docs/RELEASE-NOTES-3.1.1.md) | Escopo e mudanças da versão publicada. |
+| [Segurança e permissões](AUDITORIA.md) | Contratos de isolamento e limites técnicos das integrações. |
+| [Histórico de evolução](EVOLUCAO.md) | Evolução funcional e decisões de engenharia. |
+| [Autoria e avisos](NOTICE.md) | Identidade do projeto e componentes externos. |
 
 ```text
 willtech-general/
-├── claude-code/     agentes Markdown, hooks e arnês de homologação (Claude Code)
-├── codex/           agentes TOML e hooks projeto-local (Codex)
-├── opencode/        agentes, wrappers sandbox, plugin V2, política e testes (OpenCode V2)
-├── tools/           dossiê, drift, auto, compare, repomap, supervisor, smoke-evidence e suítes determinísticas (stdlib)
-├── docs/assets/     identidade visual: cards e banner WebP, APNG/GIF/estático do General
-└── history/         versões históricas da arquitetura
+├── opencode/       agentes, plugin V2, política e interface visual
+├── codex/          agentes TOML, hooks e visualizador
+├── claude-code/    agentes, hooks e integração com Claude Code
+├── tools/          sala, supervisor, automação, RepoMap e distribuição
+├── docs/           arquitetura, guias e recursos visuais
+└── history/        histórico da arquitetura
 ```
-
-Validação direcionada de ativação/reversão e preservação de terceiros: `python3 tools/test-install.py` (shell real + Python embutido do PS1). O ciclo nativo do instalador Windows (PowerShell 5.1: backup, merge, idempotência, disable/enable/uninstall, caminho Unicode) é exercitado no CI `windows-latest`.
-
-Suítes de regressão sem custo de modelo (executadas e aprovadas; registros em [EVOLUCAO.md](EVOLUCAO.md)): `sh tools/test-auto.sh` (39) · `sh tools/test-dossie.sh` (51) · `sh tools/test-drift.sh` (7 + gate de drift 0 divergências) · `sh tools/test-plan.sh` (21) · `sh tools/test-trace.sh` (10) · `python3 tools/test-repomap.py` (10) · `python3 tools/test-supervisor.py` (10) · `sh opencode/tests/test-wrappers.sh` (41) · `python3 tools/test-compat.py` (22, cross-platform: locks com processos concorrentes, recuperação anti-loop, dossiê antigo, hooks das 3 plataformas, falha fechado) · `python3 tools/test-install.py` (16) · `python3 tools/test-gui.py` (4) + eventos do painel em ambas as formas. Smoke headless do painel em navegador: 64/64 (×3 rodadas) + 3/3 reduced-motion, com evidências em [tools/smoke-evidence/](tools/smoke-evidence/). Regressão nativa consolidada no CI — macOS, Linux e Windows + host oficial OpenCode 2.3.0 (7 agentes subagent, plugin setup real) + smoke de inteligência 3.0: [run 44140677603](https://github.com/hebwil/willtech-general/actions/runs/44140677603), **5/5 jobs aprovados**.
 
 ---
 
