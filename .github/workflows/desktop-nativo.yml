@@ -156,6 +156,7 @@ jobs:
           python3 "$DESK/tools/willtech-room.py" validate "$DESK/.willtech/room.db" --id 1 --by reviewer --repo "$DESK"
           git -C "$DESK" add -A
           git -C "$DESK" commit -qm base
+          set -euo pipefail
           # Uma sessao autentica do Desktop exige provider; modelo 100% local
           # somente no runner descartavel. Nunca envia prompt a servico remoto.
           MODEL_DIR="$RUNNER_TEMP/wt-macos-model"
