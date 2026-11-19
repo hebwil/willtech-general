@@ -156,10 +156,67 @@ jobs:
           python3 "$DESK/tools/willtech-room.py" validate "$DESK/.willtech/room.db" --id 1 --by reviewer --repo "$DESK"
           git -C "$DESK" add -A
           git -C "$DESK" commit -qm base
+          # Uma sessao autentica do Desktop exige provider; modelo 100% local
+          # somente no runner descartavel. Nunca envia prompt a servico remoto.
+          MODEL_DIR="$RUNNER_TEMP/wt-macos-model"
+          mkdir -p "$MODEL_DIR/bin"
+          ARCH=$(uname -m)
+          curl -fsSL --retry 2 -o "$MODEL_DIR/llama.tar.gz" \
+            "https://github.com/ggml-org/llama.cpp/releases/download/b12483/llama-b12483-bin-macos-$ARCH.tar.gz"
+          curl -fsSL --retry 2 -o "$MODEL_DIR/model.gguf" \
+            "https://huggingface.co/ggml-org/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q4_K_M.gguf?download=true"
+          tar xzf "$MODEL_DIR/llama.tar.gz" -C "$MODEL_DIR/bin"
+          BIN=$(find "$MODEL_DIR/bin" -maxdepth 5 -type f -name llama-server | head -1)
+          test -n "$BIN" || exit 1
+          chmod +x "$BIN"
+          nohup "$BIN" -m "$MODEL_DIR/model.gguf" \
+            --host 127.0.0.1 --port 8080 --jinja -c 8192 -np 1 --threads 4 \
+            --chat-template-kwargs '{"enable_thinking":false}' > ~/desktop-llama.log 2>&1 &
+          MODEL_READY=0
+          for n in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then MODEL_READY=1; break; fi
+            sleep 2
+          done
+          test "$MODEL_READY" = 1 || { tail -50 ~/desktop-llama.log; exit 1; }
+          python3 - "$DESK/opencode.json" "$HOME/.config/opencode/opencode.json" <<'PY'
+          import json, sys
+          local = {
+              "model": "llamacpp/qwen3-1.7b",
+              "providers": {
+                  "llamacpp": {
+                      "package": "@opencode/ai/providers/openai-compatible",
+                      "settings": {"baseURL": "http://127.0.0.1:8080/v1", "apiKey": "lab-no-auth"},
+                      "models": {
+                          "qwen3-1.7b": {
+                              "capabilities": {"tools": True},
+                              "limit": {"context": 8192, "output": 2048},
+                              "cost": {"input": 0, "output": 0}
+                          }
+                      }
+                  }
+              }
+          }
+          for p in sys.argv[1:]:
+              with open(p, encoding="utf-8") as f: cfg = json.load(f)
+              cfg.update(local)
+              with open(p, "w", encoding="utf-8") as f:
+                  json.dump(cfg, f, indent=2)
+                  f.write("\n")
+          PY
+          echo "=== model local do projeto ==="
+          python3 -c 'import json,sys; x=json.load(open(sys.argv[1])); print(x.get("model"), x["providers"]["llamacpp"]["settings"]["baseURL"])' "$DESK/opencode.json"
           echo "=== opencode.json do projeto Desktop (plugins) ==="
           cat "$DESK/opencode.json"
           ELECTRON_ENABLE_LOGGING=1 open -n "$ISOAPP" --args --no-sandbox --disable-gpu 2>~/launch2.err
           sleep 25
+          # Cria sessao pelo Desktop REAL com o modelo local ja configurado.
+          # E2E GUI: nao confundir modelo local com simulacao de tela.
+          osascript -e 'tell application "System Events" to tell process "OpenCode" to set frontmost to true' 2>~/session-start.err
+          sleep 2
+          osascript -e 'tell application "System Events" to keystroke "Responda apenas LAB OK."' 2>>~/session-start.err
+          osascript -e 'tell application "System Events" to key code 36' 2>>~/session-start.err
+          sleep 24
+          screencapture -x ~/desktop-session.png 2>>~/screencapture.err
           pgrep -fl "OpenCode" > ~/proc2.txt
           screencapture -x ~/desktop-willtech.png 2>>~/screencapture.err
           echo "screencapture exit=$?"
@@ -298,6 +355,9 @@ jobs:
             ~/probe-baseline.png
             ~/desktop-attempt.png
             ~/desktop-willtech.png
+            ~/desktop-session.png
+            ~/session-start.err
+            ~/desktop-llama.log
             ~/proc2.txt
             ~/windows2.txt
             ~/launch2.err
