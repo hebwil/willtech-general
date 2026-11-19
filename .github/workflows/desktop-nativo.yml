@@ -255,6 +255,20 @@ jobs:
           # por inspeção visual — nunca declarado PASS sem o painel na captura.
           osascript -e 'tell application "System Events" to tell process "OpenCode" to set frontmost to true' 2>~/toggle.err
           sleep 1
+          # A captura NATIVA desktop-session.png mostra o botao lateral em
+          # (largura-34,93) na janela full-screen do runner macOS. Exercita
+          # uma unica vez o launcher lateral NOVO, nao apenas a paleta Cmd+K.
+          # Uma falha de UI automation nunca vira PASS.
+          if [ -s "$HOME/desktop-session.png" ]; then
+            W=$(sips -g pixelWidth "$HOME/desktop-session.png" | awk '/pixelWidth:/ {print $2}')
+            if [ -n "${W:-}" ] && [ "$W" -gt 100 ]; then
+              X=$((W-34))
+              osascript -e "tell application \"System Events\" to click at {$X, 93}" \
+                2>>~/toggle.err || true
+              sleep 2
+              screencapture -x ~/desktop-side-open.png 2>>~/screencapture.err || true
+            fi
+          fi
           # O menu "/" do prompt NÃO lista comandos de plugin GUI (captura anterior:
           # "No matching items" p/ /WillTech). A paleta de comandos do Desktop é
           # Cmd+K; tenta por ela (uma única tentativa bounded).
@@ -386,6 +400,7 @@ jobs:
             ~/server-plugin.log
             ~/opencode-server.log
             ~/desktop-panel.png
+            ~/desktop-side-open.png
             ~/panel-accessibility.txt
             ~/panel-accessibility.err
             ~/toggle.err
