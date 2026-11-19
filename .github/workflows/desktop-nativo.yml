@@ -236,12 +236,17 @@ jobs:
               [ -d "$d" ] && { echo "--- $d ---"; ls -la "$d" | head -8; }
             done
             echo "=== linhas willtech/gui/plugin/error nos logs ==="
-            find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" "$HOME/Library/Logs" -name "*.log" -type f 2>/dev/null | while read -r f; do
-              echo "--- $f ---"; grep -iE "willtech|gui|plugin|error|require" "$f" | tail -30
+            for d in "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" "$HOME/Library/Logs"; do
+              [ -d "$d" ] || continue
+              find "$d" -name "*.log" -type f
+            done | while IFS= read -r f; do
+              echo "--- $f ---"
+              # Ausencia de linhas de diagnostico nao mata a captura do painel.
+              (grep -iE "willtech|gui|plugin|error|require" "$f" || true) | tail -30
             done
           } > ~/server-plugin.log 2>&1
           tail -40 ~/server-plugin.log
-          NEWEST=$(find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" -name "*.log" -type f 2>/dev/null | head -1)
+          NEWEST=$(find "$HOME/.local/share/opencode" "$HOME/Library/Application Support/ai.opencode.desktop" -name "*.log" -type f 2>/dev/null | head -1 || true)
           [ -n "$NEWEST" ] && cp "$NEWEST" ~/opencode-server.log
           # Tentativa BOUNDED de revelar a aba lateral: o comando registrado
           # "team.toggle" exige sessão atual e é exposto no menu "/" de comandos.
