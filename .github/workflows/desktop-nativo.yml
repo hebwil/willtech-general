@@ -198,11 +198,17 @@ jobs:
               }
           }
           for p in sys.argv[1:]:
-              with open(p, encoding="utf-8") as f: cfg = json.load(f)
+              from pathlib import Path
+              target = Path(p)
+              # Default Project e temporario e pode nao ter opencode.json.
+              # Preservar settings existentes quando houver; nunca tocar user real.
+              cfg = json.loads(target.read_text(encoding="utf-8")) if target.is_file() else {}
+              assert isinstance(cfg, dict), "config invalida"
               cfg.update(local)
-              with open(p, "w", encoding="utf-8") as f:
-                  json.dump(cfg, f, indent=2)
-                  f.write("\n")
+              target.parent.mkdir(parents=True, exist_ok=True)
+              with target.open("w", encoding="utf-8") as out:
+                  json.dump(cfg, out, indent=2)
+                  out.write("\n")
           PY
           echo "=== model local do projeto ==="
           python3 -c 'import json,sys; x=json.load(open(sys.argv[1])); print(x.get("model"), x["providers"]["llamacpp"]["settings"]["baseURL"])' "$DESK/opencode.json"
