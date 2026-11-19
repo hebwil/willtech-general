@@ -22,6 +22,13 @@ Origin: WILLTECH custom multi-agent implementation
   <img src="docs/assets/willtech-team-banner.webp" alt="Equipe WILLTECH-GENERAL: General ao centro, ladeado pelos seis especialistas" width="100%">
 </p>
 
+<p align="center">
+  <strong>✅ v3.1.0 — FULL PASS DO NÚCLEO E DAS INTEGRAÇÕES OFICIAIS</strong><br>
+  <sub>CI 5/5 · OpenCode V2 · Codex · Claude Code · Windows · macOS · Linux · SQLite Sala dos Agentes · JIT adaptativo</sub>
+</p>
+
+**Estado tecnológico da linha v3.1.0 (19/11/2026):** o núcleo multiagente e a distribuição 3.1.0 foram testados em runners limpos com verificações reais de instalação, integridade, rollback e execução. [Homologação 5/5](https://github.com/hebwil/willtech-general/actions/runs/44427692105) e [sessões reais de Codex + Claude Code com modelo local e hooks](https://github.com/hebwil/willtech-general/actions/runs/44427692067) concluíram com sucesso. Os sete agentes preservam suas responsabilidades e o comandante de cada host mantém a autoridade. O painel visual é validado pelo proprietário em seu ambiente de uso e **não integra o gate automatizado do núcleo**; testes do macOS runner não são apresentados como PASS visual nativo. A economia medida do modo B é **45,40% menos tokens novos de entrada**, com **8/9 acertos** (igual ao baseline), sem afirmar desconto monetário de API. O modo C segue opt-in e experimental (7/9 nesta amostra). Esta declaração de **FULL PASS** refere-se ao **escopo de núcleo, distribuição e integração dos hosts testados**, não a 100% de acertos de todo modelo em qualquer projeto.
+
 ---
 
 O **WillTech-General** é uma arquitetura open source de orquestração multiagente desenvolvida pela **WILLTECH-BH** para OpenCode, OpenAI Codex e Claude Code.
@@ -56,7 +63,7 @@ A partir das versões **2.0 → 3.0**, a arquitetura deixou de ser apenas hierar
 | 🗺️ **RepoMap incremental compartilhado** | `tools/willtech-repomap.py` indexa símbolos/dependências sem copiar conteúdo; reparse só do que mudou; briefings substituem releituras; trechos revalidados por hash; isolamento por projeto e exclusão de credenciais | 🧪 Validada em simulação |
 | ⏱️ **Supervisor de delegações** | `tools/willtech-supervisor.py` rastreia cada delegação com soft/hard timeout, bloqueia recursão/duplicação/escrita concorrente, retry único reconciliado; timed_out nunca afirma interrupção; cancelamento só com confirmação do runtime | 🧪 Validada em simulação |
 
-> **Evidência da linha v3.1.0:** o benchmark inicial sem JIT adaptativo (run 44187245309) é histórico e não demonstrou economia; o [benchmark definitivo](https://github.com/hebwil/willtech-general/actions/runs/44402745515) com OpenCode e modelo aberto local mediu **−45,40% de tokens novos de entrada no modo B**, mantendo **8/9 acertos funcionais**, contra 8/9 da baseline. O volume incluindo cache **aumentou 22,20%**, e a duração média B **aumentou 3,61%**. São dados limitados a três tarefas com três repetições, não equivalentes a desconto de API. Codex/Claude Code em sessão autenticada e painel visual nativo continuam sem homologação completa; veja [notas v3.1.0](docs/RELEASE-NOTES-3.1.0.md).
+> **Evidência da linha v3.1.0:** o benchmark inicial sem JIT adaptativo (run 44187245309) é histórico e não demonstrou economia; o [benchmark definitivo](https://github.com/hebwil/willtech-general/actions/runs/44402745515) com OpenCode e modelo aberto local mediu **−45,40% de tokens novos de entrada no modo B**, mantendo **8/9 acertos funcionais**, contra 8/9 da baseline. O volume incluindo cache **aumentou 22,20%**, e a duração média B **aumentou 3,61%**. São dados limitados a três tarefas com três repetições, não equivalentes a desconto de API. Codex e Claude Code tiveram sessões reais de leitura, resposta correta, ferramentas e hooks com modelo local no laboratório gratuito ([evidência](https://github.com/hebwil/willtech-general/actions/runs/44427692067)); o visual foi confirmado pelo proprietário em seu ambiente próprio, sem atribuir PASS ao teste automatizado de render do runner. Veja [notas da release publicada](docs/RELEASE-NOTES-3.1.0.md).
 
 ### As três melhorias da rodada 2.3 (integradas na `main` via [PR #9](https://github.com/hebwil/willtech-general/pull/9))
 
@@ -64,7 +71,7 @@ A partir das versões **2.0 → 3.0**, a arquitetura deixou de ser apenas hierar
 2. **RepoMap incremental compartilhado** — `tools/willtech-repomap.py` mantém um índice de símbolos e dependências por hash de conteúdo: reparse apenas do que mudou, renames reaproveitam símbolos, isolamento por projeto e exclusão de credenciais. **Medição real em bancada** (fixture de 10 arquivos): leitura integral 380 bytes (~95 tokens estimados) vs briefing de 256 bytes (~64); parses na primeira rodada = 10, rodadas seguintes sem mudanças = 0. Valores medidos no cenário de teste, não extrapolados como percentual.
 3. **Supervisor determinístico de delegações** — `tools/willtech-supervisor.py` registra cada delegação com soft/hard timeout honestos (`timed_out` nunca afirma interrupção sem confirmação), cancelamento somente com confirmação do runtime, anti-loop (recursão, duplicação e escrita concorrente bloqueadas) e retry único reconciliado. Estado e evidências ficam no dossiê (hashes, nunca conteúdo).
 
-As três melhorias reutilizam o núcleo existente (dossiê, trace, guardas) e preservam os 7 agentes, hooks, instaladores e contratos das três plataformas (contratos 2.3 / 2.3.1 / 2.3.2). Validação por suítes determinísticas de laboratório; homologação em runtime real com modelo permanece pendente e não é anunciada como concluída.
+As três melhorias reutilizam o núcleo existente (dossiê, trace, guardas) e preservam os 7 agentes, hooks, instaladores e contratos das três plataformas (contratos 2.3 / 2.3.1 / 2.3.2). As suítes determinísticas cobrem os contratos; a integração adicional com runtime real foi homologada em [OpenCode](https://github.com/hebwil/willtech-general/actions/runs/44427692105) e em [Codex/Claude Code com modelo local](https://github.com/hebwil/willtech-general/actions/runs/44427692067), dentro dos cenários executados.
 
 ---
 
@@ -72,7 +79,7 @@ As três melhorias reutilizam o núcleo existente (dossiê, trace, guardas) e pr
 
 A consulta JIT da sala **prioriza registros validados**, tanto com índice FTS5 quanto com fallback LIKE. Na abertura de sessão (`SessionStart`), a consulta sem objetivo seleciona somente descobertas validadas como orientação geral; candidatos permanecem disponíveis **apenas em consultas direcionadas por objetivo**, com status explícito e cabeçalho de quarentena. Handoffs pendentes e skills não promovidas continuam fora da injeção automática. O orçamento, o isolamento entre projetos, a invalidação por hash e a aprovação humana de micro-skills permanecem preservados. Esta atualização é verificada por testes determinísticos; não é alegado ganho de raciocínio nem economia de tokens sem nova medição.
 
-**Estado da evidência:** testes reais com modelo gratuito e benchmark 3×3 comprovados em [docs/HOMOLOGACAO-ZERO-CUSTO.md](docs/HOMOLOGACAO-ZERO-CUSTO.md). App OpenCode Desktop real e carga do plugin GUI comprovados; **painel nativo dos sete mascotes ainda NC**. Não confundir estes resultados com homologação completa de todas as plataformas.
+**Estado da evidência:** testes reais com modelo gratuito e benchmark 3×3 em [docs/HOMOLOGACAO-ZERO-CUSTO.md](docs/HOMOLOGACAO-ZERO-CUSTO.md); distribuição versionada e hosts oficiais com gates aprovados nos cenários cobertos. Painel visual confirmado pelo proprietário em seu ambiente de uso; o runner Desktop macOS não reproduziu uma prova automatizada completa dessa tela, portanto **não se atribui PASS de GUI ao workflow**. O status FULL PASS descrito acima corresponde ao núcleo e aos hosts testados.
 
 ---
 

@@ -1,0 +1,222 @@
+name: host-modelo-local-verdadeiro
+
+# Prova independente dos hosts oficiais, nao so do parser de hooks.
+# Apenas runner publico descartavel, modelo GGUF em 127.0.0.1, chave ficticia.
+# Fail != PASS: se host nao carregar, nao usar "success" como homologacao.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/host-modelo-local-verdadeiro.yml"
+      - "codex/**"
+      - "claude-code/**"
+      - "claude/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1"
+  LLAMA_BUILD: b12483
+  GGUF_REPO: ggml-org/Qwen3-1.7B-GGUF
+  GGUF_FILE: Qwen3-1.7B-Q4_K_M.gguf
+  MODEL_ID: qwen3-1.7b
+
+jobs:
+  validar-host:
+    name: ${{ matrix.host }} — sessao com modelo local, hooks e ferramentas reais
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [codex, claude]
+    env:
+      HOST_KIND: ${{ matrix.host }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cache de modelo gratuito (nao credenciais)
+        uses: actions/cache@v4
+        with:
+          path: ~/lab-cache
+          key: llama-b12483-qwen3-1.7b-q4km-v1
+
+      - name: Preparar modelo local e servidor loopback
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/lab-cache" "$HOME/llama"
+          test -s "$HOME/lab-cache/llama.tar.gz" || curl --retry 3 -fsSL \
+            -o "$HOME/lab-cache/llama.tar.gz" \
+            "https://github.com/ggml-org/llama.cpp/releases/download/$LLAMA_BUILD/llama-$LLAMA_BUILD-bin-ubuntu-x64.tar.gz"
+          test -s "$HOME/lab-cache/model.gguf" || curl --retry 3 -fsSL \
+            -o "$HOME/lab-cache/model.gguf" \
+            "https://huggingface.co/$GGUF_REPO/resolve/main/$GGUF_FILE?download=true"
+          sha256sum "$HOME/lab-cache/llama.tar.gz" "$HOME/lab-cache/model.gguf" > "$HOME/lab-cache/SHA256SUMS.txt"
+          tar xf "$HOME/lab-cache/llama.tar.gz" -C "$HOME/llama"
+          BIN=$(find "$HOME/llama" -maxdepth 4 -name llama-server -type f | head -1)
+          test -n "$BIN"
+          chmod +x "$BIN"
+          export LD_LIBRARY_PATH="$(dirname "$BIN")"
+          nohup "$BIN" -m "$HOME/lab-cache/model.gguf" \
+            --host 127.0.0.1 --port 8080 --jinja -c 16384 --threads 4 -np 1 \
+            --chat-template-kwargs '{"enable_thinking":false}' > "$HOME/local-model.log" 2>&1 &
+          for attempt in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/health
+          curl -fsS http://127.0.0.1:8080/v1/models > "$HOME/local-models.json"
+          echo "Modelo local OK, sem chamadas remotas de inferencia"
+
+      - name: Laboratorio do WillTech inteiramente descartavel
+        shell: bash
+        run: |
+          set -euo pipefail
+          LAB="$RUNNER_TEMP/willtech-host-$HOST_KIND"
+          mkdir -p "$LAB/src"
+          cp -R tools codex claude-code opencode "$LAB/"
+          printf 'APP_VERSION = "3.4.2"\n' > "$LAB/src/version.py"
+          git -C "$LAB" init -q
+          git -C "$LAB" config user.email lab@willtech.invalid
+          git -C "$LAB" config user.name lab
+          if [ "$HOST_KIND" = codex ]; then
+            sh "$LAB/tools/willtech-install.sh" --repo "$LAB" --platform codex --yes
+          else
+            sh "$LAB/tools/willtech-install.sh" --repo "$LAB" --platform claude --yes
+          fi
+          git -C "$LAB" add -A
+          git -C "$LAB" commit -qm baseline
+          test -f "$LAB/.willtech/enabled"
+          echo "WT_LAB=$LAB" >> "$GITHUB_ENV"
+
+      - name: Instalar CLI oficial no runner isolado
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$HOST_KIND" = codex ]; then
+            npm install -g --no-fund --no-audit @openai/codex@0.169.0
+            codex --version | tee "$HOME/host-version.txt"
+          else
+            npm install -g --no-fund --no-audit @anthropic-ai/claude-code
+            claude --version | tee "$HOME/host-version.txt"
+          fi
+
+      - name: Executar sessao autentica com modelo local e sem credenciais pessoais
+        shell: bash
+        env:
+          ANTHROPIC_BASE_URL: http://127.0.0.1:8080
+          ANTHROPIC_AUTH_TOKEN: lab-only-not-real
+          ANTHROPIC_API_KEY: lab-only-not-real
+          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+          DISABLE_TELEMETRY: "1"
+          DISABLE_ERROR_REPORTING: "1"
+        run: |
+          set -euo pipefail
+          cd "$WT_LAB"
+          if [ "$HOST_KIND" = codex ]; then
+            export CODEX_HOME="$RUNNER_TEMP/codex-home"
+            mkdir -p "$CODEX_HOME"
+            cat > "$CODEX_HOME/config.toml" <<'EOF'
+          model = "qwen3-1.7b"
+          model_provider = "willtech_local"
+          approval_policy = "never"
+          sandbox_mode = "workspace-write"
+          [model_providers.willtech_local]
+          name = "WillTech llama.cpp local"
+          base_url = "http://127.0.0.1:8080/v1"
+          wire_api = "responses"
+          requires_openai_auth = false
+          EOF
+            # APENAS NO RUNNER descartavel: contrato de hooks revisado antes.
+            # O flag oficial e para one-off automation vetada, nunca no usuario.
+            python3 - "$WT_LAB/.codex/hooks.json" <<'PY'
+          import json,sys
+          cfg=json.load(open(sys.argv[1],encoding="utf-8"))
+          commands=[h["command"] for groups in cfg.get("hooks",{}).values()
+                    for g in groups for h in g.get("hooks",[])
+                    if h.get("type")=="command"]
+          assert commands and all("tools/willtech-auto.py" in c and " codex" in c
+                                  for c in commands), "hooks inesperados; nao autorizar lab"
+          print("hooks vetados:",len(commands))
+          PY
+            timeout 240 codex exec --trust --dangerously-bypass-hook-trust --json --sandbox workspace-write --model qwen3-1.7b \
+              "Leia src/version.py usando cat src/version.py sem pedir elevacao de permissao (nao e necessaria). Responda o valor literal APP_VERSION presente no arquivo." \
+              > "$HOME/native-host-session.jsonl" 2> "$HOME/native-host-session.err"
+          else
+            export CLAUDE_PROJECT_DIR="$WT_LAB"
+            timeout 240 claude --print --verbose --output-format stream-json --max-turns 5 \
+              --model qwen3-1.7b \
+              "Use a ferramenta de leitura para ler src/version.py. Qual e o valor de APP_VERSION? Responda exatamente a partir do arquivo." \
+              > "$HOME/native-host-session.jsonl" 2> "$HOME/native-host-session.err"
+          fi
+
+      - name: Validar resposta e execucao real de ferramenta (sem falso PASS)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          path = os.path.expanduser("~/native-host-session.jsonl")
+          events = []
+          for line in open(path, encoding="utf-8", errors="replace"):
+              try: events.append(json.loads(line))
+              except json.JSONDecodeError: pass
+          assert events, "NAO COMPROVADO: CLI sem eventos JSON"
+          host = os.environ["HOST_KIND"]
+          texts = []
+          tools = []
+          if host == "codex":
+              for ev in events:
+                  item = ev.get("item") or {}
+                  if item.get("type") == "agent_message": texts.append(item.get("text", ""))
+                  if item.get("type") in ("command_execution", "mcp_tool_call", "tool_call"):
+                      tools.append(item.get("type"))
+          else:
+              for ev in events:
+                  if ev.get("type") == "assistant":
+                      for block in ((ev.get("message") or {}).get("content") or []):
+                          if block.get("type") == "text": texts.append(block.get("text", ""))
+                          if block.get("type") == "tool_use": tools.append(block.get("name"))
+              for ev in events:
+                  if ev.get("type") == "result" and isinstance(ev.get("result"), str):
+                      texts.append(ev["result"])
+          output = " ".join(t for t in texts if t)
+          print("host:", host, "eventos:", len(events), "chamadas reais:", tools)
+          print("resposta:", repr(output[:1200]))
+          assert "3.4.2" in output, "FAIL FUNCIONAL: resposta nao passou o gabarito"
+          assert tools, "NAO COMPROVADO: nenhuma ferramenta real observada"
+          print("PASS REAL: host com modelo local e ferramenta executada")
+          PY
+          # O teste de hooks e separado do modelo: arquivo de estado so e
+          # prova se gerado de fato pelo CLI nativo no laboratorio.
+          if compgen -G "$WT_LAB/.willtech/state-*.json" >/dev/null; then
+            echo "PASS INTEGRACAO: hooks do host produziram estado na Sala"
+          else
+            echo "NAO COMPROVADO: CLI nao produziu arquivo de hook; nao homologar hooks nativos" >&2
+            exit 1
+          fi
+
+      - name: Guardar evidencias auditaveis (sem segredos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-host-local-${{ matrix.host }}
+          path: |
+            ~/host-version.txt
+            ~/local-models.json
+            ~/local-model.log
+            ~/native-host-session.jsonl
+            ~/native-host-session.err
+            ~/lab-cache/SHA256SUMS.txt
+          if-no-files-found: warn
