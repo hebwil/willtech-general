@@ -392,7 +392,17 @@ class InstallerTests(unittest.TestCase):
         original = run(["git", "show", "origin/main:README.md"])
         self.ok(original)
         current = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertEqual(re.findall(r"<[^>]+>", current), re.findall(r"<[^>]+>", original.stdout))
+        # Protege autoria (cabecalho), assets de identidade e tags de mascotes,
+        # sem impedir atualizacoes legitimas de apresentacao e status da versao no README.
+        self.assertEqual(current[:current.index("-->") + 3], original.stdout[:original.stdout.index("-->") + 3])
+        self.assertEqual(
+            sorted(set(re.findall(r"docs/assets/[a-zA-Z0-9_\-\.]+", original.stdout))),
+            sorted(set(re.findall(r"docs/assets/[a-zA-Z0-9_\-\.]+", current))),
+        )
+        self.assertEqual(
+            re.findall(r"<img [^>]+docs/assets/[^>]+>", original.stdout),
+            re.findall(r"<img [^>]+docs/assets/[^>]+>", current),
+        )
         marker = "## Desenvolvimento e licença"
         self.assertEqual(current.split(marker)[1], original.stdout.split(marker)[1])
         for name in ("README.md", "INSTALL.md", "EVOLUCAO.md"):
