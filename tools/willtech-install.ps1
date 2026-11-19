@@ -1,4 +1,4 @@
-# WillTech-General 2.2 — instalação nativa Windows (projeto-local, idempotente).
+﻿# WillTech-General 2.2 — instalação nativa Windows (projeto-local, idempotente).
 # Espelha tools/willtech-install.sh: escreve APENAS dentro do repo alvo
 # (.claude/, .codex/, .opencode/, .willtech/). Nada global é alterado; a
 # ExecutionPolicy do PowerShell NÃO é modificada (o flag abaixo é de processo).
@@ -45,11 +45,31 @@ foreach ($path in @($Base, (Join-Path $Base 'enabled'), (Join-Path $Base 'instal
 }
 
 function Find-Python {
-  foreach ($c in @('python3', 'python', 'py')) {
+  if ($env:WILLTECH_PYTHON -and (Test-Path $env:WILLTECH_PYTHON)) {
+    & $env:WILLTECH_PYTHON -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" *> $null
+    if ($LASTEXITCODE -eq 0) { return , @($env:WILLTECH_PYTHON, @()) }
+  }
+  foreach ($cand in @(
+    @('py', @('-3.12')),
+    @('py', @('-3.13')),
+    @('py', @('-3')),
+    @('python3', @()),
+    @('python', @())
+  )) {
+    $c = $cand[0]; $pre = $cand[1]
     if (Get-Command $c -ErrorAction SilentlyContinue) {
-      $pre = @(); if ($c -eq 'py') { $pre = @('-3') }
-      & $c @pre --version *> $null
+      & $c @pre -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" *> $null
       if ($LASTEXITCODE -eq 0) { return , @($c, $pre) }
+    }
+  }
+  $localApp = $env:LOCALAPPDATA
+  if ($localApp) {
+    foreach ($v in @('Python312', 'Python313', 'Python314')) {
+      $p = Join-Path $localApp "Programs\Python\$v\python.exe"
+      if (Test-Path $p) {
+        & $p -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)" *> $null
+        if ($LASTEXITCODE -eq 0) { return , @($p, @()) }
+      }
     }
   }
   return $null
@@ -216,7 +236,7 @@ if ($Enable) {
 
 $py = Find-Python
 if (-not $py) {
-  Write-Error 'Python 3 não encontrado (python3/python/py). Instalação recusada: os controles obrigatórios não rodariam.'
+  Write-Error 'Python >= 3.12 não encontrado (python3/python/py). Instalação recusada: os controles obrigatórios não rodariam.'
   exit 2
 }
 
@@ -283,7 +303,7 @@ New-Item -ItemType Directory -Force -Path $Base | Out-Null
 if (Want 'claude') { Invoke-UpdateComponent 'install' (Join-Path $Repo '.claude\settings.json') (Join-Path $Src 'claude-code\settings\willtech-hooks.json') $py }
 if (Want 'codex') { Invoke-UpdateComponent 'install' (Join-Path $Repo '.codex\hooks.json') (Join-Path $Src 'codex\hooks.json') $py }
 if (Want 'opencode') { Invoke-UpdateComponent 'install' (Join-Path $Repo '.opencode\plugins\willtech\index.js') (Join-Path $Src 'opencode\plugins\willtech\index.js') $py }
-@{ platform = $Platform; repo = $Repo } | ConvertTo-Json -Compress | Set-Content -Encoding utf8 (Join-Path $Base 'installed.json')
+@{ platform = $Platform; repo = $Repo; python = $py[0] } | ConvertTo-Json -Compress | Set-Content -Encoding utf8 (Join-Path $Base 'installed.json')
 New-Item -ItemType File -Force -Path (Join-Path $Base 'enabled') | Out-Null
 Write-Host 'instalação concluída; automação ativa (.willtech/enabled)'
 Write-Host 'desativar: -Disable | reverter: -Uninstall'
