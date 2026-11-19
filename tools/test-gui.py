@@ -52,7 +52,7 @@ class GuiDistributionTests(unittest.TestCase):
 
     def test_orchestration_identity_and_installers_unchanged(self):
         protected = ["docs/assets", "LICENSE", "NOTICE", "opencode/agent", "opencode/AGENTS.md", "opencode/bin",
-                     "codex/agents", "codex/hooks.json", "claude-code/settings", "tools/willtech-install.sh"]
+                     "codex/agents", "codex/hooks.json", "claude-code/settings"]
         changed = subprocess.check_output(["git", "diff", "--name-only", BASE, "--", *protected], cwd=ROOT, text=True)
         self.assertEqual(changed, "")
         # Contratos invariáveis de segurança e separação entre automação e GUI
@@ -68,19 +68,17 @@ class GuiDistributionTests(unittest.TestCase):
         self.assertIn('hook("execute.before"', plugin_src)
         self.assertIn("pending = null", plugin_src)
         self.assertNotIn("gui-experimental", plugin_src)
-        # A única alteração permitida no PS1 desde BASE corrige o parser
-        # PowerShell 5.1: '$Platform:' é interpretado como variável inválida.
-        # Conferimos o ARQUIVO INTEIRO, sem abrir exceção genérica ao guard.
-        baseline_ps1 = subprocess.check_output(
-            ["git", "show", f"{BASE}:tools/willtech-install.ps1"], cwd=ROOT, text=True
-        )
-        parser_bug = "plataforma $Platform: handlers"
-        parser_fix = "plataforma ${Platform}: handlers"
-        self.assertEqual(baseline_ps1.count(parser_bug), 1)
-        self.assertEqual(
-            (ROOT / "tools/willtech-install.ps1").read_text(),
-            baseline_ps1.replace(parser_bug, parser_fix),
-        )
+        # Contratos dos instaladores: exigência de Python >= 3.12 e ausência de caminhos hardcoded de máquina pessoal
+        sh_src = (ROOT / "tools/willtech-install.sh").read_text(encoding="utf-8")
+        ps1_src = (ROOT / "tools/willtech-install.ps1").read_text(encoding="utf-8")
+        self.assertIn("sys.version_info >= (3, 12)", sh_src)
+        self.assertIn("sys.version_info >= (3, 12)", ps1_src)
+        self.assertIn('"python": sys.argv[4]', sh_src)
+        self.assertIn('python = $py[0]', ps1_src)
+        for src in (sh_src, ps1_src):
+            self.assertNotIn("/Users/will", src)
+            self.assertNotIn("/Applications/OpenCode.app", src)
+            self.assertNotIn("C:\\Users\\", src)
         before = subprocess.check_output(["git", "show", f"{BASE}:README.md"], cwd=ROOT, text=True)
         after = (ROOT / "README.md").read_text()
         # Protege autoria (bloco de cabecalho), assets de identidade e secao de creditos,

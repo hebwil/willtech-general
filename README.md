@@ -18,10 +18,10 @@ Origin: WILLTECH custom multi-agent implementation
 </p>
 
 <p align="center">
-  <a href="https://github.com/hebwil/willtech-general/releases/tag/v3.1.1"><strong>Versão estável 3.1.1</strong></a> ·
+  <a href="https://github.com/hebwil/willtech-general/releases/tag/v3.1.2"><strong>Versão estável 3.1.2</strong></a> ·
   <a href="INSTALL.md">Instalação</a> ·
   <a href="docs/ARQUITETURA-3.0.md">Arquitetura</a> ·
-  <a href="docs/RELEASE-NOTES-3.1.1.md">Novidades</a> ·
+  <a href="docs/RELEASE-NOTES-3.1.2.md">Novidades</a> ·
   <a href="LICENSE">MIT</a>
 </p>
 
@@ -224,7 +224,7 @@ A interface visual é independente da lógica de orquestração: sua ativação 
 | [Instalação](INSTALL.md) | Passo a passo para cada host, sistemas operacionais, atualização e reversão. |
 | [Arquitetura](docs/ARQUITETURA-3.0.md) | Topologia dos agentes, orquestração, memória, automação e fluxos de segurança. |
 | [Shared Intelligence](docs/SHARED-INTELLIGENCE.md) | Sala SQLite, JIT, proveniência, estados, handoffs e micro-skills. |
-| [Notas da v3.1.1](docs/RELEASE-NOTES-3.1.1.md) | Escopo e mudanças da versão publicada. |
+| [Notas da v3.1.2](docs/RELEASE-NOTES-3.1.2.md) | Escopo e mudanças da versão publicada. |
 | [Segurança e permissões](AUDITORIA.md) | Contratos de isolamento e limites técnicos das integrações. |
 | [Histórico de evolução](EVOLUCAO.md) | Evolução funcional e decisões de engenharia. |
 | [Autoria e avisos](NOTICE.md) | Identidade do projeto e componentes externos. |

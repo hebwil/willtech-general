@@ -7,31 +7,148 @@
 // V1 não executa em V2: este plugin é exclusivamente V2 (export default com
 // id + setup, sem dependência de @opencode/plugin).
 import { spawnSync } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, statSync, readFileSync, readdirSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
+import { homedir } from "node:os";
 
 const TIMEOUT_MS = 8000;
 const BUFFER_CAP = 1 << 20;
 
-// python3 (Unix) ou python/py -3 (Windows): primeiro que responder, em cache.
+// Localiza interpretador Python >= 3.12 compatível de forma determinística e resiliente:
+// 1. Em cache na memória do processo (PY).
+// 2. Variável de ambiente explícita WILLTECH_PYTHON ou PYTHON.
+// 3. Configuração gravada na instalação do projeto (.willtech/installed.json -> campo "python").
+// 4. Candidatos por plataforma (Windows, macOS, Linux):
+//    - Windows: py -3.12, py -3.13, py -3, python3, python, caminhos de Program Files e LocalAppData
+//    - macOS / Linux: python3.12, python3.13, Homebrew (/opt/homebrew/bin, /usr/local/bin),
+//      ~/.local/bin/python3.12, instalações do uv em ~/.local/share/uv/python/*/bin/python3,
+//      pyenv (~/.pyenv/shims/python3), Frameworks oficiais e fallbacks no PATH.
+// Validação estrita: executa -c "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)".
+// Se a versão for inferior a 3.12 (ex.: /usr/bin/python3 3.9.6 do macOS), é rejeitada sem erro.
 let PY = null;
-function pythonCmd() {
+function pythonCmd(dir) {
   if (PY) return PY;
-  for (const cand of [["python3", []], ["python", []], ["py", ["-3"]]]) {
+
+  const testCompat = (cmd, args = []) => {
     try {
-      const r = spawnSync(cand[0], [...cand[1], "--version"], {
-        timeout: 3000, encoding: "utf8", windowsHide: true,
+      if (typeof cmd === "string" && cmd.startsWith("/") && !existsSync(cmd)) return false;
+      const r = spawnSync(cmd, [...args, "-c", "import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)"], {
+        timeout: 2500, windowsHide: true,
       });
-      if (r.status === 0) { PY = cand; return PY; }
+      return r.status === 0;
+    } catch {
+      return false;
+    }
+  };
+
+  // 1. Variável de ambiente explícita
+  const envPy = process.env.WILLTECH_PYTHON || process.env.PYTHON;
+  if (envPy && testCompat(envPy)) {
+    PY = [envPy, []];
+    return PY;
+  }
+
+  // 2. Configuração persistida na instalação local do projeto
+  if (dir) {
+    try {
+      const instPath = join(dir, ".willtech", "installed.json");
+      if (existsSync(instPath)) {
+        const data = JSON.parse(readFileSync(instPath, "utf8"));
+        if (data && data.python && testCompat(data.python)) {
+          PY = [data.python, []];
+          return PY;
+        }
+      }
     } catch {}
   }
+
+  // 3. Candidatos do sistema operacional
+  const isWin = process.platform === "win32";
+  const isMac = process.platform === "darwin";
+  const home = typeof homedir === "function" ? homedir() : (process.env.HOME || process.env.USERPROFILE || "");
+  const candidates = [];
+
+  if (isWin) {
+    candidates.push(["py", ["-3.12"]]);
+    candidates.push(["py", ["-3.13"]]);
+    candidates.push(["py", ["-3"]]);
+    candidates.push(["python3", []]);
+    candidates.push(["python", []]);
+    const localApp = process.env.LOCALAPPDATA || (home ? join(home, "AppData", "Local") : "");
+    if (localApp) {
+      candidates.push([join(localApp, "Programs", "Python", "Python312", "python.exe"), []]);
+      candidates.push([join(localApp, "Programs", "Python", "Python313", "python.exe"), []]);
+    }
+    const progFiles = process.env.ProgramFiles;
+    if (progFiles) {
+      candidates.push([join(progFiles, "Python312", "python.exe"), []]);
+      candidates.push([join(progFiles, "Python313", "python.exe"), []]);
+    }
+  } else {
+    // Comandos explícitos no PATH
+    candidates.push(["python3.12", []]);
+    candidates.push(["python3.13", []]);
+
+    if (isMac) {
+      // Homebrew Apple Silicon
+      candidates.push(["/opt/homebrew/bin/python3.12", []]);
+      candidates.push(["/opt/homebrew/bin/python3.13", []]);
+      candidates.push(["/opt/homebrew/bin/python3", []]);
+      // Homebrew Intel / python.org
+      candidates.push(["/usr/local/bin/python3.12", []]);
+      candidates.push(["/usr/local/bin/python3.13", []]);
+      candidates.push(["/usr/local/bin/python3", []]);
+      // Python.framework oficial
+      candidates.push(["/Library/Frameworks/Python.framework/Versions/3.12/bin/python3", []]);
+      candidates.push(["/Library/Frameworks/Python.framework/Versions/3.13/bin/python3", []]);
+    } else {
+      // Linux
+      candidates.push(["/usr/bin/python3.12", []]);
+      candidates.push(["/usr/bin/python3.13", []]);
+      candidates.push(["/usr/local/bin/python3.12", []]);
+      candidates.push(["/usr/local/bin/python3.13", []]);
+    }
+
+    // Gerenciadores no diretório home do usuário
+    if (home) {
+      candidates.push([join(home, ".local", "bin", "python3.12"), []]);
+      candidates.push([join(home, ".local", "bin", "python3.13"), []]);
+      candidates.push([join(home, ".local", "bin", "python3"), []]);
+
+      // Detecta versões instaladas pelo uv em ~/.local/share/uv/python/*/bin/python3
+      const uvBase = join(home, ".local", "share", "uv", "python");
+      if (existsSync(uvBase)) {
+        try {
+          for (const ent of readdirSync(uvBase)) {
+            const p = join(uvBase, ent, "bin", "python3");
+            if (existsSync(p)) candidates.push([p, []]);
+          }
+        } catch {}
+      }
+
+      candidates.push([join(home, ".pyenv", "shims", "python3"), []]);
+      candidates.push([join(home, ".asdf", "shims", "python3"), []]);
+    }
+
+    // Fallbacks genéricos no PATH (serão validados se >= 3.12)
+    candidates.push(["python3", []]);
+    candidates.push(["python", []]);
+  }
+
+  for (const cand of candidates) {
+    if (testCompat(cand[0], cand[1])) {
+      PY = cand;
+      return PY;
+    }
+  }
+
   return null;
 }
 
 function core(dir, event) {
   const tool = join(dir, "tools", "willtech-auto.py");
   if (!existsSync(tool)) return {};
-  const py = pythonCmd();
+  const py = pythonCmd(dir);
   if (!py) return {};
   try {
     const r = spawnSync(py[0], [...py[1], tool, "opencode"], {

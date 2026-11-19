@@ -44,11 +44,53 @@ for path in "$BASE" "$BASE/enabled" "$BASE/installed.json"; do
   fi
 done
 
+find_python() {
+  if [ -n "${WILLTECH_PYTHON:-}" ] && [ -x "$WILLTECH_PYTHON" ]; then
+    if "$WILLTECH_PYTHON" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1; then
+      printf '%s\n' "$WILLTECH_PYTHON"
+      return 0
+    fi
+  fi
+  cands="python3.12 python3.13 /opt/homebrew/bin/python3.12 /opt/homebrew/bin/python3.13 /opt/homebrew/bin/python3 /usr/local/bin/python3.12 /usr/local/bin/python3.13 /usr/local/bin/python3 /usr/bin/python3.12 /usr/bin/python3.13 $HOME/.local/bin/python3.12 $HOME/.local/bin/python3.13 $HOME/.local/bin/python3 $HOME/.pyenv/shims/python3 /Library/Frameworks/Python.framework/Versions/3.12/bin/python3 /Library/Frameworks/Python.framework/Versions/3.13/bin/python3 python3 python"
+  for c in $cands; do
+    if command -v "$c" >/dev/null 2>&1 || [ -x "$c" ]; then
+      if "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1; then
+        command -v "$c" 2>/dev/null || printf '%s\n' "$c"
+        return 0
+      fi
+    fi
+  done
+  if [ -d "$HOME/.local/share/uv/python" ]; then
+    for uv_py in "$HOME"/.local/share/uv/python/*/bin/python3; do
+      if [ -x "$uv_py" ]; then
+        if "$uv_py" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1; then
+          printf '%s\n' "$uv_py"
+          return 0
+        fi
+      fi
+    done
+  fi
+  return 1
+}
+
+PY_BIN=""
+if [ "$MODE" = install ]; then
+  if ! PY_BIN="$(find_python)" || [ -z "$PY_BIN" ]; then
+    echo "erro: Python >= 3.12 não encontrado no sistema." >&2
+    echo "O WillTech-General requer Python 3.12 ou superior para executar sua automação nativa." >&2
+    echo "Instale Python 3.12+ (ex: via python.org, Homebrew ou uv) ou defina WILLTECH_PYTHON=/caminho/para/python3.12." >&2
+    echo "Instalação recusada para evitar falhas em tempo de execução." >&2
+    exit 2
+  fi
+else
+  PY_BIN="$(find_python 2>/dev/null || command -v python3 2>/dev/null || echo python3)"
+fi
+
 # N3: valida o layout de distribuição ANTES de qualquer alteração. Informa
 # precisamente qual componente está ausente/inválido e impede instalação
 # parcial (nenhum arquivo é tocado se a origem estiver incompleta).
 if [ "$MODE" = install ]; then
-  python3 - "$SRC" "$REPO" "$PLATFORM" <<'PY'
+  "$PY_BIN" - "$SRC" "$REPO" "$PLATFORM" <<'PY'
 import json, os, sys
 src, repo, platform = sys.argv[1:4]
 def want(p): return platform in ("all", p)
@@ -79,7 +121,7 @@ PY
 fi
 
 update_component() {
-  python3 - "$1" "$2" "$3" "$REPO" <<'PY'
+  "$PY_BIN" - "$1" "$2" "$3" "$REPO" <<'PY'
 import hashlib, json, os, shutil, sys
 mode, target, template, root = sys.argv[1:5]
 root = os.path.realpath(root)
@@ -246,10 +288,10 @@ mkdir -p "$BASE"
 if want claude; then update_component install "$REPO/.claude/settings.json" "$SRC/claude-code/settings/willtech-hooks.json"; fi
 if want codex; then update_component install "$REPO/.codex/hooks.json" "$SRC/codex/hooks.json"; fi
 if want opencode; then update_component install "$REPO/.opencode/plugins/willtech/index.js" "$SRC/opencode/plugins/willtech/index.js"; fi
-python3 - "$PLATFORM" "$REPO" "$BASE/installed.json" <<'PY'
+"$PY_BIN" - "$PLATFORM" "$REPO" "$BASE/installed.json" "$PY_BIN" <<'PY'
 import json, sys
 with open(sys.argv[3], "w", encoding="utf-8") as fh:
-    json.dump({"platform": sys.argv[1], "repo": sys.argv[2]}, fh)
+    json.dump({"platform": sys.argv[1], "repo": sys.argv[2], "python": sys.argv[4]}, fh)
 PY
 : > "$BASE/enabled"
 echo "instalação concluída; automação ativa (.willtech/enabled)"

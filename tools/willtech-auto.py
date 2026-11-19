@@ -30,6 +30,12 @@ import subprocess
 import sys
 import time
 
+if sys.version_info < (3, 12):
+    sys.stderr.write(
+        f"WillTech: Python >= 3.12 é obrigatório (detectado {sys.version.split()[0]}).\n"
+    )
+    sys.exit(1)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 STDIN_CAP = 1 << 20
@@ -291,7 +297,11 @@ def directed_repomap_brief(base, repo, objective="", role="general",
             safe_rel = re.sub(r"[\r\n`]+", " ", str(rel or "")).strip()
             raw_syms = files[rel].get("symbols", [])
             raw_syms = sorted(raw_syms, key=lambda s: (0 if s["n"].lower() in tset else 1, s["l"]))
-            syms = ", ".join(f"{re.sub(r'[\r\n`]+', ' ', str(s['n'] or '')).strip()}@{s['l']}" for s in raw_syms[:6])
+            clean_syms = [
+                re.sub(r"[\r\n`]+", " ", str(s["n"] or "")).strip() + f"@{s['l']}"
+                for s in raw_syms[:6]
+            ]
+            syms = ", ".join(clean_syms)
             line = f"MAP {safe_rel}: {syms}"
             deps = [re.sub(r"[\r\n`]+", " ", str(d or "")).strip() for d in out_edges.get(rel, [])]
             if deps:
