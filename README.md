@@ -15,19 +15,16 @@ Origin: WILLTECH custom multi-agent implementation
 </p>
 
 <p align="center">
-  <sub>Versão da linha de código: <strong>3.1.0</strong> (Shared Intelligence + JIT adaptativo; confira a release publicada) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
+  <sub>Versão da linha de código: <strong>3.1.1</strong> (Shared Intelligence + JIT adaptativo; confira a release publicada) · Licença MIT · OpenCode V2, Codex e Claude Code</sub>
 </p>
 
 <p align="center">
   <img src="docs/assets/willtech-team-banner.webp" alt="Equipe WILLTECH-GENERAL: General ao centro, ladeado pelos seis especialistas" width="100%">
 </p>
 
-<p align="center">
-  <strong>✅ v3.1.0 — FULL PASS DO NÚCLEO E DAS INTEGRAÇÕES OFICIAIS</strong><br>
-  <sub>CI 5/5 · OpenCode V2 · Codex · Claude Code · Windows · macOS · Linux · SQLite Sala dos Agentes · JIT adaptativo</sub>
-</p>
+**Status tecnológico — v3.1.1 em validação:** núcleo e integrações OpenCode V2, Codex e Claude Code; sete agentes, memória SQLite, JIT adaptativo e distribuição multiplataforma. Os resultados completos pertencem aos commits e workflows indicados abaixo. Para verificar a instalação real no OpenCode, consulte o [teste rápido de ponta a ponta](docs/TESTE-RAPIDO-OPENCODE-3.1.1.md).
 
-**Estado tecnológico da linha v3.1.0 (19/11/2026):** o núcleo multiagente e a distribuição 3.1.0 foram testados em runners limpos com verificações reais de instalação, integridade, rollback e execução. [Homologação 5/5](https://github.com/hebwil/willtech-general/actions/runs/44427692105) e [sessões reais de Codex + Claude Code com modelo local e hooks](https://github.com/hebwil/willtech-general/actions/runs/44427692067) concluíram com sucesso. Os sete agentes preservam suas responsabilidades e o comandante de cada host mantém a autoridade. O painel visual é validado pelo proprietário em seu ambiente de uso e **não integra o gate automatizado do núcleo**; testes do macOS runner não são apresentados como PASS visual nativo. A economia medida do modo B é **45,40% menos tokens novos de entrada**, com **8/9 acertos** (igual ao baseline), sem afirmar desconto monetário de API. O modo C segue opt-in e experimental (7/9 nesta amostra). Esta declaração de **FULL PASS** refere-se ao **escopo de núcleo, distribuição e integração dos hosts testados**, não a 100% de acertos de todo modelo em qualquer projeto.
+**Evidências de homologação da linha 3.1 (19/11/2026):** o núcleo multiagente e a distribuição 3.1.0 foram testados em runners limpos com verificações reais de instalação, integridade, rollback e execução. [Homologação 5/5](https://github.com/hebwil/willtech-general/actions/runs/44427692105) e [sessões reais de Codex + Claude Code com modelo local e hooks](https://github.com/hebwil/willtech-general/actions/runs/44427692067) concluíram com sucesso. Os sete agentes preservam suas responsabilidades e o comandante de cada host mantém a autoridade. O painel visual é validado pelo proprietário em seu ambiente de uso e **não integra o gate automatizado do núcleo**; testes do macOS runner não são apresentados como PASS visual nativo. A economia medida do modo B é **45,40% menos tokens novos de entrada**, com **8/9 acertos** (igual ao baseline), sem afirmar desconto monetário de API. O modo C segue opt-in e experimental (7/9 nesta amostra). Esta declaração de **FULL PASS** refere-se ao **escopo de núcleo, distribuição e integração dos hosts testados**, não a 100% de acertos de todo modelo em qualquer projeto.
 
 ---
 
